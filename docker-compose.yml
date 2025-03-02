@@ -1,17 +1,17 @@
 services:
-  mysql-mata:
+  mysql-meta:
     image: mysql:8.0  # 사용할 MySQL 버전 지정
     container_name: RSI-mata  # 컨테이너 이름 설정
     restart: always  # 컨테이너가 중지되면 자동 재시작
     environment:
-      MYSQL_ROOT_PASSWORD: RSI-mata # 루트 계정 비밀번호 설정
-      MYSQL_DATABASE: RSIMata  # 생성할 기본 데이터베이스
+      MYSQL_ROOT_PASSWORD: RSI-meta # 루트 계정 비밀번호 설정
+      MYSQL_DATABASE: RSIMeta  # 생성할 기본 데이터베이스
       MYSQL_USER: dnltjdrn  # 사용자 계정 생성
       MYSQL_PASSWORD: qwer3750  # 사용자 계정 비밀번호
     ports:
       - "3307:3306"  # 호스트와 컨테이너 간 포트 매핑
     volumes:
-      - mysql_RSI_mata:/var/lib/mysql  # 데이터 영속성을 위한 볼륨 설정
+      - mysql_RSI_meta:/var/lib/mysql  # 데이터 영속성을 위한 볼륨 설정
 
   mysql-data:
     image: mysql:8.0  # 사용할 MySQL 버전 지정
@@ -28,5 +28,5 @@ services:
       - mysql_RSI_data:/var/lib/mysql  # 데이터 영속성을 위한 볼륨 설정
 
 volumes:
-  mysql_RSI_mata:
+  mysql_RSI_meta:
   mysql_RSI_data:

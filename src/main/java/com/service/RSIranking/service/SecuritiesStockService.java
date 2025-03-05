@@ -4,6 +4,7 @@ import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -21,13 +22,15 @@ public class SecuritiesStockService {
     private static final String AUTH_KEY = "3DAF2BE024974AD1B472C1F214E2A63D376D41E0";
 
     private final SecuritiesStockRepository securitiesStockRepository;
-    private RestTemplate restTemplate;
+
 
     public List<SecuritiesStockEntity> getStockData(String date) {
         // API URL 조립
         String url = UriComponentsBuilder.fromHttpUrl(API_URL)
                 .queryParam("basDd", date) // 기준 날짜 추가
                 .toUriString();
+
+        RestTemplate restTemplate = new RestTemplate();
 
         // HTTP 헤더 설정
         HttpHeaders headers = new HttpHeaders();

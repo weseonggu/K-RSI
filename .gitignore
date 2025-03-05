@@ -35,3 +35,10 @@ out/
 
 ### VS Code ###
 .vscode/
+src/main/java/com/service/RSIranking/entity/AfterEntity.java
+src/main/java/com/service/RSIranking/entity/BeforeEntity.java
+src/main/java/com/service/RSIranking/batch/FirstBatch.java
+src/main/java/com/service/RSIranking/controller/MainController.java
+src/main/java/com/service/RSIranking/repository/AfterRepository.java
+src/main/java/com/service/RSIranking/repository/BeforeRepository.java
+src/main/java/com/service/RSIranking/schedule/FirstSchedule.java

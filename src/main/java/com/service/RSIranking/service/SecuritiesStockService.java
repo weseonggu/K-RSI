@@ -1,5 +1,6 @@
 package com.service.RSIranking.service;
 
+import com.service.RSIranking.dto.SecuritiesStockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
@@ -50,8 +51,11 @@ public class SecuritiesStockService {
             if (body.containsKey("OutBlock_1")) {
                 List<Map<String, Object>> stockList = (List<Map<String, Object>>) body.get("OutBlock_1");
 
-                for (Map<String, Object> stock : stockList) {
-                    stocks.add(SecuritiesStockEntity.parseJsonToSecuritiesStock(stock));
+                for (Map<String, Object> stockJson : stockList) {
+                    // json -> DTO로 변환
+                    SecuritiesStockDto stockDto = SecuritiesStockDto.fromJson(stockJson, true);
+                    // DTO -> entity로 변환
+                    stocks.add(stockDto.toEntity());
                 }
             }
         }

@@ -12,7 +12,7 @@ public class GetSecuritiesStockTest {
 
     @Test
     public void testGetStockData_Success() throws Exception{
-        securitiesStockService.getStockData("20240102");
+        securitiesStockService.getStockData("20250220");
 
     }
 }

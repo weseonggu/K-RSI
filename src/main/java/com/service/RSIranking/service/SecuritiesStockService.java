@@ -1,5 +1,6 @@
 package com.service.RSIranking.service;
 
+import com.service.RSIranking.config.KrxApiProperties;
 import com.service.RSIranking.dto.SecuritiesStockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.SecuritiesStockRepository;
@@ -22,12 +23,14 @@ public class SecuritiesStockService {
     private static final String API_URL = "http://data-dbg.krx.co.kr/svc/apis/sto/stk_bydd_trd";
     private static final String AUTH_KEY = "3DAF2BE024974AD1B472C1F214E2A63D376D41E0";
 
+    private final KrxApiProperties krxApiProperties;
+
     private final SecuritiesStockRepository securitiesStockRepository;
 
 
     public List<SecuritiesStockEntity> getStockData(String date) {
         // API URL 조립
-        String url = UriComponentsBuilder.fromHttpUrl(API_URL)
+        String url = UriComponentsBuilder.fromHttpUrl(krxApiProperties.getUrl())
                 .queryParam("basDd", date) // 기준 날짜 추가
                 .toUriString();
 
@@ -35,7 +38,7 @@ public class SecuritiesStockService {
 
         // HTTP 헤더 설정
         HttpHeaders headers = new HttpHeaders();
-        headers.set("AUTH_KEY", AUTH_KEY);
+        headers.set("AUTH_KEY", krxApiProperties.getKey());
         headers.set("Accept", "application/json");
 
         HttpEntity<String> entity = new HttpEntity<>(headers);

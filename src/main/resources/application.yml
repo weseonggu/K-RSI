@@ -1,0 +1,26 @@
+spring:
+  datasource-data:
+    password: qwer3750
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    jdbc-url: jdbc:mysql://localhost:3308/RSIData
+    username: dnltjdrn
+  datasource-meta:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: dnltjdrn
+    password: qwer3750
+    jdbc-url: jdbc:mysql://localhost:3307/RSIMeta
+  batch:
+    jdbc:
+      initialize-schema: always
+      schema: classpath:org/springframework/batch/core/schema-mysql.sql
+    job:
+      enabled: 'false'
+  application:
+    name: RSIranking
+server:
+  port: '9090'
+
+api:
+  krx:
+    url: "http://data-dbg.krx.co.kr/svc/apis/sto/stk_bydd_trd"
+    key: "3DAF2BE024974AD1B472C1F214E2A63D376D41E0"

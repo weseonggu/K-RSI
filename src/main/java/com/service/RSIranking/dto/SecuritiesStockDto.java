@@ -6,17 +6,19 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.Map;
 
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SecuritiesStockDto {
+public class SecuritiesStockDto implements Serializable {
     private String isuCd;
     private String isuNm;
     private String mktNm;
     private Boolean isPublicStock;
+    private boolean checked = false;
 
     /**
      * JSON 데이터 SecuritiesStockDto로 변환
@@ -38,11 +40,18 @@ public class SecuritiesStockDto {
      */
     public SecuritiesStockEntity toEntity() {
         return SecuritiesStockEntity.builder()
-                .isuCd(this.isuCd)
+                .id(this.isuCd)
                 .isuNm(this.isuNm)
                 .mktNm(this.mktNm)
                 .isPublicStock(this.isPublicStock)
                 .build();
+    }
+
+    /**
+     * dto 확인 여부 엄데이트
+     */
+    public void updateChecked(){
+        this.checked =true;
     }
 }
 

@@ -2,6 +2,7 @@ package com.service.RSIranking.batch.step;
 
 import com.service.RSIranking.dto.SecuritiesStockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.repository.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockEntity, SecuritiesStockEntity> {
 
     private List<SecuritiesStockDto> dtoList;
+    private final SecuritiesStockRepository securitiesStockRepository;
 
     @BeforeStep
     public void retrieveInterStepData(StepExecution stepExecution) {
@@ -52,13 +54,19 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
     }
 
     @AfterStep
-    public ExitStatus collectNewStocks(StepExecution stepExecution) {
+    public ExitStatus collectNewStocks() {
         List<SecuritiesStockDto> newStockDtos = dtoList.stream()
                 .filter(dto -> !dto.isChecked()) // 🔹 확인되지 않은 DTO (신규 데이터)
                 .collect(Collectors.toList());
 
-        // 🔹 ExecutionContext에 신규 데이터 저장
-        stepExecution.getJobExecution().getExecutionContext().put("newStockDtos", newStockDtos);
+        // DB에 신규 데이터 저장
+        List<SecuritiesStockEntity> newStockEntities = newStockDtos.stream()
+                .map(SecuritiesStockEntity::new) // DTO -> Entity 변환
+                .collect(Collectors.toList());
+
+        if (!newStockEntities.isEmpty()) {
+            securitiesStockRepository.saveAll(newStockEntities);
+        }
 
         return ExitStatus.COMPLETED;
     }

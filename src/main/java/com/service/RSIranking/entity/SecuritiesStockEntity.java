@@ -14,7 +14,7 @@ import lombok.*;
 @Builder
 public class SecuritiesStockEntity {
     @Id
-    @Column(name = "isu_cd", length = 20, nullable = false)
+    @Column(name = "isu_cd", length = 100, nullable = false)
     private String id;  // 표준코드
 
     @Column(name = "isu_nm", length = 100, nullable = false)

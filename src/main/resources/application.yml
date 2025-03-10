@@ -22,5 +22,6 @@ server:
 
 api:
   krx:
-    url: "http://data-dbg.krx.co.kr/svc/apis/sto/stk_bydd_trd"
+    kospi-info-url: "http://data-dbg.krx.co.kr/svc/apis/sto/stk_bydd_trd"
+    kosdaq-info-url: "http://data-dbg.krx.co.kr/svc/apis/sto/ksq_isu_base_info"
     key: "3DAF2BE024974AD1B472C1F214E2A63D376D41E0"

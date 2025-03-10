@@ -32,7 +32,6 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
 
     @Override
     public SecuritiesStockEntity process(SecuritiesStockEntity entity) throws Exception {
-        // Todo 데이터를 비교해서 삭제된거는 반영이되지만 새로 추가된 종목은 저장이 안되는 문제가 있음
         // dtoList와 비교하여 변경 사항 처리
         Optional<SecuritiesStockDto> matchedDto = dtoList.stream()
                 .filter(dto -> dto.getIsuCd().equals(entity.getId()))

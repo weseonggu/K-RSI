@@ -1,9 +1,10 @@
 package com.service.RSIranking.batch.step;
 
-import com.service.RSIranking.config.KrxApiProperties;
+import com.service.RSIranking.config.krx_api.ApiConfig;
 import com.service.RSIranking.dto.SecuritiesStockDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
@@ -24,9 +25,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FetchDataTasklet implements Tasklet {
 
-    private final KrxApiProperties krxApiProperties;
-
     private StepExecution stepExecution;
+    private ApiConfig apiConfig;
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
@@ -37,8 +37,7 @@ public class FetchDataTasklet implements Tasklet {
         String presentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         // API URL 조립
-        String url = UriComponentsBuilder.fromHttpUrl(krxApiProperties.getUrl())
-                // Todo 공휴일 주말에는 요청시 비어 있는 데이터 가져온다.
+        String url = UriComponentsBuilder.fromHttpUrl(apiConfig.getUrl())
 //                .queryParam("basDd", presentDate) // 기준 날짜 추가
                 .queryParam("basDd", "20250307")
                 .toUriString();
@@ -47,7 +46,7 @@ public class FetchDataTasklet implements Tasklet {
 
         // HTTP 헤더 설정
         HttpHeaders headers = new HttpHeaders();
-        headers.set("AUTH_KEY", krxApiProperties.getKey());
+        headers.set("AUTH_KEY", apiConfig.getKey());
         headers.set("Accept", "application/json");
 
         HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -77,6 +76,14 @@ public class FetchDataTasklet implements Tasklet {
 
     @BeforeStep
     public void saveStepExecution(StepExecution stepExecution) {
+
         this.stepExecution = stepExecution;
+
+        JobParameters jobParameters = stepExecution.getJobParameters();
+        String apiUrl = jobParameters.getString("apiUrl");
+        String apiKey = jobParameters.getString("apiKey");
+        if (apiUrl != null && apiKey != null) {
+            this.apiConfig = new ApiConfig(apiKey, apiUrl);
+        }
     }
 }

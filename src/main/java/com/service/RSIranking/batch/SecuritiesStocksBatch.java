@@ -1,9 +1,9 @@
 package com.service.RSIranking.batch;
 
 import com.service.RSIranking.batch.step.CompareAndUpdateProcessor;
+import com.service.RSIranking.batch.step.DBStockReader;
 import com.service.RSIranking.batch.step.FetchDataTasklet;
 import com.service.RSIranking.batch.step.StockWriter;
-import com.service.RSIranking.config.KrxApiProperties;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.SecuritiesStockRepository;
 import org.springframework.batch.core.Job;
@@ -13,16 +13,12 @@ import org.springframework.batch.core.listener.ExecutionContextPromotionListener
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.data.RepositoryItemReader;
-import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.Sort;
 import org.springframework.transaction.PlatformTransactionManager;
-
-import java.util.Map;
 
 @Configuration
 public class SecuritiesStocksBatch {
@@ -30,17 +26,17 @@ public class SecuritiesStocksBatch {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
     private final SecuritiesStockRepository securitiesStockRepository;
-    private final KrxApiProperties krxApiProperties;
+
+    private String mktNm;
 
     public SecuritiesStocksBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
-                                 SecuritiesStockRepository securitiesStockRepository,
-                                 KrxApiProperties krxApiProperties)
+                                 SecuritiesStockRepository securitiesStockRepository)
     {
     this.jobRepository =  jobRepository;
     this.platformTransactionManager = platformTransactionManager;
     this.securitiesStockRepository = securitiesStockRepository;
-    this.krxApiProperties =  krxApiProperties;
+
     }
 
 // ====================================JoB=================================================
@@ -65,7 +61,7 @@ public class SecuritiesStocksBatch {
     }
     @Bean
     public FetchDataTasklet fetchDataTasklet() {
-        return new FetchDataTasklet(krxApiProperties);
+        return new FetchDataTasklet();
     }
     @Bean
     public ExecutionContextPromotionListener fetchDataListener() {
@@ -76,27 +72,23 @@ public class SecuritiesStocksBatch {
 
 // ==============================STEP2=====================================================
     // DB에 있는 데이터 업데이트 step
+    // todo chunk 크기 yml 파일 에서 관리하도록 변경 필요
     @Bean
     public Step updateDatabaseStep() {
         return new StepBuilder("updateDatabaseStep", jobRepository)
                 .<SecuritiesStockEntity, SecuritiesStockEntity>chunk(10, platformTransactionManager)
-                .reader(stockReader())
+//                .reader(stockReader())
+                .reader(stockEntityItemReader())
                 .processor(compareAndUpdateProcessor()) // 기존 processor 추가
                 .writer(newStockWriter())
-                .listener(compareAndUpdateProcessor()) // 🔹 리스너로 등록해야 @BeforeStep 실행됨
+                .listener(compareAndUpdateProcessor()) // 리스너로 등록해야 @BeforeStep 실행됨
+                .listener(stockEntityItemReader())
                 .build();
     }
-    // DB 데이터 읽기
+    // DB 데이터 읽어 오기
     @Bean
-    public RepositoryItemReader<SecuritiesStockEntity> stockReader() {
-
-        return new RepositoryItemReaderBuilder<SecuritiesStockEntity>()
-                .name("stockReader")
-                .pageSize(10)// 페이징 설정
-                .methodName("findAll")
-                .repository(securitiesStockRepository)
-                .sorts(Map.of("id", Sort.Direction.ASC))// 정렬
-                .build();
+    public ItemReader<SecuritiesStockEntity> stockEntityItemReader(){
+        return new DBStockReader(securitiesStockRepository);
     }
     // DB 데이터랑 api요청으로 가져온 데이터 비교하기
     @Bean
@@ -108,5 +100,6 @@ public class SecuritiesStocksBatch {
     public ItemWriter<SecuritiesStockEntity> newStockWriter() {
         return new StockWriter(securitiesStockRepository);
     }
+
 
 }

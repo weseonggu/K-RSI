@@ -26,10 +26,13 @@ public class SecuritiesStockDto implements Serializable {
      * @return SecuritiesStockDto 객체
      */
     public static SecuritiesStockDto fromJson(Map<String, Object> stock, Boolean isPublicStock) {
+        String mktNm = (String) stock.getOrDefault("MKT_NM",
+                (String) stock.getOrDefault("MKT_TP_NM", "N/A"));
+
         return SecuritiesStockDto.builder()
                 .isuCd((String) stock.getOrDefault("ISU_CD", "N/A"))
                 .isuNm((String) stock.getOrDefault("ISU_NM", "N/A"))
-                .mktNm((String) stock.getOrDefault("MKT_NM", "N/A"))
+                .mktNm(mktNm)
                 .isPublicStock(isPublicStock)
                 .build();
     }

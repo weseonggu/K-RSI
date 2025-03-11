@@ -83,7 +83,6 @@ public class SecuritiesStocksBatch {
     public Step updateDatabaseStep() {
         return new StepBuilder("updateDatabaseStep", jobRepository)
                 .<SecuritiesStockEntity, SecuritiesStockEntity>chunk(10, platformTransactionManager)
-//                .reader(stockReader())
                 .reader(stockEntityItemReader())
                 .processor(compareAndUpdateProcessor()) // 기존 processor 추가
                 .writer(newStockWriter())

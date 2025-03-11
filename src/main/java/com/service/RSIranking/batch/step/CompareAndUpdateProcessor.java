@@ -62,7 +62,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
     @AfterStep
     public ExitStatus collectNewStocks() {
         List<SecuritiesStockDto> newStockDtos = dtoList.stream()
-                .filter(dto -> !dto.isChecked()) // 🔹 확인되지 않은 DTO (신규 데이터)
+                .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
                 .collect(Collectors.toList());
 
         // DB에 신규 데이터 저장

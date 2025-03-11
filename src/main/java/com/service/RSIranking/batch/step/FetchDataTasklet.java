@@ -18,6 +18,7 @@ import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -77,9 +78,8 @@ public class FetchDataTasklet implements Tasklet {
         String redisKey = LocalDate.now().toString() +"-"+ mktNM;
 
         ValueOperations<String, List<SecuritiesStockDto>> ops = redisTemplate.opsForValue();
-        ops.set(redisKey, stocks);
+        ops.set(redisKey, stocks, Duration.ofHours(3));
 
-//        jobContext.put("StockDtoList", stocks);
         jobContext.put("StockDtoList", redisKey);
 
         return RepeatStatus.FINISHED;

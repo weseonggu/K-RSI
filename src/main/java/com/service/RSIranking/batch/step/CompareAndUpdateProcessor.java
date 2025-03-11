@@ -35,8 +35,6 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
 
         ValueOperations<String, List<SecuritiesStockDto>> ops = redisTemplate.opsForValue();
         this.dtoList = ops.get(redisKey);
-
-//        this.dtoList = (List<SecuritiesStockDto>) jobContext.get("StockDtoList");
     }
 
     @Override
@@ -74,7 +72,6 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
 
         if (!newStockEntities.isEmpty()) {
             securitiesStockRepository.saveAll(newStockEntities);
-            // todo 레디스에서 데이터 삭제
         }
 
         return ExitStatus.COMPLETED;

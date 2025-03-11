@@ -12,6 +12,8 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -26,7 +28,10 @@ import java.util.Map;
 public class FetchDataTasklet implements Tasklet {
 
     private StepExecution stepExecution;
-    private ApiConfig apiConfig;
+    private ApiConfig apiConfig =  new ApiConfig();
+
+    private final RedisTemplate redisTemplate;
+    private String mktNM;
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
@@ -69,7 +74,13 @@ public class FetchDataTasklet implements Tasklet {
             }
         }
 
-        jobContext.put("StockDtoList", stocks);
+        String redisKey = LocalDate.now().toString() +"-"+ mktNM;
+
+        ValueOperations<String, List<SecuritiesStockDto>> ops = redisTemplate.opsForValue();
+        ops.set(redisKey, stocks);
+
+//        jobContext.put("StockDtoList", stocks);
+        jobContext.put("StockDtoList", redisKey);
 
         return RepeatStatus.FINISHED;
     }
@@ -80,10 +91,9 @@ public class FetchDataTasklet implements Tasklet {
         this.stepExecution = stepExecution;
 
         JobParameters jobParameters = stepExecution.getJobParameters();
-        String apiUrl = jobParameters.getString("apiUrl");
-        String apiKey = jobParameters.getString("apiKey");
-        if (apiUrl != null && apiKey != null) {
-            this.apiConfig = new ApiConfig(apiKey, apiUrl);
-        }
+        this.apiConfig.setUrl(jobParameters.getString("apiUrl"));
+        this.apiConfig.setKey(jobParameters.getString("apiKey"));
+        this.mktNM = jobParameters.getString("mktNm");
+
     }
 }

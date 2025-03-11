@@ -1,7 +1,7 @@
 services:
   mysql-meta:
     image: mysql:8.0  # 사용할 MySQL 버전 지정
-    container_name: RSI-mata  # 컨테이너 이름 설정
+    container_name: RSI-meta  # 컨테이너 이름 설정
     restart: always  # 컨테이너가 중지되면 자동 재시작
     environment:
       MYSQL_ROOT_PASSWORD: RSI-meta # 루트 계정 비밀번호 설정
@@ -26,7 +26,13 @@ services:
       - "3308:3306"  # 호스트와 컨테이너 간 포트 매핑
     volumes:
       - mysql_RSI_data:/var/lib/mysql  # 데이터 영속성을 위한 볼륨 설정
-
+  redis:
+    image: redis/redis-stack
+    container_name: RSI-Redis
+    restart: always
+    command: [ "redis-server", "--requirepass", "systempass" ]
+    ports:
+      - 6380:6379
 volumes:
   mysql_RSI_meta:
   mysql_RSI_data:

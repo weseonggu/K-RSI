@@ -17,6 +17,15 @@ spring:
       enabled: 'false'
   application:
     name: RSIranking
+  data:
+    redis:
+      host: localhost
+      port: 6380
+      username: default
+      password: systempass
+      timeout: 3000
+
+
 server:
   port: '9090'
 

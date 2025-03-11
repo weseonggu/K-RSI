@@ -4,6 +4,7 @@ import com.service.RSIranking.batch.step.CompareAndUpdateProcessor;
 import com.service.RSIranking.batch.step.DBStockReader;
 import com.service.RSIranking.batch.step.FetchDataTasklet;
 import com.service.RSIranking.batch.step.StockWriter;
+import com.service.RSIranking.dto.SecuritiesStockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.SecuritiesStockRepository;
 import org.springframework.batch.core.Job;
@@ -18,7 +19,10 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
+
+import java.util.List;
 
 @Configuration
 public class SecuritiesStocksBatch {
@@ -26,17 +30,19 @@ public class SecuritiesStocksBatch {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
     private final SecuritiesStockRepository securitiesStockRepository;
+    private final RedisTemplate<String, List<SecuritiesStockDto>> redisTemplate;
 
     private String mktNm;
 
     public SecuritiesStocksBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
-                                 SecuritiesStockRepository securitiesStockRepository)
+                                 SecuritiesStockRepository securitiesStockRepository,
+                                 @Qualifier("stockRedisTemplate")RedisTemplate<String, List<SecuritiesStockDto>> redisTemplate)
     {
     this.jobRepository =  jobRepository;
     this.platformTransactionManager = platformTransactionManager;
     this.securitiesStockRepository = securitiesStockRepository;
-
+    this.redisTemplate = redisTemplate;
     }
 
 // ====================================JoB=================================================
@@ -61,7 +67,7 @@ public class SecuritiesStocksBatch {
     }
     @Bean
     public FetchDataTasklet fetchDataTasklet() {
-        return new FetchDataTasklet();
+        return new FetchDataTasklet(redisTemplate);
     }
     @Bean
     public ExecutionContextPromotionListener fetchDataListener() {
@@ -93,7 +99,7 @@ public class SecuritiesStocksBatch {
     // DB 데이터랑 api요청으로 가져온 데이터 비교하기
     @Bean
     public ItemProcessor<SecuritiesStockEntity, SecuritiesStockEntity> compareAndUpdateProcessor(){
-        return new CompareAndUpdateProcessor(securitiesStockRepository);
+        return new CompareAndUpdateProcessor(securitiesStockRepository, redisTemplate);
     }
     // proccess 결과 DB에 저장하기
     @Bean

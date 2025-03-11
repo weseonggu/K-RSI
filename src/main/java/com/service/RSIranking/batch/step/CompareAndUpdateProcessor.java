@@ -11,6 +11,8 @@ import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,13 +23,20 @@ import java.util.stream.Collectors;
 public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockEntity, SecuritiesStockEntity> {
 
     private List<SecuritiesStockDto> dtoList;
+    private String redisKey;
     private final SecuritiesStockRepository securitiesStockRepository;
+    private final RedisTemplate redisTemplate;
 
     @BeforeStep
     public void retrieveInterStepData(StepExecution stepExecution) {
         final JobExecution jobExecution = stepExecution.getJobExecution();
         final ExecutionContext jobContext = jobExecution.getExecutionContext();
-        this.dtoList = (List<SecuritiesStockDto>) jobContext.get("StockDtoList");
+        this.redisKey = (String)jobContext.get("StockDtoList");
+
+        ValueOperations<String, List<SecuritiesStockDto>> ops = redisTemplate.opsForValue();
+        this.dtoList = ops.get(redisKey);
+
+//        this.dtoList = (List<SecuritiesStockDto>) jobContext.get("StockDtoList");
     }
 
     @Override
@@ -48,7 +57,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
         }
 
 
-        System.out.println("Processor 반환 데이터: " + entity);
+//        System.out.println("Processor 반환 데이터: " + entity);
         return entity;
     }
 
@@ -65,6 +74,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
 
         if (!newStockEntities.isEmpty()) {
             securitiesStockRepository.saveAll(newStockEntities);
+            // todo 레디스에서 데이터 삭제
         }
 
         return ExitStatus.COMPLETED;

@@ -6,22 +6,22 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js
-        uses: actions/setup-node@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          node-version: '18.10.0'
+          java-version: '17'
+          distribution: 'temurin'
 
-      - name: Install Dependencies
-        run: npm install
-
-      - name : Npm Build
-        run: unset CI && npm run build
+      - name: Build with Gradle
+        run: ./gradlew clean :RSIranking:bootJar -x test
 
         # 여기 까지는 여느 빌드와 다름 없다.
 

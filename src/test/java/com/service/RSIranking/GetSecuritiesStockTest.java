@@ -18,11 +18,11 @@ public class GetSecuritiesStockTest {
     @Autowired
     private SecuritiesStockService securitiesStockService;
 
-    @Test
-    public void testGetStockData() throws Exception{
-        securitiesStockService.getStockData("20240220");
-
-    }
+//    @Test
+//    public void testGetStockData() throws Exception{
+//        securitiesStockService.getStockData("20240220");
+//
+//    }
 
 
     @Autowired

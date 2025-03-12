@@ -49,4 +49,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/RSI_Batch
+          tags: ${{ secrets.DOCKER_USERNAME }}/rsibatch

@@ -39,13 +39,12 @@ public class FetchDataTasklet implements Tasklet {
         JobExecution jobExecution = contribution.getStepExecution().getJobExecution();
         ExecutionContext jobContext = jobExecution.getExecutionContext();
 
-        // 오늘 날짜
-        String presentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        // 어제 날짜
+        String presentDate = LocalDate.now().minusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         // API URL 조립
         String url = UriComponentsBuilder.fromHttpUrl(apiConfig.getUrl())
-//                .queryParam("basDd", presentDate) // 기준 날짜 추가
-                .queryParam("basDd", "20250307")
+                .queryParam("basDd", presentDate) // 기준 날짜 추가
                 .toUriString();
 
         RestTemplate restTemplate = new RestTemplate();

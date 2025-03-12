@@ -18,11 +18,11 @@ public class GetSecuritiesStockTest {
     @Autowired
     private SecuritiesStockService securitiesStockService;
 
-    @Test
-    public void testGetStockData() throws Exception{
-        securitiesStockService.getStockData("20240220");
-
-    }
+//    @Test
+//    public void testGetStockData() throws Exception{
+//        securitiesStockService.getStockData("20240220");
+//
+//    }
 
 
     @Autowired
@@ -38,7 +38,14 @@ public class GetSecuritiesStockTest {
     private String kospiInfoUrl;
 
     @Test
-    public void getKospiStockData_Success() throws Exception{
+    public void getKospiStockData_Success() throws Exception {
+
+        System.gc();
+        Thread.sleep(1000);
+
+        Runtime runtime = Runtime.getRuntime();
+        long beforeMemory = runtime.totalMemory() - runtime.freeMemory();
+        long startTime = System.currentTimeMillis();
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
         String date = dateFormat.format(new Date());
@@ -52,13 +59,32 @@ public class GetSecuritiesStockTest {
 
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), jobParameters);
 
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+
+        System.gc();
+        Thread.sleep(1000);
+
+        long afterMemory = runtime.totalMemory() - runtime.freeMemory();
+        long usedMemory = afterMemory - beforeMemory;
+
+        System.out.println("배치 실행 시간(ms): " + duration);
+        System.out.println("배치 실행 시 사용된 메모리: " + usedMemory + " bytes");
     }
+
 
     @Value("${api.krx.kosdaq-info-url}")
     private String kosdaqInfoUrl;
 
     @Test
     public void getKosdaqStockData_Success() throws Exception{
+
+        System.gc();
+        Thread.sleep(1000);
+
+        Runtime runtime = Runtime.getRuntime();
+        long beforeMemory = runtime.totalMemory() - runtime.freeMemory();
+        long startTime = System.currentTimeMillis();
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
         String date = dateFormat.format(new Date());
@@ -71,6 +97,18 @@ public class GetSecuritiesStockTest {
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), jobParameters);
+
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+
+        System.gc();
+        Thread.sleep(1000);
+
+        long afterMemory = runtime.totalMemory() - runtime.freeMemory();
+        long usedMemory = afterMemory - beforeMemory;
+
+        System.out.println("배치 실행 시간(ms): " + duration);
+        System.out.println("배치 실행 시 사용된 메모리: " + usedMemory + " bytes");
 
     }
 }

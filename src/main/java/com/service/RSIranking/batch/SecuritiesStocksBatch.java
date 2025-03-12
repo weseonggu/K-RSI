@@ -1,5 +1,7 @@
 package com.service.RSIranking.batch;
 
+import com.service.RSIranking.batch.measurement.JobExecutionTimeListener;
+import com.service.RSIranking.batch.measurement.StepExecutionTimeListener;
 import com.service.RSIranking.batch.step.CompareAndUpdateProcessor;
 import com.service.RSIranking.batch.step.DBStockReader;
 import com.service.RSIranking.batch.step.FetchDataTasklet;
@@ -31,18 +33,24 @@ public class SecuritiesStocksBatch {
     private final PlatformTransactionManager platformTransactionManager;
     private final SecuritiesStockRepository securitiesStockRepository;
     private final RedisTemplate<String, List<SecuritiesStockDto>> redisTemplate;
+    private final JobExecutionTimeListener jobExecutionTimeListener;
+    private final StepExecutionTimeListener stepExecutionTimeListener;
 
     private String mktNm;
 
     public SecuritiesStocksBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
                                  SecuritiesStockRepository securitiesStockRepository,
-                                 @Qualifier("stockRedisTemplate")RedisTemplate<String, List<SecuritiesStockDto>> redisTemplate)
+                                 @Qualifier("stockRedisTemplate")RedisTemplate<String, List<SecuritiesStockDto>> redisTemplate,
+                                 JobExecutionTimeListener jobExecutionTimeListener,
+                                 StepExecutionTimeListener stepExecutionTimeListener)
     {
     this.jobRepository =  jobRepository;
     this.platformTransactionManager = platformTransactionManager;
     this.securitiesStockRepository = securitiesStockRepository;
     this.redisTemplate = redisTemplate;
+    this.jobExecutionTimeListener = jobExecutionTimeListener;
+    this.stepExecutionTimeListener = stepExecutionTimeListener;
     }
 
 // ====================================JoB=================================================
@@ -51,6 +59,7 @@ public class SecuritiesStocksBatch {
     @Bean
     public Job SecuritiesStocksUpdateJob(){
         return new JobBuilder("stockUpdateJob", jobRepository)
+                .listener(jobExecutionTimeListener)
                 .start(requestKRXAPIStep())
                 .next(updateDatabaseStep())
                 .build();
@@ -63,6 +72,7 @@ public class SecuritiesStocksBatch {
                 .tasklet(fetchDataTasklet() , platformTransactionManager)
                 .listener(fetchDataTasklet())
                 .listener(fetchDataListener() )
+                .listener(stepExecutionTimeListener)
                 .build();
     }
     @Bean
@@ -83,12 +93,12 @@ public class SecuritiesStocksBatch {
     public Step updateDatabaseStep() {
         return new StepBuilder("updateDatabaseStep", jobRepository)
                 .<SecuritiesStockEntity, SecuritiesStockEntity>chunk(10, platformTransactionManager)
-//                .reader(stockReader())
                 .reader(stockEntityItemReader())
                 .processor(compareAndUpdateProcessor()) // 기존 processor 추가
                 .writer(newStockWriter())
                 .listener(compareAndUpdateProcessor()) // 리스너로 등록해야 @BeforeStep 실행됨
                 .listener(stockEntityItemReader())
+                .listener(stepExecutionTimeListener)
                 .build();
     }
     // DB 데이터 읽어 오기

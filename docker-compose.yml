@@ -6,7 +6,7 @@ services:
       - "9090:9090"
     networks:
       - RSI-network
-#    image: 이미지 이름:latest
+    image: weseeonggu/rsibatch:latest
 networks:
   RSI-network:
     driver: bridge

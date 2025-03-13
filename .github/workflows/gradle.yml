@@ -1,10 +1,6 @@
 name: 'deploy'
 
-# 임시로 설정
 on: push
-#  push:
-#    branches:
-#      - master
 
 jobs:
   build:
@@ -26,8 +22,6 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew clean bootJar -x test
-
-        # 여기 까지는 여느 빌드와 다름 없다.
 
   docker:
     name: Deploy Docker Image
@@ -53,3 +47,22 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/rsibatch
+
+  deploy:
+    name: Deploy on Self-Hosted Runner
+    runs-on: self-hosted  # 로컬에서 실행되는 GitHub Runner 사용
+    needs: docker
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Deploy with Docker Compose
+        run: |
+          cd C/Users/fkskd/rsi/batch  # 실제 프로젝트 폴더 경로 입력
+          docker-compose pull
+          docker-compose up -d --force-recreate
+          docker image prune -f

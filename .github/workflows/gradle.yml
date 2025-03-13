@@ -48,21 +48,21 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/rsibatch
 
-deploy:
-  name: Deploy on Self-Hosted Runner
-  runs-on: self-hosted
-  needs: docker
+  deploy:
+    name: Deploy on Self-Hosted Runner
+    runs-on: self-hosted
+    needs: docker
 
-  steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Login to Docker Hub
-      run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Deploy with Docker Compose
-      run: |
-        cd C/Users/fkskd/rsi/batch
-        cmd /c "docker-compose pull"
-        cmd /c "docker-compose up -d --force-recreate"
-        cmd /c "docker image prune -f"
+      - name: Deploy with Docker Compose
+        run: |
+          cd C/Users/fkskd/rsi/batch
+          cmd /c "docker-compose pull"
+          cmd /c "docker-compose up -d --force-recreate"
+          cmd /c "docker image prune -f"

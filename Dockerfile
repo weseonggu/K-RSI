@@ -25,7 +25,7 @@ RUN ./gradlew clean build -x test
 FROM openjdk:17-jdk-slim
 WORKDIR /app
 # JAR 파일 복사
-COPY --from=build /app/RSIranking/build/libs/*SNAPSHOT.jar ./app.jar
+COPY --from=build /app/build/libs/*SNAPSHOT.jar ./app.jar
 
 # Set environment variables if needed
 

@@ -2,6 +2,9 @@ name: 'deploy'
 
 # 임시로 설정
 on: push
+#  push:
+#    branches:
+#      - master
 
 jobs:
   build:

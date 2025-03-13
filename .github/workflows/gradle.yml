@@ -57,6 +57,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Set execution policy for PowerShell
+        run: |
+          powershell -Command "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force"  # PowerShell 실행 정책 변경
+
       - name: Login to Docker Hub
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 

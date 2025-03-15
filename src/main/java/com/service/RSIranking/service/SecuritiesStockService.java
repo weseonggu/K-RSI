@@ -3,7 +3,7 @@ package com.service.RSIranking.service;
 import com.service.RSIranking.config.krx_api.KrxApiProperties;
 import com.service.RSIranking.dto.KospiSecuritiesStockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
-import com.service.RSIranking.repository.SecuritiesStockRepository;
+import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;

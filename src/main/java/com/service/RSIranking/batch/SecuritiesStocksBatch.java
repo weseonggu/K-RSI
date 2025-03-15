@@ -6,9 +6,9 @@ import com.service.RSIranking.batch.step.CompareAndUpdateProcessor;
 import com.service.RSIranking.batch.step.DBStockReader;
 import com.service.RSIranking.batch.step.FetchDataTasklet;
 import com.service.RSIranking.batch.step.StockWriter;
-import com.service.RSIranking.dto.KospiSecuritiesStockDto;
+import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
-import com.service.RSIranking.repository.SecuritiesStockRepository;
+import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -32,7 +32,7 @@ public class SecuritiesStocksBatch {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
     private final SecuritiesStockRepository securitiesStockRepository;
-    private final RedisTemplate<String, List<KospiSecuritiesStockDto>> redisTemplate;
+    private final RedisTemplate<String, List<StockDto>> redisTemplate;
     private final JobExecutionTimeListener jobExecutionTimeListener;
     private final StepExecutionTimeListener stepExecutionTimeListener;
 
@@ -41,7 +41,7 @@ public class SecuritiesStocksBatch {
     public SecuritiesStocksBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
                                  SecuritiesStockRepository securitiesStockRepository,
-                                 @Qualifier("stockRedisTemplate")RedisTemplate<String, List<KospiSecuritiesStockDto>> redisTemplate,
+                                 @Qualifier("stockRedisTemplate")RedisTemplate<String, List<StockDto>> redisTemplate,
                                  JobExecutionTimeListener jobExecutionTimeListener,
                                  StepExecutionTimeListener stepExecutionTimeListener)
     {

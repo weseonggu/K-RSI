@@ -1,4 +1,4 @@
-package com.service.RSIranking.repository;
+package com.service.RSIranking.repository.jpa;
 
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import org.springframework.data.domain.Page;

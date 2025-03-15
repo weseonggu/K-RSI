@@ -1,7 +1,7 @@
 package com.service.RSIranking.batch.step;
 
 import com.service.RSIranking.entity.SecuritiesStockEntity;
-import com.service.RSIranking.repository.SecuritiesStockRepository;
+import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;

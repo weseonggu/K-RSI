@@ -16,11 +16,11 @@ import java.util.HashMap;
 
 @Configuration
 @EnableJpaRepositories(
-        basePackages = "com.service.RSIranking.repository",
+        basePackages = "com.service.RSIranking.repository.jpa",
         entityManagerFactoryRef = "dataEntityManager",
         transactionManagerRef = "dataTransactionManager"
 )
-public class DataDBConfig {
+public class JPADataDBConfig {
 
     @Bean(name = "dataDBSource")
     @ConfigurationProperties(prefix = "spring.datasource-data")

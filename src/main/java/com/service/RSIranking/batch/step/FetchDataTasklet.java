@@ -1,7 +1,9 @@
 package com.service.RSIranking.batch.step;
 
 import com.service.RSIranking.config.krx_api.ApiConfig;
-import com.service.RSIranking.dto.SecuritiesStockDto;
+import com.service.RSIranking.dto.KosdaqSecuritiesStockDto;
+import com.service.RSIranking.dto.KospiSecuritiesStockDto;
+import com.service.RSIranking.dto.StockDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
@@ -59,7 +61,7 @@ public class FetchDataTasklet implements Tasklet {
         // API 요청
         ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
 
-        List<SecuritiesStockDto> stocks = new ArrayList<>();
+        List<StockDto> stocks = new ArrayList<>();
 
         // 응답 데이터 파싱
         if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
@@ -68,15 +70,20 @@ public class FetchDataTasklet implements Tasklet {
                 List<Map<String, Object>> stockList = (List<Map<String, Object>>) body.get("OutBlock_1");
 
                 for (Map<String, Object> stockJson : stockList) {
-                    // json -> DTO로 변환 후 리스트에 적제
-                    stocks.add(SecuritiesStockDto.fromJson(stockJson, true));
+                    if ("KOSDAQ".equalsIgnoreCase(mktNM)) {
+                        // KOSDAQ 주식 데이터 처리
+                        stocks.add(KosdaqSecuritiesStockDto.fromJson(stockJson, true));
+                    } else {
+                        // 기본값: KOSPI 주식 데이터 처리
+                        stocks.add(KospiSecuritiesStockDto.fromJson(stockJson, true));
+                    }
                 }
             }
         }
 
         String redisKey = LocalDate.now().toString() +"-"+ mktNM;
 
-        ValueOperations<String, List<SecuritiesStockDto>> ops = redisTemplate.opsForValue();
+        ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
         ops.set(redisKey, stocks, Duration.ofHours(3));
 
         jobContext.put("StockDtoList", redisKey);

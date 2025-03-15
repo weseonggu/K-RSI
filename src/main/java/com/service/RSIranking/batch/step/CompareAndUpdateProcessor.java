@@ -1,6 +1,6 @@
 package com.service.RSIranking.batch.step;
 
-import com.service.RSIranking.dto.SecuritiesStockDto;
+import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockEntity, SecuritiesStockEntity> {
 
-    private List<SecuritiesStockDto> dtoList;
+    private List<StockDto> dtoList;
     private String redisKey;
     private final SecuritiesStockRepository securitiesStockRepository;
     private final RedisTemplate redisTemplate;
@@ -33,14 +33,14 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
         final ExecutionContext jobContext = jobExecution.getExecutionContext();
         this.redisKey = (String)jobContext.get("StockDtoList");
 
-        ValueOperations<String, List<SecuritiesStockDto>> ops = redisTemplate.opsForValue();
+        ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
         this.dtoList = ops.get(redisKey);
     }
 
     @Override
     public SecuritiesStockEntity process(SecuritiesStockEntity entity) throws Exception {
         // dtoList와 비교하여 변경 사항 처리
-        Optional<SecuritiesStockDto> matchedDto = dtoList.stream()
+        Optional<StockDto> matchedDto = dtoList.stream()
                 .filter(dto -> dto.getIsuCd().equals(entity.getId()))
                 .findFirst();
 
@@ -48,7 +48,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
             // 기존 데이터 업데이트
             entity.updateFromDto(matchedDto.get());
             // 확인한 dto true로 변경
-            matchedDto.get().updateChecked();
+            matchedDto.ifPresent(StockDto::updateChecked);
         } else {
             // 삭제된 데이터 처리
             entity.delistStock();
@@ -62,7 +62,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
     @AfterStep
     public ExitStatus collectNewStocks() {
 //        System.out.println("=============================새로운 데이터 저장====================");
-        List<SecuritiesStockDto> newStockDtos = dtoList.stream()
+        List<StockDto> newStockDtos = dtoList.stream()
                 .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
                 .collect(Collectors.toList());
 

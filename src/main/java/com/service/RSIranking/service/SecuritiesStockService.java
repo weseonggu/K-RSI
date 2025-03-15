@@ -1,7 +1,7 @@
 package com.service.RSIranking.service;
 
 import com.service.RSIranking.config.krx_api.KrxApiProperties;
-import com.service.RSIranking.dto.SecuritiesStockDto;
+import com.service.RSIranking.dto.KospiSecuritiesStockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +51,7 @@ public class SecuritiesStockService {
 
                 for (Map<String, Object> stockJson : stockList) {
                     // json -> DTO로 변환
-                    SecuritiesStockDto stockDto = SecuritiesStockDto.fromJson(stockJson, true);
+                    KospiSecuritiesStockDto stockDto = KospiSecuritiesStockDto.fromJson(stockJson, true);
                     // DTO -> entity로 변환
                     stocks.add(stockDto.toEntity());
                 }

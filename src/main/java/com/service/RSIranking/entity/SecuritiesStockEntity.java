@@ -1,6 +1,6 @@
 package com.service.RSIranking.entity;
 
-import com.service.RSIranking.dto.SecuritiesStockDto;
+import com.service.RSIranking.dto.StockDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -31,12 +31,12 @@ public class SecuritiesStockEntity {
     public void delistStock(){
         this.isPublicStock = false;
     }
-    public void updateFromDto(SecuritiesStockDto dto){
+    public void updateFromDto(StockDto dto){
         this.id = dto.getIsuCd();
         this.isuNm = dto.getIsuNm();
         this.mktNm = dto.getMktNm();
     }
-    public SecuritiesStockEntity(SecuritiesStockDto dto) {
+    public SecuritiesStockEntity(StockDto dto) {
         this.id = dto.getIsuCd();
         this.isuNm = dto.getIsuNm();
         this.mktNm = dto.getMktNm();

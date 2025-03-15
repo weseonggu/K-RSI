@@ -13,7 +13,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SecuritiesStockDto implements Serializable {
+public class KospiSecuritiesStockDto implements Serializable, StockDto {
     private String isuCd;
     private String isuNm;
     private String mktNm;
@@ -25,14 +25,11 @@ public class SecuritiesStockDto implements Serializable {
      * @param stock 종목 정보 데이터
      * @return SecuritiesStockDto 객체
      */
-    public static SecuritiesStockDto fromJson(Map<String, Object> stock, Boolean isPublicStock) {
-        String mktNm = (String) stock.getOrDefault("MKT_NM",
-                (String) stock.getOrDefault("MKT_TP_NM", "N/A"));
-
-        return SecuritiesStockDto.builder()
+    public static KospiSecuritiesStockDto fromJson(Map<String, Object> stock, Boolean isPublicStock) {
+        return KospiSecuritiesStockDto.builder()
                 .isuCd((String) stock.getOrDefault("ISU_CD", "N/A"))
                 .isuNm((String) stock.getOrDefault("ISU_NM", "N/A"))
-                .mktNm(mktNm)
+                .mktNm((String) stock.getOrDefault("MKT_NM","N/A"))
                 .isPublicStock(isPublicStock)
                 .build();
     }

@@ -2,7 +2,7 @@ spring:
   datasource-data:
     password: qwer3750
     driver-class-name: com.mysql.cj.jdbc.Driver
-    jdbc-url: jdbc:mysql://localhost:3308/RSIData
+    jdbc-url: jdbc:mysql://localhost:3308/RSIData?rewriteBatchedStatements=true
     username: dnltjdrn
   datasource-meta:
     driver-class-name: com.mysql.cj.jdbc.Driver

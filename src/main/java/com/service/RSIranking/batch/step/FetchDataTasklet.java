@@ -46,7 +46,8 @@ public class FetchDataTasklet implements Tasklet {
 
         // API URL 조립
         String url = UriComponentsBuilder.fromHttpUrl(apiConfig.getUrl())
-                .queryParam("basDd", presentDate) // 기준 날짜 추가
+//                .queryParam("basDd", presentDate) // 기준 날짜 추가
+                .queryParam("basDd", "20250314")
                 .toUriString();
 
         RestTemplate restTemplate = new RestTemplate();

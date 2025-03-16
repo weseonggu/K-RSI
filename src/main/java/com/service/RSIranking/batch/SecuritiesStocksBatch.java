@@ -8,6 +8,7 @@ import com.service.RSIranking.batch.step.FetchDataTasklet;
 import com.service.RSIranking.batch.step.StockWriter;
 import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.repository.jdbc.SecuritiesStockJDBCRepository;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -35,6 +36,7 @@ public class SecuritiesStocksBatch {
     private final RedisTemplate<String, List<StockDto>> redisTemplate;
     private final JobExecutionTimeListener jobExecutionTimeListener;
     private final StepExecutionTimeListener stepExecutionTimeListener;
+    private final SecuritiesStockJDBCRepository securitiesStockJDBCRepository;
 
     private String mktNm;
 
@@ -43,7 +45,8 @@ public class SecuritiesStocksBatch {
                                  SecuritiesStockRepository securitiesStockRepository,
                                  @Qualifier("stockRedisTemplate")RedisTemplate<String, List<StockDto>> redisTemplate,
                                  JobExecutionTimeListener jobExecutionTimeListener,
-                                 StepExecutionTimeListener stepExecutionTimeListener)
+                                 StepExecutionTimeListener stepExecutionTimeListener,
+                                 SecuritiesStockJDBCRepository securitiesStockJDBCRepository)
     {
     this.jobRepository =  jobRepository;
     this.platformTransactionManager = platformTransactionManager;
@@ -51,6 +54,7 @@ public class SecuritiesStocksBatch {
     this.redisTemplate = redisTemplate;
     this.jobExecutionTimeListener = jobExecutionTimeListener;
     this.stepExecutionTimeListener = stepExecutionTimeListener;
+    this.securitiesStockJDBCRepository = securitiesStockJDBCRepository;
     }
 
 // ====================================JoB=================================================
@@ -109,7 +113,7 @@ public class SecuritiesStocksBatch {
     // DB 데이터랑 api요청으로 가져온 데이터 비교하기
     @Bean
     public ItemProcessor<SecuritiesStockEntity, SecuritiesStockEntity> compareAndUpdateProcessor(){
-        return new CompareAndUpdateProcessor(securitiesStockRepository, redisTemplate);
+        return new CompareAndUpdateProcessor(securitiesStockRepository, redisTemplate, securitiesStockJDBCRepository);
     }
     // proccess 결과 DB에 저장하기
     @Bean

@@ -2,6 +2,7 @@ package com.service.RSIranking.batch.step;
 
 import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.repository.jdbc.SecuritiesStockJDBCRepository;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.ExitStatus;
@@ -26,6 +27,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
     private String redisKey;
     private final SecuritiesStockRepository securitiesStockRepository;
     private final RedisTemplate redisTemplate;
+    private final SecuritiesStockJDBCRepository securitiesStockJDBCRepository;
 
     @BeforeStep
     public void retrieveInterStepData(StepExecution stepExecution) {
@@ -58,10 +60,30 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
 //        System.out.println("Processor 반환 데이터: " + entity);
         return entity;
     }
+//    // jpa를 사용한 신규 종목 저장
+//    @AfterStep
+//    public ExitStatus collectNewStocks() {
+////        System.out.println("=============================새로운 데이터 저장====================");
+//        List<StockDto> newStockDtos = dtoList.stream()
+//                .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
+//                .collect(Collectors.toList());
+//
+//        // DB에 신규 데이터 저장
+//        List<SecuritiesStockEntity> newStockEntities = newStockDtos.stream()
+//                .map(SecuritiesStockEntity::new) // DTO -> Entity 변환
+//                .collect(Collectors.toList());
+//
+//        if (!newStockEntities.isEmpty()) {
+//            securitiesStockRepository.saveAll(newStockEntities);
+//        }
+//
+//        return ExitStatus.COMPLETED;
+//    }
 
+    // jdbc를 사용한 신규 종목 저장
     @AfterStep
     public ExitStatus collectNewStocks() {
-//        System.out.println("=============================새로운 데이터 저장====================");
+        System.out.println("=============================새로운 데이터 저장====================");
         List<StockDto> newStockDtos = dtoList.stream()
                 .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
                 .collect(Collectors.toList());
@@ -72,9 +94,9 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
                 .collect(Collectors.toList());
 
         if (!newStockEntities.isEmpty()) {
-            securitiesStockRepository.saveAll(newStockEntities);
+            securitiesStockJDBCRepository.bulkInsert(newStockEntities);
         }
-
+        System.out.println("=============================새로운 데이터 저장완료====================");
         return ExitStatus.COMPLETED;
     }
 

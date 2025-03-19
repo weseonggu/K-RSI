@@ -5,10 +5,7 @@ import com.service.RSIranking.dto.KosdaqSecuritiesStockDto;
 import com.service.RSIranking.dto.KospiSecuritiesStockDto;
 import com.service.RSIranking.dto.StockDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.StepContribution;
-import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
@@ -46,8 +43,7 @@ public class FetchDataTasklet implements Tasklet {
 
         // API URL 조립
         String url = UriComponentsBuilder.fromHttpUrl(apiConfig.getUrl())
-//                .queryParam("basDd", presentDate) // 기준 날짜 추가
-                .queryParam("basDd", "20250314")
+                .queryParam("basDd", "20250316") // 테스트 날짜
                 .toUriString();
 
         RestTemplate restTemplate = new RestTemplate();
@@ -62,28 +58,32 @@ public class FetchDataTasklet implements Tasklet {
         // API 요청
         ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
 
+        // 응답 데이터 확인
+        if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null ||
+                !response.getBody().containsKey("OutBlock_1")) {
+            stepExecution.setExitStatus(ExitStatus.NOOP);
+            return RepeatStatus.FINISHED; // 데이터가 없으면 배치를 종료
+        }
+
+        List<Map<String, Object>> stockList = (List<Map<String, Object>>) response.getBody().get("OutBlock_1");
+        if (stockList == null || stockList.isEmpty()) {
+
+            stepExecution.setExitStatus(new ExitStatus("NO_DATA"));
+            return RepeatStatus.FINISHED; // 데이터가 없으면 배치를 종료
+        }
+
         List<StockDto> stocks = new ArrayList<>();
 
-        // 응답 데이터 파싱
-        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-            Map<String, Object> body = response.getBody();
-            if (body.containsKey("OutBlock_1")) {
-                List<Map<String, Object>> stockList = (List<Map<String, Object>>) body.get("OutBlock_1");
-
-                for (Map<String, Object> stockJson : stockList) {
-                    if ("KOSDAQ".equalsIgnoreCase(mktNM)) {
-                        // KOSDAQ 주식 데이터 처리
-                        stocks.add(KosdaqSecuritiesStockDto.fromJson(stockJson, true));
-                    } else {
-                        // 기본값: KOSPI 주식 데이터 처리
-                        stocks.add(KospiSecuritiesStockDto.fromJson(stockJson, true));
-                    }
-                }
+        // 데이터 변환 및 저장
+        for (Map<String, Object> stockJson : stockList) {
+            if ("KOSDAQ".equalsIgnoreCase(mktNM)) {
+                stocks.add(KosdaqSecuritiesStockDto.fromJson(stockJson, true));
+            } else {
+                stocks.add(KospiSecuritiesStockDto.fromJson(stockJson, true));
             }
         }
 
-        String redisKey = LocalDate.now().toString() +"-"+ mktNM;
-
+        String redisKey = LocalDate.now().toString() + "-" + mktNM;
         ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
         ops.set(redisKey, stocks, Duration.ofHours(3));
 

@@ -15,7 +15,7 @@ public class SecuritiesStockJDBCRepository {
         this.jdbcTemplate = jdbcTemplate;
 
     }
-    
+
     public void bulkInsert(List<SecuritiesStockEntity> stocks) {
         String sql = "INSERT INTO SecuritiesStockEntity (isu_cd, isu_nm, mkt_nm, is_public_stock) VALUES (?, ?, ?, ?)";
 

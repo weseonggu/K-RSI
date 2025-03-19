@@ -1,6 +1,7 @@
 package com.service.RSIranking.schedule;
 
 import com.service.RSIranking.config.krx_api.KrxApiProperties;
+import com.service.RSIranking.util.IsHoliday;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.Date;
 
 @Configuration
@@ -20,12 +22,18 @@ public class SecuritiesStockLauncher {
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
     private final KrxApiProperties krxApiProperties;
+    private final IsHoliday isHoliday;
     // Todo 주말 공휴일 실행 하지 말아야함
     @Scheduled(cron = "10 * * * * *", zone = "Asia/Seoul")
     public void kospiInfoUpdateJobLauncher() throws Exception{
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
         String date = dateFormat.format(new Date());
+
+        // Todo 1차 어제 날짜가 주말인지 확인
+        System.out.println("어제가 주말인가요? "+isHoliday.isWeekend());
+        // Todo 2차 어제 날짜가 공휴일 인지 확인
+        checkDate();
 
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("date", date)
@@ -36,7 +44,7 @@ public class SecuritiesStockLauncher {
 
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), jobParameters);
     }
-    @Scheduled(cron = "10 * * * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "10 * * * * *", zone = "Asia/Seoul")
     public void kosdaqInfoUpdateJobLauncher() throws Exception{
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
@@ -50,5 +58,21 @@ public class SecuritiesStockLauncher {
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), jobParameters);
+    }
+
+    /**
+     * 어제 날짜가 공휴일인지 확인
+     * @return
+     */
+    private boolean checkDate(){
+        // 날짜의 공휴일, 주말 여부 확인
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        int year = yesterday.getYear();
+        int month = yesterday.getMonthValue();
+        String data = isHoliday.getAnniversaryInfo(year, month);
+
+        System.out.println(data);
+
+        return true;
     }
 }

@@ -61,11 +61,14 @@ public class SecuritiesStocksBatch {
     // 유가 증권 종목 업데이트 Job
     // 주 1회 금요일에 실행 하도록
     @Bean
-    public Job SecuritiesStocksUpdateJob(){
+    public Job SecuritiesStocksUpdateJob() {
         return new JobBuilder("stockUpdateJob", jobRepository)
                 .listener(jobExecutionTimeListener)
                 .start(requestKRXAPIStep())
-                .next(updateDatabaseStep())
+                .on("NO_DATA").end() // 데이터가 없으면 잡 종료
+                .from(requestKRXAPIStep())
+                .on("*").to(updateDatabaseStep()) // 데이터가 있으면 다음 스텝 실행
+                .end()
                 .build();
     }
 // ===============================STEP1===============================================

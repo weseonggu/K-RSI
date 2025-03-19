@@ -1,4 +1,4 @@
-package com.service.RSIranking.batch;
+package com.service.RSIranking.batch.job;
 
 import com.service.RSIranking.batch.measurement.JobExecutionTimeListener;
 import com.service.RSIranking.batch.measurement.StepExecutionTimeListener;
@@ -38,8 +38,6 @@ public class SecuritiesStocksBatch {
     private final StepExecutionTimeListener stepExecutionTimeListener;
     private final SecuritiesStockJDBCRepository securitiesStockJDBCRepository;
 
-    private String mktNm;
-
     public SecuritiesStocksBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
                                  SecuritiesStockRepository securitiesStockRepository,
@@ -58,8 +56,7 @@ public class SecuritiesStocksBatch {
     }
 
 // ====================================JoB=================================================
-    // 유가 증권 종목 업데이트 Job
-    // 주 1회 금요일에 실행 하도록
+    // 증권 종목 업데이트 Job
     @Bean
     public Job SecuritiesStocksUpdateJob() {
         return new JobBuilder("stockUpdateJob", jobRepository)

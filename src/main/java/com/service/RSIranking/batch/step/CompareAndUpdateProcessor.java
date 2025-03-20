@@ -25,6 +25,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
 
     private List<StockDto> dtoList;
     private String redisKey;
+
     private final SecuritiesStockRepository securitiesStockRepository;
     private final RedisTemplate redisTemplate;
     private final SecuritiesStockJDBCRepository securitiesStockJDBCRepository;
@@ -55,15 +56,11 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
             // 삭제된 데이터 처리
             entity.delistStock();
         }
-
-
-//        System.out.println("Processor 반환 데이터: " + entity);
         return entity;
     }
 //    // jpa를 사용한 신규 종목 저장
 //    @AfterStep
 //    public ExitStatus collectNewStocks() {
-////        System.out.println("=============================새로운 데이터 저장====================");
 //        List<StockDto> newStockDtos = dtoList.stream()
 //                .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
 //                .collect(Collectors.toList());
@@ -83,7 +80,6 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
     // jdbc를 사용한 신규 종목 저장
     @AfterStep
     public ExitStatus collectNewStocks() {
-        System.out.println("=============================새로운 데이터 저장====================");
         List<StockDto> newStockDtos = dtoList.stream()
                 .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
                 .collect(Collectors.toList());
@@ -96,7 +92,6 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
         if (!newStockEntities.isEmpty()) {
             securitiesStockJDBCRepository.bulkInsert(newStockEntities);
         }
-        System.out.println("=============================새로운 데이터 저장완료====================");
         return ExitStatus.COMPLETED;
     }
 

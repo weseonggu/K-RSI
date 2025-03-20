@@ -10,6 +10,7 @@ import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.jdbc.SecuritiesStockJDBCRepository;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
+import com.service.RSIranking.service.KrxRequestService;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -37,6 +38,7 @@ public class SecuritiesStocksBatch {
     private final JobExecutionTimeListener jobExecutionTimeListener;
     private final StepExecutionTimeListener stepExecutionTimeListener;
     private final SecuritiesStockJDBCRepository securitiesStockJDBCRepository;
+    private final KrxRequestService krxRequestService;
 
     public SecuritiesStocksBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
@@ -44,7 +46,8 @@ public class SecuritiesStocksBatch {
                                  @Qualifier("stockRedisTemplate")RedisTemplate<String, List<StockDto>> redisTemplate,
                                  JobExecutionTimeListener jobExecutionTimeListener,
                                  StepExecutionTimeListener stepExecutionTimeListener,
-                                 SecuritiesStockJDBCRepository securitiesStockJDBCRepository)
+                                 SecuritiesStockJDBCRepository securitiesStockJDBCRepository,
+                                 KrxRequestService krxRequestService)
     {
     this.jobRepository =  jobRepository;
     this.platformTransactionManager = platformTransactionManager;
@@ -53,6 +56,7 @@ public class SecuritiesStocksBatch {
     this.jobExecutionTimeListener = jobExecutionTimeListener;
     this.stepExecutionTimeListener = stepExecutionTimeListener;
     this.securitiesStockJDBCRepository = securitiesStockJDBCRepository;
+    this.krxRequestService = krxRequestService;
     }
 
 // ====================================JoB=================================================
@@ -81,7 +85,7 @@ public class SecuritiesStocksBatch {
     }
     @Bean
     public FetchDataTasklet fetchDataTasklet() {
-        return new FetchDataTasklet(redisTemplate);
+        return new FetchDataTasklet(redisTemplate, krxRequestService);
     }
     @Bean
     public ExecutionContextPromotionListener fetchDataListener() {
@@ -120,6 +124,8 @@ public class SecuritiesStocksBatch {
     public ItemWriter<SecuritiesStockEntity> newStockWriter() {
         return new StockWriter(securitiesStockRepository);
     }
+
+//========================================BeforeJob===================================================
 
 
 }

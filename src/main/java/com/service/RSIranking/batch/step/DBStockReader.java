@@ -18,13 +18,12 @@ import java.util.Iterator;
 @RequiredArgsConstructor
 public class DBStockReader implements ItemReader<SecuritiesStockEntity>, ItemStreamReader<SecuritiesStockEntity> {
 
-    private final SecuritiesStockRepository securitiesStockRepository;
-
     private StepExecution stepExecution;
     private String mktNm;
-
     private int currentPage = 0;
     private Iterator<SecuritiesStockEntity> currentIterator = null;
+
+    private final SecuritiesStockRepository securitiesStockRepository;
 
     @Override
     public SecuritiesStockEntity read() throws Exception {

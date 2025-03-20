@@ -4,6 +4,7 @@ import com.service.RSIranking.config.krx_api.ApiConfig;
 import com.service.RSIranking.dto.KosdaqSecuritiesStockDto;
 import com.service.RSIranking.dto.KospiSecuritiesStockDto;
 import com.service.RSIranking.dto.StockDto;
+import com.service.RSIranking.service.KrxRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.annotation.BeforeStep;
@@ -11,15 +12,15 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.data.redis.serializer.SerializationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,45 +30,34 @@ public class FetchDataTasklet implements Tasklet {
 
     private StepExecution stepExecution;
     private ApiConfig apiConfig =  new ApiConfig();
+    private String mktNM;
+    private String date;
 
     private final RedisTemplate redisTemplate;
-    private String mktNM;
+    private final KrxRequestService krxRequestService;
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+
         JobExecution jobExecution = contribution.getStepExecution().getJobExecution();
         ExecutionContext jobContext = jobExecution.getExecutionContext();
 
-        // 어제 날짜
-        String presentDate = LocalDate.now().minusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-
-        // API URL 조립
-        String url = UriComponentsBuilder.fromHttpUrl(apiConfig.getUrl())
-                .queryParam("basDd", "20250316") // 테스트 날짜
-                .toUriString();
-
-        RestTemplate restTemplate = new RestTemplate();
-
-        // HTTP 헤더 설정
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("AUTH_KEY", apiConfig.getKey());
-        headers.set("Accept", "application/json");
-
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
-        // API 요청
-        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+        // 요청 서비스 호출
+        // 재시도로 3회 실패시 null을 반환하며 배치를 종료하도록 밑에서 구성
+        ResponseEntity<Map> response = krxRequestService.krxRequest(apiConfig, date);
 
         // 응답 데이터 확인
-        if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null ||
+        // response이 null 이면 스탭 종료밑 배치 종료
+        if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null || response == null ||
                 !response.getBody().containsKey("OutBlock_1")) {
-            stepExecution.setExitStatus(ExitStatus.NOOP);
+            stepExecution.setExitStatus(new ExitStatus("NO_DATA"));
             return RepeatStatus.FINISHED; // 데이터가 없으면 배치를 종료
         }
 
         List<Map<String, Object>> stockList = (List<Map<String, Object>>) response.getBody().get("OutBlock_1");
-        if (stockList == null || stockList.isEmpty()) {
 
+        // 응답은 왔지만 데이터가 비어 있는경우 스탭과 배치 종료
+        if (stockList == null || stockList.isEmpty()) {
             stepExecution.setExitStatus(new ExitStatus("NO_DATA"));
             return RepeatStatus.FINISHED; // 데이터가 없으면 배치를 종료
         }
@@ -82,12 +72,22 @@ public class FetchDataTasklet implements Tasklet {
                 stocks.add(KospiSecuritiesStockDto.fromJson(stockJson, true));
             }
         }
+        try{
 
-        String redisKey = LocalDate.now().toString() + "-" + mktNM;
-        ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
-        ops.set(redisKey, stocks, Duration.ofHours(3));
+            // 레디스 키 날짜 + 시장
+            String redisKey = LocalDate.now().toString() + "-" + mktNM;
 
-        jobContext.put("StockDtoList", redisKey);
+            // 레디스 저장
+            ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
+            ops.set(redisKey, stocks, Duration.ofHours(3));
+            jobContext.put("StockDtoList", redisKey);
+
+        } catch (RedisConnectionFailureException | SerializationException e) {
+            // Redis 저장 실패 처리
+            stepExecution.setExitStatus(new ExitStatus("REDIS_FAILED"));
+            stepExecution.addFailureException(e);
+            return RepeatStatus.FINISHED;
+        }
 
         return RepeatStatus.FINISHED;
     }
@@ -101,6 +101,7 @@ public class FetchDataTasklet implements Tasklet {
         this.apiConfig.setUrl(jobParameters.getString("apiUrl"));
         this.apiConfig.setKey(jobParameters.getString("apiKey"));
         this.mktNM = jobParameters.getString("mktNm");
+        this.date = jobParameters.getString("date");
 
     }
 }

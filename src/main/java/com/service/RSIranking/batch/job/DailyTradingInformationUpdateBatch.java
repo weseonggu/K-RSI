@@ -3,11 +3,8 @@ package com.service.RSIranking.batch.job;
 import com.service.RSIranking.batch.measurement.JobExecutionTimeListener;
 import com.service.RSIranking.batch.measurement.StepExecutionTimeListener;
 import com.service.RSIranking.dto.StockDto;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -38,14 +35,14 @@ public class DailyTradingInformationUpdateBatch {
     }
 
     // todo 일별 매매 정도 업데이트 job
-    @Bean
-    public Job DailyTradingInformationUpdateJob() {
-        return new JobBuilder("stockUpdateJob", jobRepository)
-                .listener(jobExecutionTimeListener)
-                .start()
-                .end()
-                .build();
-    }
+//    @Bean
+//    public Job DailyTradingInformationUpdateJob() {
+//        return new JobBuilder("stockUpdateJob", jobRepository)
+//                .listener(jobExecutionTimeListener)
+//                .start()
+//                .end()
+//                .build();
+//    }
     // todo 일별 매매 정보 가져오는 step
     
     // todo 일별 매맴 정보 DB에 저장 step

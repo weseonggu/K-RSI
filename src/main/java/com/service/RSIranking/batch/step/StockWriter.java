@@ -5,14 +5,15 @@ import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 public class StockWriter implements ItemWriter<SecuritiesStockEntity> {
 
     private final SecuritiesStockRepository securitiesStockRepository;
 
-
     @Override
+    @Transactional
     public void write(Chunk<? extends SecuritiesStockEntity> chunk) throws Exception {
 
         try {
@@ -21,5 +22,4 @@ public class StockWriter implements ItemWriter<SecuritiesStockEntity> {
             throw e;
         }
     }
-
 }

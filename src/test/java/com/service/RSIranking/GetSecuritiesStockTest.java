@@ -55,6 +55,7 @@ public class GetSecuritiesStockTest {
                 .addString("apiUrl", kospiInfoUrl)
                 .addString("apiKey", key)
                 .addString("mktNm", "KOSPI")
+                .addString("date", "20250317")
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), jobParameters);
@@ -94,6 +95,7 @@ public class GetSecuritiesStockTest {
                 .addString("apiUrl", kosdaqInfoUrl)
                 .addString("apiKey", key)
                 .addString("mktNm", "KOSDAQ")
+                .addString("date", "20250319")
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), jobParameters);

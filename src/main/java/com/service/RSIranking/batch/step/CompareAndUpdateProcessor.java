@@ -79,7 +79,14 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
 
     // jdbc를 사용한 신규 종목 저장
     @AfterStep
-    public ExitStatus collectNewStocks() {
+    public ExitStatus collectNewStocks(StepExecution stepExecution) {
+
+//        System.out.println("========write에서 실패===========");
+        // 이전 작업에서 문제가 발생할 경우 그냥 종료
+        if (stepExecution.getExitStatus().getExitCode().equals(ExitStatus.FAILED.getExitCode())) {
+            return ExitStatus.FAILED;
+        }
+//        System.out.println("========DB저장===========");
         List<StockDto> newStockDtos = dtoList.stream()
                 .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
                 .collect(Collectors.toList());

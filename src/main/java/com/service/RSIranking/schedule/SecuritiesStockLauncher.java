@@ -30,7 +30,6 @@ public class SecuritiesStockLauncher {
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
         String date = dateFormat.format(new Date());
-
         // Todo 1차 어제 날짜가 주말인지 확인
         System.out.println("어제가 주말인가요? "+isHoliday.isWeekend());
         // Todo 2차 어제 날짜가 공휴일 인지 확인
@@ -53,7 +52,10 @@ public class SecuritiesStockLauncher {
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
         String date = dateFormat.format(new Date());
-
+        // Todo 1차 어제 날짜가 주말인지 확인
+        System.out.println("어제가 주말인가요? "+isHoliday.isWeekend());
+        // Todo 2차 어제 날짜가 공휴일 인지 확인
+        checkDate();
         String yesterday = yesterday();
 
         JobParameters jobParameters = new JobParametersBuilder()

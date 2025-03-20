@@ -126,7 +126,4 @@ public class SecuritiesStocksBatch {
         return new StockWriter(securitiesStockRepository);
     }
 
-//========================================BeforeJob===================================================
-
-
 }

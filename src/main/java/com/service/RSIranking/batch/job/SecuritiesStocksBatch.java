@@ -67,6 +67,7 @@ public class SecuritiesStocksBatch {
                 .listener(jobExecutionTimeListener)
                 .start(requestKRXAPIStep())
                 .on("NO_DATA").end() // 데이터가 없으면 잡 종료
+                .on("REDIS_FAILED").end()// 레디스 저장 실패 시 잡 종료
                 .from(requestKRXAPIStep())
                 .on("*").to(updateDatabaseStep()) // 데이터가 있으면 다음 스텝 실행
                 .end()

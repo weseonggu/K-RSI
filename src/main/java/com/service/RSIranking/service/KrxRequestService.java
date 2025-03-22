@@ -26,7 +26,7 @@ public class KrxRequestService {
      * @param date 요청할 날짜
      * @return 응답
      */
-    @Retryable(value = RestClientException.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @Retryable(retryFor = RestClientException.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public ResponseEntity<Map>  krxRequest(ApiConfig apiConfig, String date){
 
         RestTemplate restTemplate = new RestTemplate();
@@ -50,7 +50,7 @@ public class KrxRequestService {
     }
 
     @Recover
-    public ResponseEntity<Map> recover(RestClientException e) {
+    public ResponseEntity<Map> recover(RestClientException e, ApiConfig apiConfig, String date) {
         log.info("데이터 가져오기 실패");
         return null;
     }

@@ -4,6 +4,7 @@ import com.service.RSIranking.config.krx_api.ApiConfig;
 import com.service.RSIranking.dto.KosdaqSecuritiesStockDto;
 import com.service.RSIranking.dto.KospiSecuritiesStockDto;
 import com.service.RSIranking.dto.StockDto;
+import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.*;
@@ -12,14 +13,9 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.repeat.RepeatStatus;
-import org.springframework.data.redis.RedisConnectionFailureException;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,8 +29,8 @@ public class FetchDataTasklet implements Tasklet {
     private String mktNM;
     private String date;
 
-    private final RedisTemplate redisTemplate;
     private final KrxRequestService krxRequestService;
+    private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
@@ -72,20 +68,14 @@ public class FetchDataTasklet implements Tasklet {
                 stocks.add(KospiSecuritiesStockDto.fromJson(stockJson, true));
             }
         }
-        try{
+        // 레디스 키 날짜 + 시장
+        String redisKey = LocalDate.now().toString() + "-" + mktNM;
 
-            // 레디스 키 날짜 + 시장
-            String redisKey = LocalDate.now().toString() + "-" + mktNM;
-
-            // 레디스 저장
-            ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
-            ops.set(redisKey, stocks, Duration.ofHours(3));
+        // 레디스 저장 재시도 로직 있음 -> 재시도에 실패시 배치 종료
+        if(interStepDataSharingWithRedisService.putStockToRedis(redisKey, stocks)){
             jobContext.put("StockDtoList", redisKey);
-
-        } catch (RedisConnectionFailureException | SerializationException e) {
-            // Redis 저장 실패 처리
+        }else{
             stepExecution.setExitStatus(new ExitStatus("REDIS_FAILED"));
-            stepExecution.addFailureException(e);
             return RepeatStatus.FINISHED;
         }
 
@@ -101,7 +91,7 @@ public class FetchDataTasklet implements Tasklet {
         this.apiConfig.setUrl(jobParameters.getString("apiUrl"));
         this.apiConfig.setKey(jobParameters.getString("apiKey"));
         this.mktNM = jobParameters.getString("mktNm");
-        this.date = jobParameters.getString("date");
+        this.date = jobParameters.getString("yesterday");
 
     }
 }

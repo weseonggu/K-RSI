@@ -10,6 +10,7 @@ import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.jdbc.SecuritiesStockJDBCRepository;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
+import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -39,6 +40,7 @@ public class SecuritiesStocksBatch {
     private final StepExecutionTimeListener stepExecutionTimeListener;
     private final SecuritiesStockJDBCRepository securitiesStockJDBCRepository;
     private final KrxRequestService krxRequestService;
+    private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
 
     public SecuritiesStocksBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
@@ -47,7 +49,8 @@ public class SecuritiesStocksBatch {
                                  JobExecutionTimeListener jobExecutionTimeListener,
                                  StepExecutionTimeListener stepExecutionTimeListener,
                                  SecuritiesStockJDBCRepository securitiesStockJDBCRepository,
-                                 KrxRequestService krxRequestService)
+                                 KrxRequestService krxRequestService,
+                                 InterStepDataSharingWithRedisService interStepDataSharingWithRedisService)
     {
     this.jobRepository =  jobRepository;
     this.platformTransactionManager = platformTransactionManager;
@@ -57,6 +60,7 @@ public class SecuritiesStocksBatch {
     this.stepExecutionTimeListener = stepExecutionTimeListener;
     this.securitiesStockJDBCRepository = securitiesStockJDBCRepository;
     this.krxRequestService = krxRequestService;
+    this.interStepDataSharingWithRedisService = interStepDataSharingWithRedisService;
     }
 
 // ====================================JoB=================================================
@@ -86,7 +90,7 @@ public class SecuritiesStocksBatch {
     }
     @Bean
     public FetchDataTasklet fetchDataTasklet() {
-        return new FetchDataTasklet(redisTemplate, krxRequestService);
+        return new FetchDataTasklet(krxRequestService, interStepDataSharingWithRedisService);
     }
     @Bean
     public ExecutionContextPromotionListener fetchDataListener() {

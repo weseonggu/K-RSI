@@ -42,7 +42,7 @@ public class SecuritiesStockLauncher {
                 .addString("apiUrl", krxApiProperties.getKospiInfoUrl())
                 .addString("apiKey", krxApiProperties.getKey())
                 .addString("mktNm", "KOSPI")
-                .addString("date", yesterday)
+                .addString("yesterday", yesterday)
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), jobParameters);
@@ -63,7 +63,7 @@ public class SecuritiesStockLauncher {
                 .addString("apiUrl", krxApiProperties.getKosdaqInfoUrl())
                 .addString("apiKey", krxApiProperties.getKey())
                 .addString("mktNm", "KOSDAQ")
-                .addString("date", yesterday)
+                .addString("yesterday", yesterday)
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), jobParameters);

@@ -1,6 +1,5 @@
 package com.service.RSIranking;
 
-import com.service.RSIranking.service.SecuritiesStockService;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -15,15 +14,6 @@ import java.util.Date;
 
 @SpringBootTest
 public class GetSecuritiesStockTest {
-    @Autowired
-    private SecuritiesStockService securitiesStockService;
-
-//    @Test
-//    public void testGetStockData() throws Exception{
-//        securitiesStockService.getStockData("20240220");
-//
-//    }
-
 
     @Autowired
     private JobLauncher jobLauncher;
@@ -55,7 +45,7 @@ public class GetSecuritiesStockTest {
                 .addString("apiUrl", kospiInfoUrl)
                 .addString("apiKey", key)
                 .addString("mktNm", "KOSPI")
-                .addString("date", "20250317")
+                .addString("yesterday", "20250317")
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), jobParameters);
@@ -95,7 +85,7 @@ public class GetSecuritiesStockTest {
                 .addString("apiUrl", kosdaqInfoUrl)
                 .addString("apiKey", key)
                 .addString("mktNm", "KOSDAQ")
-                .addString("date", "20250319")
+                .addString("yesterday", "20250319")
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), jobParameters);

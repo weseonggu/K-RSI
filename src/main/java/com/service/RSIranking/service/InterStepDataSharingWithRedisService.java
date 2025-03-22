@@ -1,0 +1,51 @@
+package com.service.RSIranking.service;
+
+import com.service.RSIranking.dto.StockDto;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.util.List;
+
+@Service
+@Slf4j
+public class InterStepDataSharingWithRedisService {
+    private final RedisTemplate<String, List<StockDto>> redisTemplate;
+
+    public InterStepDataSharingWithRedisService (
+            @Qualifier("stockRedisTemplate")RedisTemplate<String, List<StockDto>> stockRedisTemplate
+    ){
+        this.redisTemplate = stockRedisTemplate;
+    }
+
+    @Retryable(recover = "failToPutData",
+            retryFor = {
+            RuntimeException.class
+    }
+    , maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    public boolean putStockToRedis(String key, List<StockDto> value){
+        try {
+            System.out.println("==================레디스 저장 시도=======================");
+            ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
+            ops.set(key, value, Duration.ofHours(3));
+            return true;
+        }catch (Exception e){
+            log.error("Redis 저장 중 예외 발생: ", e);
+            throw new RuntimeException("레디스 저장 실패");
+        }
+
+    }
+
+    @Recover
+    public boolean failToPutData(RuntimeException e, String key, List<StockDto> value){
+        System.out.println("==================레디스 저장 실패 recover=======================");
+        log.info("Redis에 데이터 저장 실패: "+e);
+        return false;
+    }
+}

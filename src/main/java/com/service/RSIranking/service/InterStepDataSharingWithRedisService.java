@@ -31,7 +31,6 @@ public class InterStepDataSharingWithRedisService {
     , maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public boolean putStockToRedis(String key, List<StockDto> value){
         try {
-            System.out.println("==================레디스 저장 시도=======================");
             ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
             ops.set(key, value, Duration.ofHours(3));
             return true;
@@ -44,8 +43,27 @@ public class InterStepDataSharingWithRedisService {
 
     @Recover
     public boolean failToPutData(RuntimeException e, String key, List<StockDto> value){
-        System.out.println("==================레디스 저장 실패 recover=======================");
         log.info("Redis에 데이터 저장 실패: "+e);
+        return false;
+    }
+
+    @Retryable(recover = "failToGetData",
+            retryFor = {
+                    RuntimeException.class
+            }
+            , maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    public List<StockDto> getStockToRedis(String key){
+        try{
+            ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
+            return ops.get(key);
+        }catch (Exception e){
+            log.error("Redis에서 조회 중 예외 발생: ", e);
+            throw new RuntimeException("레디스 조회 실패");
+        }
+    }
+    @Recover
+    public boolean failToGetData(RuntimeException e, String key){
+        log.info("Redis에 데이터 조회 실패: "+e);
         return false;
     }
 }

@@ -3,7 +3,7 @@ package com.service.RSIranking.batch.step;
 import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.jdbc.SecuritiesStockJDBCRepository;
-import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
+import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
@@ -12,8 +12,6 @@ import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,20 +22,18 @@ import java.util.stream.Collectors;
 public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockEntity, SecuritiesStockEntity> {
 
     private List<StockDto> dtoList;
-    private String redisKey;
 
-    private final SecuritiesStockRepository securitiesStockRepository;
-    private final RedisTemplate redisTemplate;
+
     private final SecuritiesStockJDBCRepository securitiesStockJDBCRepository;
+    private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
 
     @BeforeStep
     public void retrieveInterStepData(StepExecution stepExecution) {
         final JobExecution jobExecution = stepExecution.getJobExecution();
         final ExecutionContext jobContext = jobExecution.getExecutionContext();
-        this.redisKey = (String)jobContext.get("StockDtoList");
+        String redisKey = (String)jobContext.get("StockDtoList");
 
-        ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
-        this.dtoList = ops.get(redisKey);
+        this.dtoList = interStepDataSharingWithRedisService.getStockToRedis(redisKey);
     }
 
     @Override
@@ -58,32 +54,14 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
         }
         return entity;
     }
-//    // jpa를 사용한 신규 종목 저장
-//    @AfterStep
-//    public ExitStatus collectNewStocks() {
-//        List<StockDto> newStockDtos = dtoList.stream()
-//                .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
-//                .collect(Collectors.toList());
-//
-//        // DB에 신규 데이터 저장
-//        List<SecuritiesStockEntity> newStockEntities = newStockDtos.stream()
-//                .map(SecuritiesStockEntity::new) // DTO -> Entity 변환
-//                .collect(Collectors.toList());
-//
-//        if (!newStockEntities.isEmpty()) {
-//            securitiesStockRepository.saveAll(newStockEntities);
-//        }
-//
-//        return ExitStatus.COMPLETED;
-//    }
 
     // jdbc를 사용한 신규 종목 저장
     @AfterStep
     public ExitStatus collectNewStocks(StepExecution stepExecution) {
 
-//        System.out.println("========write에서 실패===========");
         // 이전 작업에서 문제가 발생할 경우 그냥 종료
         if (stepExecution.getExitStatus().getExitCode().equals(ExitStatus.FAILED.getExitCode())) {
+//            System.out.println("========write에서 실패===========");
             return ExitStatus.FAILED;
         }
 //        System.out.println("========DB저장===========");

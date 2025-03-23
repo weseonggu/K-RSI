@@ -2,8 +2,8 @@ package com.service.RSIranking.batch.step;
 
 import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
-import com.service.RSIranking.repository.jdbc.SecuritiesStockJDBCRepository;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
+import com.service.RSIranking.service.StockBulkInsertService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
@@ -24,15 +24,14 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
     private List<StockDto> dtoList;
 
 
-    private final SecuritiesStockJDBCRepository securitiesStockJDBCRepository;
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
+    private final StockBulkInsertService stockBulkInsertService;
 
     @BeforeStep
     public void retrieveInterStepData(StepExecution stepExecution) {
         final JobExecution jobExecution = stepExecution.getJobExecution();
         final ExecutionContext jobContext = jobExecution.getExecutionContext();
         String redisKey = (String)jobContext.get("StockDtoList");
-
         this.dtoList = interStepDataSharingWithRedisService.getStockToRedis(redisKey);
     }
 
@@ -61,10 +60,10 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
 
         // 이전 작업에서 문제가 발생할 경우 그냥 종료
         if (stepExecution.getExitStatus().getExitCode().equals(ExitStatus.FAILED.getExitCode())) {
-//            System.out.println("========write에서 실패===========");
+            System.out.println("========write에서 실패===========");
             return ExitStatus.FAILED;
         }
-//        System.out.println("========DB저장===========");
+        System.out.println("========DB저장===========");
         List<StockDto> newStockDtos = dtoList.stream()
                 .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
                 .collect(Collectors.toList());
@@ -75,7 +74,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
                 .collect(Collectors.toList());
 
         if (!newStockEntities.isEmpty()) {
-            securitiesStockJDBCRepository.bulkInsert(newStockEntities);
+            stockBulkInsertService.stocksInsert(newStockEntities);
         }
         return ExitStatus.COMPLETED;
     }

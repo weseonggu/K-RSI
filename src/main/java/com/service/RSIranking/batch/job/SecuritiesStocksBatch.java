@@ -6,12 +6,11 @@ import com.service.RSIranking.batch.step.CompareAndUpdateProcessor;
 import com.service.RSIranking.batch.step.DBStockReader;
 import com.service.RSIranking.batch.step.FetchDataTasklet;
 import com.service.RSIranking.batch.step.StockWriter;
-import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
-import com.service.RSIranking.repository.jdbc.SecuritiesStockJDBCRepository;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
+import com.service.RSIranking.service.StockBulkInsertService;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -24,10 +23,7 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
-
-import java.util.List;
 
 @Configuration
 public class SecuritiesStocksBatch {
@@ -35,32 +31,29 @@ public class SecuritiesStocksBatch {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
     private final SecuritiesStockRepository securitiesStockRepository;
-    private final RedisTemplate<String, List<StockDto>> redisTemplate;
     private final JobExecutionTimeListener jobExecutionTimeListener;
     private final StepExecutionTimeListener stepExecutionTimeListener;
-    private final SecuritiesStockJDBCRepository securitiesStockJDBCRepository;
     private final KrxRequestService krxRequestService;
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
+    private final StockBulkInsertService stockBulkInsertService;
 
     public SecuritiesStocksBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
                                  SecuritiesStockRepository securitiesStockRepository,
-                                 @Qualifier("stockRedisTemplate")RedisTemplate<String, List<StockDto>> redisTemplate,
                                  JobExecutionTimeListener jobExecutionTimeListener,
                                  StepExecutionTimeListener stepExecutionTimeListener,
-                                 SecuritiesStockJDBCRepository securitiesStockJDBCRepository,
                                  KrxRequestService krxRequestService,
-                                 InterStepDataSharingWithRedisService interStepDataSharingWithRedisService)
+                                 InterStepDataSharingWithRedisService interStepDataSharingWithRedisService,
+                                 StockBulkInsertService stockBulkInsertService)
     {
     this.jobRepository =  jobRepository;
     this.platformTransactionManager = platformTransactionManager;
     this.securitiesStockRepository = securitiesStockRepository;
-    this.redisTemplate = redisTemplate;
     this.jobExecutionTimeListener = jobExecutionTimeListener;
     this.stepExecutionTimeListener = stepExecutionTimeListener;
-    this.securitiesStockJDBCRepository = securitiesStockJDBCRepository;
     this.krxRequestService = krxRequestService;
     this.interStepDataSharingWithRedisService = interStepDataSharingWithRedisService;
+    this.stockBulkInsertService = stockBulkInsertService;
     }
 
 // ====================================JoB=================================================
@@ -106,23 +99,23 @@ public class SecuritiesStocksBatch {
     public Step updateDatabaseStep() {
         return new StepBuilder("updateDatabaseStep", jobRepository)
                 .<SecuritiesStockEntity, SecuritiesStockEntity>chunk(10, platformTransactionManager)
-                .reader(stockEntityItemReader())
+                .reader(stockEntityItemReader(10))
                 .processor(compareAndUpdateProcessor()) // 기존 processor 추가
                 .writer(newStockWriter())
                 .listener(compareAndUpdateProcessor()) // 리스너로 등록해야 @BeforeStep 실행됨
-                .listener(stockEntityItemReader())
+                .listener(stockEntityItemReader(10))
                 .listener(stepExecutionTimeListener)
                 .build();
     }
     // DB 데이터 읽어 오기
     @Bean
-    public ItemReader<SecuritiesStockEntity> stockEntityItemReader(){
-        return new DBStockReader(securitiesStockRepository);
+    public ItemReader<SecuritiesStockEntity> stockEntityItemReader(int pageSize){
+        return new DBStockReader(securitiesStockRepository, pageSize);
     }
     // DB 데이터랑 api요청으로 가져온 데이터 비교하기
     @Bean
     public ItemProcessor<SecuritiesStockEntity, SecuritiesStockEntity> compareAndUpdateProcessor(){
-        return new CompareAndUpdateProcessor(securitiesStockJDBCRepository, interStepDataSharingWithRedisService);
+        return new CompareAndUpdateProcessor(interStepDataSharingWithRedisService,stockBulkInsertService);
     }
     // proccess 결과 DB에 저장하기
     @Bean

@@ -27,8 +27,11 @@ public class SecuritiesStockJDBCRepository {
                         stock.getIsPublicStock()
                 })
                 .toList();
-
-        jdbcTemplate.batchUpdate(sql, batchArgs);
+        try {
+            jdbcTemplate.batchUpdate(sql, batchArgs);
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }
     }
 
 }

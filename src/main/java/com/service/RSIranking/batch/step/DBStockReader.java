@@ -24,13 +24,14 @@ public class DBStockReader implements ItemReader<SecuritiesStockEntity>, ItemStr
     private Iterator<SecuritiesStockEntity> currentIterator = null;
 
     private final SecuritiesStockRepository securitiesStockRepository;
+    private final int pageSize;
 
     @Override
     public SecuritiesStockEntity read() throws Exception {
         if (currentIterator == null || !currentIterator.hasNext()) {
             // 새 페이지 로드
             // todo 페이징 크기 chunk 크기와 같아야 하기 때문에 yml파일에서 관리하도록 변경이 필요
-            Page<SecuritiesStockEntity> currentBatch = securitiesStockRepository.findByMktNm(mktNm, PageRequest.of(currentPage, 10));
+            Page<SecuritiesStockEntity> currentBatch = securitiesStockRepository.findByMktNm(mktNm, PageRequest.of(currentPage, pageSize));
 
             if (currentBatch.isEmpty()) {
                 return null; // 더 이상 읽을 데이터 없음

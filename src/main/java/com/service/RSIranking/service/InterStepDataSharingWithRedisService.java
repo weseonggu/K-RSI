@@ -24,6 +24,12 @@ public class InterStepDataSharingWithRedisService {
         this.redisTemplate = stockRedisTemplate;
     }
 
+    /**
+     * 스탭간 데이터 공유를 위한 레디스 저장
+     * @param key 키
+     * @param value 데이터
+     * @return 성공 여부 0 1
+     */
     @Retryable(recover = "failToPutData",
             retryFor = {
             RuntimeException.class
@@ -47,6 +53,11 @@ public class InterStepDataSharingWithRedisService {
         return false;
     }
 
+    /**
+     * 스탭간 데이터 고유시 데이터 조회 
+     * @param key 키
+     * @return 데이터
+     */
     @Retryable(recover = "failToGetData",
             retryFor = {
                     RuntimeException.class

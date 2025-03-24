@@ -1,13 +1,15 @@
 package com.service.RSIranking.entity;
 
 import com.service.RSIranking.dto.StockDto;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import lombok.*;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Entity
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -25,6 +27,11 @@ public class SecuritiesStockEntity {
 
     @Column(name = "is_public_stock", nullable = false)
     private Boolean isPublicStock;
+
+    //==============================================================================
+
+    @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<DailyTradingInformation> tradingInfo;
 
     //==============================================================================
 

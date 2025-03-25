@@ -1,6 +1,7 @@
 package com.service.RSIranking.service;
 
 import com.service.RSIranking.dto.StockDto;
+import com.service.RSIranking.dto.TradingInfoDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -16,12 +17,15 @@ import java.util.List;
 @Service
 @Slf4j
 public class InterStepDataSharingWithRedisService {
-    private final RedisTemplate<String, List<StockDto>> redisTemplate;
+    private final RedisTemplate<String, List<StockDto>> stockRedisTemplate;
+    private final RedisTemplate<String, List<TradingInfoDto>> tradingRedisTemplate;
 
     public InterStepDataSharingWithRedisService (
-            @Qualifier("stockRedisTemplate")RedisTemplate<String, List<StockDto>> stockRedisTemplate
+            @Qualifier("stockRedisTemplate")RedisTemplate<String, List<StockDto>> stockRedisTemplate,
+            @Qualifier("requestDailyTradingInfo")RedisTemplate<String, List<TradingInfoDto>> tradingRedisTemplate
     ){
-        this.redisTemplate = stockRedisTemplate;
+        this.stockRedisTemplate = stockRedisTemplate;
+        this.tradingRedisTemplate = tradingRedisTemplate;
     }
 
     /**
@@ -37,7 +41,7 @@ public class InterStepDataSharingWithRedisService {
     , maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public boolean putStockToRedis(String key, List<StockDto> value){
         try {
-            ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
+            ValueOperations<String, List<StockDto>> ops = stockRedisTemplate.opsForValue();
             ops.set(key, value, Duration.ofHours(3));
             return true;
         }catch (Exception e){
@@ -65,7 +69,7 @@ public class InterStepDataSharingWithRedisService {
             , maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public List<StockDto> getStockToRedis(String key){
         try{
-            ValueOperations<String, List<StockDto>> ops = redisTemplate.opsForValue();
+            ValueOperations<String, List<StockDto>> ops = stockRedisTemplate.opsForValue();
             return ops.get(key);
         }catch (Exception e){
             log.error("Redis에서 조회 중 예외 발생: ", e);
@@ -77,4 +81,5 @@ public class InterStepDataSharingWithRedisService {
         log.info("Redis에 데이터 조회 실패: "+e);
         return false;
     }
+
 }

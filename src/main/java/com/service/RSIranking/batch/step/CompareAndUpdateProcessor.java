@@ -1,5 +1,6 @@
 package com.service.RSIranking.batch.step;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
@@ -32,7 +33,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
         final JobExecution jobExecution = stepExecution.getJobExecution();
         final ExecutionContext jobContext = jobExecution.getExecutionContext();
         String redisKey = (String)jobContext.get("StockDtoList");
-        this.dtoList = interStepDataSharingWithRedisService.getStockToRedis(redisKey);
+        this.dtoList = interStepDataSharingWithRedisService.getStockToRedis(redisKey, new TypeReference<List<StockDto>>() {});
     }
 
     @Override

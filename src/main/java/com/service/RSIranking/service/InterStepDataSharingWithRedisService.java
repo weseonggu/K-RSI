@@ -1,5 +1,7 @@
 package com.service.RSIranking.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.dto.TradingInfoDto;
 import lombok.extern.slf4j.Slf4j;
@@ -17,15 +19,20 @@ import java.util.List;
 @Service
 @Slf4j
 public class InterStepDataSharingWithRedisService {
-    private final RedisTemplate<String, List<StockDto>> stockRedisTemplate;
+//    private final RedisTemplate<String, List<StockDto>> stockRedisTemplate;
+    private final RedisTemplate<String, String > stockRedisTemplate;
     private final RedisTemplate<String, List<TradingInfoDto>> tradingRedisTemplate;
+    private final ObjectMapper objectMapper;
 
     public InterStepDataSharingWithRedisService (
-            @Qualifier("stockRedisTemplate")RedisTemplate<String, List<StockDto>> stockRedisTemplate,
-            @Qualifier("requestDailyTradingInfo")RedisTemplate<String, List<TradingInfoDto>> tradingRedisTemplate
+//            @Qualifier("stockRedisTemplate")RedisTemplate<String, List<StockDto>> stockRedisTemplate,
+            @Qualifier("stockRedisTemplate")RedisTemplate<String, String> stockRedisTemplate,
+            @Qualifier("requestDailyTradingInfo")RedisTemplate<String, List<TradingInfoDto>> tradingRedisTemplate,
+            ObjectMapper objectMapper
     ){
         this.stockRedisTemplate = stockRedisTemplate;
         this.tradingRedisTemplate = tradingRedisTemplate;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -39,10 +46,12 @@ public class InterStepDataSharingWithRedisService {
             RuntimeException.class
     }
     , maxAttempts = 3, backoff = @Backoff(delay = 2000))
-    public boolean putStockToRedis(String key, List<StockDto> value){
+    public <T> boolean putStockToRedis(String key, T value){
         try {
-            ValueOperations<String, List<StockDto>> ops = stockRedisTemplate.opsForValue();
-            ops.set(key, value, Duration.ofHours(3));
+            String jsonData = objectMapper.writeValueAsString(value);
+
+            ValueOperations<String, String> ops = stockRedisTemplate.opsForValue();
+            ops.set(key, jsonData, Duration.ofHours(3));
             return true;
         }catch (Exception e){
             log.error("Redis 저장 중 예외 발생: ", e);
@@ -50,12 +59,25 @@ public class InterStepDataSharingWithRedisService {
         }
 
     }
+//    public boolean putStockToRedis(String key, List<StockDto> value){
+//        try {
+//            ValueOperations<String, List<StockDto>> ops = stockRedisTemplate.opsForValue();
+//            ops.set(key, value, Duration.ofHours(3));
+//            return true;
+//        }catch (Exception e){
+//            log.error("Redis 저장 중 예외 발생: ", e);
+//            throw new RuntimeException("레디스 저장 실패");
+//        }
+//
+//    }
 
     @Recover
     public boolean failToPutData(RuntimeException e, String key, List<StockDto> value){
         log.info("Redis에 데이터 저장 실패: "+e);
         return false;
     }
+
+//=============================================================================================================
 
     /**
      * 스탭간 데이터 고유시 데이터 조회 
@@ -67,15 +89,27 @@ public class InterStepDataSharingWithRedisService {
                     RuntimeException.class
             }
             , maxAttempts = 3, backoff = @Backoff(delay = 2000))
-    public List<StockDto> getStockToRedis(String key){
+    public <T> T getStockToRedis(String key, TypeReference<T> typeReference){
         try{
-            ValueOperations<String, List<StockDto>> ops = stockRedisTemplate.opsForValue();
-            return ops.get(key);
+            String jsonData = stockRedisTemplate.opsForValue().get(key);
+            if (jsonData != null) {
+                return objectMapper.readValue(jsonData, typeReference);
+            }
+            return null;
         }catch (Exception e){
             log.error("Redis에서 조회 중 예외 발생: ", e);
             throw new RuntimeException("레디스 조회 실패");
         }
     }
+//    public List<StockDto> getStockToRedis(String key){
+//        try{
+//            ValueOperations<String, List<StockDto>> ops = stockRedisTemplate.opsForValue();
+//            return ops.get(key);
+//        }catch (Exception e){
+//            log.error("Redis에서 조회 중 예외 발생: ", e);
+//            throw new RuntimeException("레디스 조회 실패");
+//        }
+//    }
     @Recover
     public boolean failToGetData(RuntimeException e, String key){
         log.info("Redis에 데이터 조회 실패: "+e);

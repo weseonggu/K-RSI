@@ -1,5 +1,6 @@
 package com.service.RSIranking.dto;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,10 +14,12 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonTypeName("KOSDAQ")
 public class KosdaqSecuritiesStockDto implements Serializable, StockDto {
     private String isuCd;
     private String isuNm;
     private String mktNm;
+    private String type;
     private Boolean isPublicStock;
     private boolean checked = false;
 
@@ -30,6 +33,7 @@ public class KosdaqSecuritiesStockDto implements Serializable, StockDto {
                 .isuCd((String) stock.getOrDefault("ISU_SRT_CD", "N/A"))
                 .isuNm((String) stock.getOrDefault("ISU_NM", "N/A"))
                 .mktNm((String) stock.getOrDefault("MKT_TP_NM", "N/A"))
+                .type((String) stock.getOrDefault("MKT_TP_NM","N/A"))
                 .isPublicStock(isPublicStock)
                 .build();
     }

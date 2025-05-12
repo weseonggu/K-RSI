@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -89,11 +90,12 @@ public class InterStepDataSharingWithRedisService {
                     RuntimeException.class
             }
             , maxAttempts = 3, backoff = @Backoff(delay = 2000))
-    public <T> T getStockToRedis(String key, TypeReference<T> typeReference){
+    public <T> Optional<T> getStockToRedis(String key, TypeReference<T> typeReference){
         try{
             String jsonData = stockRedisTemplate.opsForValue().get(key);
             if (jsonData != null) {
-                return objectMapper.readValue(jsonData, typeReference);
+                T data  = objectMapper.readValue(jsonData, typeReference);
+                return Optional.ofNullable(data);
             }
             return null;
         }catch (Exception e){

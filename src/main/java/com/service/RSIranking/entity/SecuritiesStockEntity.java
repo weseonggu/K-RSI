@@ -39,9 +39,12 @@ public class SecuritiesStockEntity {
         this.isPublicStock = false;
     }
     public void updateFromDto(StockDto dto){
-        this.id = dto.getIsuCd();
-        this.isuNm = dto.getIsuNm();
-        this.mktNm = dto.getMktNm();
+        if (!this.isuNm.equals(dto.getIsuNm())) {
+            this.isuNm = dto.getIsuNm();
+        }
+        if (!this.mktNm.equals(dto.getMktNm())) {
+            this.mktNm = dto.getMktNm();
+        }
     }
     public SecuritiesStockEntity(StockDto dto) {
         this.id = dto.getIsuCd();

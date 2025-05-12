@@ -25,20 +25,28 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
     private List<StockDto> dtoList;
 
 
-    private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
+    private final InterStepDataSharingWithRedisService interStepDataSharingWithRedis;
     private final StockBulkInsertService stockBulkInsertService;
 
     @BeforeStep
     public void retrieveInterStepData(StepExecution stepExecution) {
-        final JobExecution jobExecution = stepExecution.getJobExecution();
-        final ExecutionContext jobContext = jobExecution.getExecutionContext();
-        String redisKey = (String)jobContext.get("StockDtoList");
-        this.dtoList = interStepDataSharingWithRedisService.getStockToRedis(redisKey, new TypeReference<List<StockDto>>() {});
+        try {
+            final JobExecution jobExecution = stepExecution.getJobExecution();
+            final ExecutionContext jobContext = jobExecution.getExecutionContext();
+            String redisKey = (String) jobContext.get("StockDtoList");
+
+            this.dtoList = interStepDataSharingWithRedis
+                    .getStockToRedis(redisKey, new TypeReference<List<StockDto>>() {})
+                    .orElseThrow(() -> new RuntimeException("Redis에서 StockDtoList를 찾을 수 없습니다."));
+        } catch (Exception e) {
+            throw new RuntimeException("중간 단계 데이터 조회 중 예외 발생", e);
+        }
     }
 
     @Override
     public SecuritiesStockEntity process(SecuritiesStockEntity entity) throws Exception {
         // dtoList와 비교하여 변경 사항 처리
+        // todo dtoList가 null일 경우의 처리를 해야 함
         Optional<StockDto> matchedDto = dtoList.stream()
                 .filter(dto -> dto.getIsuCd().equals(entity.getId()))
                 .findFirst();
@@ -61,10 +69,8 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
 
         // 이전 작업에서 문제가 발생할 경우 그냥 종료
         if (stepExecution.getExitStatus().getExitCode().equals(ExitStatus.FAILED.getExitCode())) {
-            System.out.println("========write에서 실패===========");
             return ExitStatus.FAILED;
         }
-        System.out.println("========DB저장===========");
         List<StockDto> newStockDtos = dtoList.stream()
                 .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
                 .collect(Collectors.toList());

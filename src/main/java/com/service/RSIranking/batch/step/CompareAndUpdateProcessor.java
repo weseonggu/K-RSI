@@ -3,6 +3,7 @@ package com.service.RSIranking.batch.step;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.StockBulkInsertService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
 
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedis;
     private final StockBulkInsertService stockBulkInsertService;
+    private final SecuritiesStockRepository securitiesStockRepository;
 
     @BeforeStep
     public void retrieveInterStepData(StepExecution stepExecution) {
@@ -52,15 +54,27 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
                 .findFirst();
 
         if (matchedDto.isPresent()) {
-            // 기존 데이터 업데이트
-            entity.updateFromDto(matchedDto.get());
             // 확인한 dto true로 변경
             matchedDto.ifPresent(StockDto::updateChecked);
+
+            if (compareStockData(entity, matchedDto.get())){
+                // 기존 데이터 업데이트
+                entity.updateFromDto(matchedDto.get());
+            }
+            else{
+                return null;
+            }
+
+
+            return entity;
         } else {
             // 삭제된 데이터 처리
             entity.delistStock();
+            return entity;
         }
-        return entity;
+    }
+    private boolean compareStockData(SecuritiesStockEntity entity, StockDto dto){
+        return !entity.getIsuNm().equals(dto.getIsuNm());
     }
 
     // jdbc를 사용한 신규 종목 저장

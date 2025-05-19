@@ -115,7 +115,7 @@ public class SecuritiesStocksBatch {
     // DB 데이터랑 api요청으로 가져온 데이터 비교하기
     @Bean
     public ItemProcessor<SecuritiesStockEntity, SecuritiesStockEntity> compareAndUpdateProcessor(){
-        return new CompareAndUpdateProcessor(interStepDataSharingWithRedisService,stockBulkInsertService);
+        return new CompareAndUpdateProcessor(interStepDataSharingWithRedisService,stockBulkInsertService, securitiesStockRepository);
     }
     // proccess 결과 DB에 저장하기
     @Bean

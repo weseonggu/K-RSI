@@ -53,7 +53,7 @@ public class DailyTradingInformationUpdateBatch {
     // todo 일별 매매 정보 가져오는 step
     @Bean
     public Step requestDailyTradingInfoStep() {
-        return new StepBuilder("requestKRXAPIStep", jobRepository)
+        return new StepBuilder("requestKRXAPITradingStep", jobRepository)
                 .tasklet( requestDailyTradingInfoTasklet(), platformTransactionManager)
                 .listener(requestDailyTradingInfoTasklet())
                 .listener(requestDailyTradingInfoListener() )

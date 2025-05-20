@@ -3,6 +3,7 @@ package com.service.RSIranking.batch.job;
 import com.service.RSIranking.batch.measurement.JobExecutionTimeListener;
 import com.service.RSIranking.batch.measurement.StepExecutionTimeListener;
 import com.service.RSIranking.batch.step.RequestDailyTradingInfoTasklet;
+import com.service.RSIranking.batch.step.UpdateDailyTradingInfoTasklet;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
 import org.springframework.batch.core.Job;
@@ -27,6 +28,7 @@ public class DailyTradingInformationUpdateBatch {
     private final KrxRequestService krxRequestService;
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
 
+
     public DailyTradingInformationUpdateBatch(JobRepository jobRepository,
                                               @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
                                               JobExecutionTimeListener jobExecutionTimeListener,
@@ -40,6 +42,7 @@ public class DailyTradingInformationUpdateBatch {
         this.stepExecutionTimeListener = stepExecutionTimeListener;
         this.krxRequestService = krxRequestService;
         this.interStepDataSharingWithRedisService = interStepDataSharingWithRedisService;
+
     }
 
     // todo 일별 매매 정도 업데이트 job
@@ -48,9 +51,17 @@ public class DailyTradingInformationUpdateBatch {
         return new JobBuilder("dailyTradingInformationUpdateJob", jobRepository)
                 .listener(jobExecutionTimeListener)
                 .start(requestDailyTradingInfoStep())
+                .on("NO_DATA").end() // 데이터가 없으면 잡 종료
+                .on("REDIS_FAILED").end()// 레디스 저장 실패 시 잡 종료
+                .from(requestDailyTradingInfoStep())
+                .on("*").to(updateDailyTradingInfoStep())
+                .end()
                 .build();
     }
-    // todo 일별 매매 정보 가져오는 step
+
+    //=============================STEP1================================================
+
+    // 일별 매매 정보 가져오는 step
     @Bean
     public Step requestDailyTradingInfoStep() {
         return new StepBuilder("requestKRXAPITradingStep", jobRepository)
@@ -70,6 +81,20 @@ public class DailyTradingInformationUpdateBatch {
         listener.setKeys(new String[] {"DailyTradingInfo"});
         return listener;
     }
-    
+
+    //=============================STEP2================================================
+
     // todo 일별 매맴 정보 DB에 저장 step
+    @Bean
+    public Step updateDailyTradingInfoStep() {
+        return new StepBuilder("updateKRXAPITradingStep", jobRepository)
+                .tasklet( udateDailyTradingInfoTasklet(), platformTransactionManager)
+                .listener(udateDailyTradingInfoTasklet())
+                .listener(stepExecutionTimeListener)
+                .build();
+    }
+    @Bean
+    public Tasklet udateDailyTradingInfoTasklet() {
+        return new UpdateDailyTradingInfoTasklet(interStepDataSharingWithRedisService);
+    }
 }

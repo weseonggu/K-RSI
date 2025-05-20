@@ -18,5 +18,5 @@ public class KrxApiProperties {
     private String kospiInfoUrl;
     private String kosdaqInfoUrl;
     private String kospiTradingInfoUrl;
-    private String kodaqTradingInfoUrl;
+    private String kosdaqTradingInfoUrl;
 }

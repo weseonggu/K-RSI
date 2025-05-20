@@ -17,14 +17,14 @@ import java.util.Date;
 
 @Configuration
 @RequiredArgsConstructor
-public class dailyTradingInfoSchedule {
+public class DailyTradingInfoSchedule {
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
     private final KrxApiProperties krxApiProperties;
     private final IsHoliday isHoliday;
 
     @Scheduled(cron = "40 * * * * *", zone = "Asia/Seoul")
-    public void kospidailyTradingInfoJobLauncher() throws Exception{
+    public void kospiDailyTradingInfoJobLauncher() throws Exception{
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
         String date = dateFormat.format(new Date());
@@ -36,6 +36,25 @@ public class dailyTradingInfoSchedule {
                 .addString("apiUrl", krxApiProperties.getKospiTradingInfoUrl())
                 .addString("apiKey", krxApiProperties.getKey())
                 .addString("mktNm", "KOSPI")
+                .addString("yesterday", yesterday)
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), jobParameters);
+    }
+
+    @Scheduled(cron = "40 * * * * *", zone = "Asia/Seoul")
+    public void kosdaqDailyTradingInfoJobLauncher() throws Exception{
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
+        String date = dateFormat.format(new Date());
+
+        String yesterday = yesterday();
+
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("date", date)
+                .addString("apiUrl", krxApiProperties.getKosdaqTradingInfoUrl())
+                .addString("apiKey", krxApiProperties.getKey())
+                .addString("mktNm", "KOSDAQ")
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 

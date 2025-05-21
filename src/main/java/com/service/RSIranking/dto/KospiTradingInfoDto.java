@@ -51,4 +51,5 @@ public class KospiTradingInfoDto implements Serializable, TradingInfoDto {
                 .type((String) stock.getOrDefault("MKT_NM", "KOSPI"))
                 .build();
     }
+
 }

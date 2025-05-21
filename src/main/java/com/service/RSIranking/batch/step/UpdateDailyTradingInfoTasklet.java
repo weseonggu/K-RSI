@@ -2,7 +2,9 @@ package com.service.RSIranking.batch.step;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.TradingInfoDto;
+import com.service.RSIranking.entity.DailyTradingInformation;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
+import com.service.RSIranking.service.UpdateDailyTradingInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecution;
@@ -15,6 +17,7 @@ import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.repeat.RepeatStatus;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -23,6 +26,7 @@ public class UpdateDailyTradingInfoTasklet implements Tasklet {
     private List<TradingInfoDto> tradingInfoDtos;
 
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedis;
+    private final UpdateDailyTradingInfoService updateDailyTradingInfoService;
 
     @BeforeStep
     public void retrieveInterStepData(StepExecution stepExecution){
@@ -41,9 +45,11 @@ public class UpdateDailyTradingInfoTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-
-        log.info(tradingInfoDtos.toString());
-
+        // todo 매매정보 업데이트 로직 try-catch 사용하기
+        List<DailyTradingInformation> dailyTradingInformationList =  tradingInfoDtos.stream()
+                .map(DailyTradingInformation :: new)
+                .collect(Collectors.toList());
+        updateDailyTradingInfoService.tradingInfoInsert(dailyTradingInformationList, tradingInfoDtos);
         return RepeatStatus.FINISHED;
     }
 }

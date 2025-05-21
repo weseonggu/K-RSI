@@ -6,6 +6,7 @@ import com.service.RSIranking.batch.step.RequestDailyTradingInfoTasklet;
 import com.service.RSIranking.batch.step.UpdateDailyTradingInfoTasklet;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
+import com.service.RSIranking.service.UpdateDailyTradingInfoService;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -27,6 +28,7 @@ public class DailyTradingInformationUpdateBatch {
     private final StepExecutionTimeListener stepExecutionTimeListener;
     private final KrxRequestService krxRequestService;
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
+    private final UpdateDailyTradingInfoService updateDailyTradingInfoService;
 
 
     public DailyTradingInformationUpdateBatch(JobRepository jobRepository,
@@ -34,7 +36,8 @@ public class DailyTradingInformationUpdateBatch {
                                               JobExecutionTimeListener jobExecutionTimeListener,
                                               StepExecutionTimeListener stepExecutionTimeListener,
                                               KrxRequestService krxRequestService,
-                                              InterStepDataSharingWithRedisService interStepDataSharingWithRedisService)
+                                              InterStepDataSharingWithRedisService interStepDataSharingWithRedisService,
+                                              UpdateDailyTradingInfoService updateDailyTradingInfoService)
     {
         this.jobRepository =  jobRepository;
         this.platformTransactionManager = platformTransactionManager;
@@ -42,6 +45,7 @@ public class DailyTradingInformationUpdateBatch {
         this.stepExecutionTimeListener = stepExecutionTimeListener;
         this.krxRequestService = krxRequestService;
         this.interStepDataSharingWithRedisService = interStepDataSharingWithRedisService;
+        this.updateDailyTradingInfoService = updateDailyTradingInfoService;
 
     }
 
@@ -95,6 +99,6 @@ public class DailyTradingInformationUpdateBatch {
     }
     @Bean
     public Tasklet udateDailyTradingInfoTasklet() {
-        return new UpdateDailyTradingInfoTasklet(interStepDataSharingWithRedisService);
+        return new UpdateDailyTradingInfoTasklet(interStepDataSharingWithRedisService, updateDailyTradingInfoService);
     }
 }

@@ -1,20 +1,24 @@
 package com.service.RSIranking.entity;
 
+import com.service.RSIranking.dto.TradingInfoDto;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Builder
-@SequenceGenerator(name = "DAILY_TRADING_INFO_SEQ", sequenceName = "TRADING_INFO_SEQ",initialValue = 1, allocationSize = 1)
 public class DailyTradingInformation {
 
     @Id
-    @GeneratedValue(strategy = GenerationType. SEQUENCE, generator = "DAILY_TRADING_INFO_SEQ")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;// 기본키
 
     @Column(name = "date")
@@ -42,10 +46,10 @@ public class DailyTradingInformation {
     private double rsi;// rsi 지표
 
     @Column(name = "acc_trdvol")
-    private int accTrdvol;// 거래량
+    private Long accTrdvol;// 거래량
 
-    @Column(name = "acc_redval")
-    private int accRedval;// 거래 대금
+    @Column(name = "acc_trdval")
+    private Long accTedval;// 거래 대금
 
     //================================================================
 
@@ -55,4 +59,17 @@ public class DailyTradingInformation {
 
     //================================================================
 
+    // dto -> entity로 변경하기
+    public DailyTradingInformation(TradingInfoDto dto){
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        this.date = LocalDate.parse(dto.getBasDd(),formatter);
+        this.tddClsprc = Integer.parseInt(dto.getTddClsprc());
+        this.cmpprevddPrc = Integer.parseInt(dto.getCmpprevddPrc());
+        this.flucRt = Double.parseDouble(dto.getFlucRt());
+        this.tddOpnprc = Integer.parseInt(dto.getTddOpnprc());
+        this.tddHgprc = Integer.parseInt(dto.getTddHgprc());
+        this.tddLwprc = Integer.parseInt(dto.getTddLwprc());
+        this.accTrdvol = Long.parseLong(dto.getAccTrdvol());
+        this.accTedval =  Long.parseLong(dto.getAccTrdval());
+    }
 }

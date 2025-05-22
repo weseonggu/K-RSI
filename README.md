@@ -29,7 +29,7 @@ _RSI(Relative Strength Index, 상대강도지수)_ 는
 
 ## 아키택처
 <img src="/img/architecture.png" width="70%"></img>
-## 블록그 글
+## 블로그
 [K-RSI 종목 업데이트 배치 구현](https://blog.naver.com/fkskdldh/223799505942)<br>
 [RSI 프로젝트 일일 매매 정보 업데이트 배치](https://blog.naver.com/fkskdldh/223874475953)<br>
 [RSI 계산](https://blog.naver.com/fkskdldh/223874613532)<br>

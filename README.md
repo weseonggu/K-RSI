@@ -28,6 +28,6 @@ _RSI(Relative Strength Index, 상대강도지수)_ 는
 
 
 ## 아키택처
-<img src="/img/architecture.PNG" width="70%"></img>
+<img src="/img/architecture.png" width="70%"></img>
 
 ## 트러블 슈팅

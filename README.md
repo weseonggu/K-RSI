@@ -29,5 +29,12 @@ _RSI(Relative Strength Index, 상대강도지수)_ 는
 
 ## 아키택처
 <img src="/img/architecture.png" width="70%"></img>
-
-## 트러블 슈팅
+## 블록그 글
+https://blog.naver.com/fkskdldh/223799505942<br>
+https://blog.naver.com/fkskdldh/223874475953
+## 트러블 슈팅**
+https://blog.naver.com/fkskdldh/223799523690<br>
+https://blog.naver.com/fkskdldh/223799536017<br>
+https://blog.naver.com/fkskdldh/223806769165<br>
+https://blog.naver.com/fkskdldh/223812944394<br>
+https://blog.naver.com/fkskdldh/223874481464<br>

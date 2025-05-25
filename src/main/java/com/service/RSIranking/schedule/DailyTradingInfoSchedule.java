@@ -8,7 +8,6 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -23,7 +22,7 @@ public class DailyTradingInfoSchedule {
     private final KrxApiProperties krxApiProperties;
     private final IsHoliday isHoliday;
 
-    @Scheduled(cron = "40 * * * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "40 * * * * *", zone = "Asia/Seoul")
     public void kospiDailyTradingInfoJobLauncher() throws Exception{
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
@@ -42,7 +41,7 @@ public class DailyTradingInfoSchedule {
         jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), jobParameters);
     }
 
-    @Scheduled(cron = "40 * * * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "40 * * * * *", zone = "Asia/Seoul")
     public void kosdaqDailyTradingInfoJobLauncher() throws Exception{
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");

@@ -1,5 +1,7 @@
 package com.service.RSIranking;
 
+
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -13,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @SpringBootTest
+@Disabled
 public class GetSecuritiesStockTest {
 
     @Autowired

@@ -23,6 +23,7 @@ public class SecuritiesStockLauncher {
     private final JobRegistry jobRegistry;
     private final KrxApiProperties krxApiProperties;
     private final IsHoliday isHoliday;
+    private final IsClosedDay isClosedDay;
 
 //    @Scheduled(cron = "10 * * * * *", zone = "Asia/Seoul")
     public void kospiInfoUpdateJobLauncher() throws Exception{

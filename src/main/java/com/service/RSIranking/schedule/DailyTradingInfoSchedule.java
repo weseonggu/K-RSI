@@ -1,36 +1,49 @@
 package com.service.RSIranking.schedule;
 
 import com.service.RSIranking.config.krx_api.KrxApiProperties;
-import com.service.RSIranking.util.IsHoliday;
+import com.service.RSIranking.util.GetDateUtil;
+import com.service.RSIranking.util.IsClosedDay;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 @Configuration
 @RequiredArgsConstructor
+@Slf4j
 public class DailyTradingInfoSchedule {
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
     private final KrxApiProperties krxApiProperties;
-    private final IsHoliday isHoliday;
+    private final GetDateUtil getDateUtil;
+    private final IsClosedDay isClosedDay;
 
-//    @Scheduled(cron = "40 * * * * *", zone = "Asia/Seoul")
-    public void kospiDailyTradingInfoJobLauncher() throws Exception{
+    @Scheduled(cron = "45 * * * * *", zone = "Asia/Seoul")
+    public void dailyTradingInfoSchedule() throws Exception{
+
+        String yesterday = getDateUtil.yesterday();
+        boolean isClosed = isClosedDay.isClosedDay(yesterday);
+        if(!isClosed){
+            log.info("종목 일별 매매 정보 업데이트 시작");
+            dailyTradingInfoJobLauncher(yesterday);
+        }else {
+            log.info("휴장일 종목 일별 매매 정보 업데이트 없음");
+        }
+    }
+
+    public void dailyTradingInfoJobLauncher(String yesterday) throws Exception{
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
         String date = dateFormat.format(new Date());
 
-        String yesterday = yesterday();
-
-        JobParameters jobParameters = new JobParametersBuilder()
+        JobParameters kospiJobParameters = new JobParametersBuilder()
                 .addString("date", date)
                 .addString("apiUrl", krxApiProperties.getKospiTradingInfoUrl())
                 .addString("apiKey", krxApiProperties.getKey())
@@ -38,18 +51,9 @@ public class DailyTradingInfoSchedule {
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 
-        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), jobParameters);
-    }
+        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), kospiJobParameters);
 
-//    @Scheduled(cron = "40 * * * * *", zone = "Asia/Seoul")
-    public void kosdaqDailyTradingInfoJobLauncher() throws Exception{
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
-        String date = dateFormat.format(new Date());
-
-        String yesterday = yesterday();
-
-        JobParameters jobParameters = new JobParametersBuilder()
+        JobParameters kosdaqJobParameters = new JobParametersBuilder()
                 .addString("date", date)
                 .addString("apiUrl", krxApiProperties.getKosdaqTradingInfoUrl())
                 .addString("apiKey", krxApiProperties.getKey())
@@ -57,10 +61,6 @@ public class DailyTradingInfoSchedule {
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 
-        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), jobParameters);
-    }
-    // todo 중복 코드
-    private String yesterday(){
-        return LocalDate.now().minusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), kosdaqJobParameters);
     }
 }

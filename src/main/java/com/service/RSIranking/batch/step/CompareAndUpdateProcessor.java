@@ -7,6 +7,7 @@ import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.StockBulkInsertService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.StepExecution;
@@ -41,6 +42,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
                     .getStockToRedis(redisKey, new TypeReference<List<StockDto>>() {})
                     .orElseThrow(() -> new RuntimeException("Redis에서 StockDtoList를 찾을 수 없습니다."));
         } catch (Exception e) {
+            stepExecution.setStatus(BatchStatus.FAILED);
             throw new RuntimeException("중간 단계 데이터 조회 중 예외 발생", e);
         }
     }

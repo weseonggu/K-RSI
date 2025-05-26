@@ -1,4 +1,4 @@
-package com.service.RSIranking.schedule;
+package com.service.RSIranking.util;
 
 import com.service.RSIranking.config.krx_api.ApiConfig;
 import com.service.RSIranking.config.krx_api.KrxApiProperties;

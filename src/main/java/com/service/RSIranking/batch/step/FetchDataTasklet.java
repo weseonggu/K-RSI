@@ -76,7 +76,8 @@ public class FetchDataTasklet implements Tasklet {
             jobContext.put("StockDtoList", redisKey);
         }else{
             stepExecution.setExitStatus(new ExitStatus("REDIS_FAILED"));
-            return RepeatStatus.FINISHED;
+            stepExecution.setStatus(BatchStatus.FAILED);
+            throw new RuntimeException("Redis 저장 실패");
         }
 
         return RepeatStatus.FINISHED;

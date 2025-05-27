@@ -1,4 +1,4 @@
-package com.service.RSIranking.batch.step;
+package com.service.RSIranking.batch.stock_info_job.step;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.StockDto;

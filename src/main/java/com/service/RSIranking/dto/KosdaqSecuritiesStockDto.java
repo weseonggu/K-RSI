@@ -21,7 +21,7 @@ public class KosdaqSecuritiesStockDto implements Serializable, StockDto {
     private String mktNm;
     private String type;
     private Boolean isPublicStock;
-    private boolean checked = false;
+    private boolean checked;
 
     /**
      * JSON 데이터 SecuritiesStockDto로 변환

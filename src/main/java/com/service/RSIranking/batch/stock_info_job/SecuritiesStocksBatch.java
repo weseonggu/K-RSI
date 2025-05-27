@@ -1,11 +1,11 @@
-package com.service.RSIranking.batch.job;
+package com.service.RSIranking.batch.stock_info_job;
 
 import com.service.RSIranking.batch.measurement.JobExecutionTimeListener;
 import com.service.RSIranking.batch.measurement.StepExecutionTimeListener;
-import com.service.RSIranking.batch.step.CompareAndUpdateProcessor;
-import com.service.RSIranking.batch.step.DBStockReader;
-import com.service.RSIranking.batch.step.FetchDataTasklet;
-import com.service.RSIranking.batch.step.StockWriter;
+import com.service.RSIranking.batch.stock_info_job.step.CompareAndUpdateProcessor;
+import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToDBReader;
+import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToKRXTasklet;
+import com.service.RSIranking.batch.stock_info_job.step.UpdateStockInfoWriter;
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
@@ -82,8 +82,8 @@ public class SecuritiesStocksBatch {
                 .build();
     }
     @Bean
-    public FetchDataTasklet fetchDataTasklet() {
-        return new FetchDataTasklet(krxRequestService, interStepDataSharingWithRedisService);
+    public GetStockInfoToKRXTasklet fetchDataTasklet() {
+        return new GetStockInfoToKRXTasklet(krxRequestService, interStepDataSharingWithRedisService);
     }
     @Bean
     public ExecutionContextPromotionListener fetchDataListener() {
@@ -110,7 +110,7 @@ public class SecuritiesStocksBatch {
     // DB 데이터 읽어 오기
     @Bean
     public ItemReader<SecuritiesStockEntity> stockEntityItemReader(int pageSize){
-        return new DBStockReader(securitiesStockRepository, pageSize);
+        return new GetStockInfoToDBReader(securitiesStockRepository, pageSize);
     }
     // DB 데이터랑 api요청으로 가져온 데이터 비교하기
     @Bean
@@ -120,7 +120,7 @@ public class SecuritiesStocksBatch {
     // proccess 결과 DB에 저장하기
     @Bean
     public ItemWriter<SecuritiesStockEntity> newStockWriter() {
-        return new StockWriter(securitiesStockRepository);
+        return new UpdateStockInfoWriter(securitiesStockRepository);
     }
 
 }

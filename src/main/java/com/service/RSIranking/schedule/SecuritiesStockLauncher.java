@@ -27,7 +27,7 @@ public class SecuritiesStockLauncher {
     private final IsClosedDay isClosedDay;
     private final GetDateUtil getDateUtil;
 
-    @Scheduled(cron = "10 * * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
     public void infoUpdateSchedule() throws Exception{
 
         String yesterday = getDateUtil.yesterday();

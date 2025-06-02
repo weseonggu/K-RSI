@@ -108,7 +108,7 @@ public class SecuritiesStocksBatch {
                 .build();
     }
     // DB 데이터 읽어 오기
-    @Bean
+    @Bean(name = "stockEntityItemReaderForSecurities")
     public ItemReader<SecuritiesStockEntity> stockEntityItemReader(int pageSize){
         return new GetStockInfoToDBReader(securitiesStockRepository, pageSize);
     }

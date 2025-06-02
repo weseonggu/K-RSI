@@ -33,7 +33,7 @@ public class GetStockInfoToDBReader implements ItemReader<SecuritiesStockEntity>
         if (currentIterator == null || !currentIterator.hasNext()) {
             // 새 페이지 로드
             // todo 페이징 크기 chunk 크기와 같아야 하기 때문에 yml파일에서 관리하도록 변경이 필요
-            Page<SecuritiesStockEntity> currentBatch = securitiesStockRepository.findByMktNm(mktNm, PageRequest.of(currentPage, pageSize));
+            Page<SecuritiesStockEntity> currentBatch = securitiesStockRepository.findByMktNmAndIsPublicStockTrue(mktNm, PageRequest.of(currentPage, pageSize));
 
             if (currentBatch.isEmpty()) {
                 return null; // 더 이상 읽을 데이터 없음

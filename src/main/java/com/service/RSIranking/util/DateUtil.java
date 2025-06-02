@@ -19,6 +19,11 @@ public class DateUtil {
         return LocalDate.now().minusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
     }
 
+    /**
+     * 주말, 휴장일을 제외한 날짜 구하기
+     * @param date 날짜
+     * @return 날짜 리스트
+     */
     public boolean isWeekend(String date) {
         try {
             // 날짜 문자열을 LocalDate로 파싱

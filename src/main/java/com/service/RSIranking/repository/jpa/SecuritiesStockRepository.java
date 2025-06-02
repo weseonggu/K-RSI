@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SecuritiesStockRepository extends JpaRepository<SecuritiesStockEntity, String> {
     Page<SecuritiesStockEntity> findAll(Pageable pageable);
-    Page<SecuritiesStockEntity> findByMktNm(String mktNm, Pageable pageable);
+    Page<SecuritiesStockEntity> findByMktNmAndIsPublicStockTrue(String mktNm, Pageable pageable);
 }

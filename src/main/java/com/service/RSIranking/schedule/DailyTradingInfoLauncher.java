@@ -10,7 +10,6 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -25,7 +24,7 @@ public class DailyTradingInfoLauncher {
     private final DateUtil dateUtil;
     private final IsClosedDay isClosedDay;
 
-    @Scheduled(cron = "45 * * * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "45 * * * * *", zone = "Asia/Seoul")
     public void dailyTradingInfoSchedule() throws Exception{
 
         String yesterday = dateUtil.yesterday();

@@ -1,4 +1,4 @@
-package com.service.RSIranking.batch.step;
+package com.service.RSIranking.batch.stock_info_job.step;
 
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
@@ -18,7 +18,7 @@ import java.util.Iterator;
 
 @RequiredArgsConstructor
 @Slf4j
-public class DBStockReader implements ItemReader<SecuritiesStockEntity>, ItemStreamReader<SecuritiesStockEntity> {
+public class GetStockInfoToDBReader implements ItemReader<SecuritiesStockEntity>, ItemStreamReader<SecuritiesStockEntity> {
 
     private StepExecution stepExecution;
     private String mktNm;
@@ -30,7 +30,6 @@ public class DBStockReader implements ItemReader<SecuritiesStockEntity>, ItemStr
 
     @Override
     public SecuritiesStockEntity read() throws Exception {
-        log.info("데이터 읽기 시작");
         if (currentIterator == null || !currentIterator.hasNext()) {
             // 새 페이지 로드
             // todo 페이징 크기 chunk 크기와 같아야 하기 때문에 yml파일에서 관리하도록 변경이 필요
@@ -43,7 +42,6 @@ public class DBStockReader implements ItemReader<SecuritiesStockEntity>, ItemStr
             currentIterator = currentBatch.iterator();
             currentPage++; // 다음 페이지로 이동
         }
-        log.info("데이터 읽기 끝");
         return currentIterator.hasNext() ? currentIterator.next() : null;
     }
 

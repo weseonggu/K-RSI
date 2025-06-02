@@ -1,4 +1,4 @@
-package com.service.RSIranking.batch.step;
+package com.service.RSIranking.batch.stock_info_job.step;
 
 import com.service.RSIranking.entity.SecuritiesStockEntity;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Slf4j
-public class StockWriter implements ItemWriter<SecuritiesStockEntity> {
+public class UpdateStockInfoWriter implements ItemWriter<SecuritiesStockEntity> {
 
     private final SecuritiesStockRepository securitiesStockRepository;
 

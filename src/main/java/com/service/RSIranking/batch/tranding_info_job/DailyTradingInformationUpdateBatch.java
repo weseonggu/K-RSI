@@ -1,9 +1,9 @@
-package com.service.RSIranking.batch.job;
+package com.service.RSIranking.batch.tranding_info_job;
 
 import com.service.RSIranking.batch.measurement.JobExecutionTimeListener;
 import com.service.RSIranking.batch.measurement.StepExecutionTimeListener;
-import com.service.RSIranking.batch.step.RequestDailyTradingInfoTasklet;
-import com.service.RSIranking.batch.step.UpdateDailyTradingInfoTasklet;
+import com.service.RSIranking.batch.tranding_info_job.step.RequestDailyTradingInfoTasklet;
+import com.service.RSIranking.batch.tranding_info_job.step.UpdateDailyTradingInfoTasklet;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
 import com.service.RSIranking.service.UpdateDailyTradingInfoService;

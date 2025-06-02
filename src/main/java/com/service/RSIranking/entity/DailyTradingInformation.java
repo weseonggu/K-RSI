@@ -25,25 +25,25 @@ public class DailyTradingInformation {
     private LocalDate date;// 날짜
 
     @Column(name = "tdd_clsprc")
-    private int tddClsprc;// 종가
+    private Integer tddClsprc;// 종가
 
     @Column(name = "cmpprevdd_prc")
-    private int cmpprevddPrc;// 대비
+    private Integer cmpprevddPrc;// 대비
 
     @Column(name = "fluc_rt")
-    private double flucRt;// 등략률
+    private Double flucRt;// 등략률
 
     @Column(name = "tdd_opnprc")
-    private int tddOpnprc;// 시가
+    private Integer tddOpnprc;// 시가
 
     @Column(name = "tdd_hgprc")
-    private int tddHgprc;// 고가
+    private Integer tddHgprc;// 고가
 
     @Column(name = "tdd_lwprc")
-    private int tddLwprc;// 저가
+    private Integer tddLwprc;// 저가
 
     @Column(name = "rsi")
-    private double rsi;// rsi 지표
+    private Double rsi;// rsi 지표
 
     @Column(name = "acc_trdvol")
     private Long accTrdvol;// 거래량

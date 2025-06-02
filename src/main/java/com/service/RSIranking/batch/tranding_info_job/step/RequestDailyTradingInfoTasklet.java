@@ -1,12 +1,11 @@
-package com.service.RSIranking.batch.step;
+package com.service.RSIranking.batch.tranding_info_job.step;
 
 import com.service.RSIranking.config.krx_api.ApiConfig;
-import com.service.RSIranking.dto.KosdaqSecuritiesStockDto;
-import com.service.RSIranking.dto.KospiSecuritiesStockDto;
-import com.service.RSIranking.dto.StockDto;
+import com.service.RSIranking.dto.*;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.scope.context.ChunkContext;
@@ -22,7 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
-public class FetchDataTasklet implements Tasklet {
+@Slf4j
+public class RequestDailyTradingInfoTasklet implements Tasklet {
 
     private StepExecution stepExecution;
     private ApiConfig apiConfig =  new ApiConfig();
@@ -31,6 +31,7 @@ public class FetchDataTasklet implements Tasklet {
 
     private final KrxRequestService krxRequestService;
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
+
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
@@ -49,7 +50,6 @@ public class FetchDataTasklet implements Tasklet {
             stepExecution.setExitStatus(new ExitStatus("NO_DATA"));
             return RepeatStatus.FINISHED; // 데이터가 없으면 배치를 종료
         }
-
         List<Map<String, Object>> stockList = (List<Map<String, Object>>) response.getBody().get("OutBlock_1");
 
         // 응답은 왔지만 데이터가 비어 있는경우 스탭과 배치 종료
@@ -57,28 +57,28 @@ public class FetchDataTasklet implements Tasklet {
             stepExecution.setExitStatus(new ExitStatus("NO_DATA"));
             return RepeatStatus.FINISHED; // 데이터가 없으면 배치를 종료
         }
-
-        List<StockDto> stocks = new ArrayList<>();
+        // todo Stock 인터 페이스 변경
+        List<TradingInfoDto> stocks = new ArrayList<>();
 
         // 데이터 변환 및 저장
         for (Map<String, Object> stockJson : stockList) {
             if ("KOSDAQ".equalsIgnoreCase(mktNM)) {
-                stocks.add(KosdaqSecuritiesStockDto.fromJson(stockJson, true));
+                stocks.add(KosdaqTradingInfoDto.fromJson(stockJson));// <- 여기 변경
             } else {
-                stocks.add(KospiSecuritiesStockDto.fromJson(stockJson, true));
+                stocks.add(KospiTradingInfoDto.fromJson(stockJson));// <- 여기 변경
             }
         }
         // 레디스 키 날짜 + 시장
-        String redisKey = LocalDate.now().toString() + "-" + mktNM;
-
+        String redisKey ="daily-trading-"+LocalDate.now().toString() + "-" + mktNM;
+        
         // 레디스 저장 재시도 로직 있음 -> 재시도에 실패시 배치 종료
         if(interStepDataSharingWithRedisService.putStockToRedis(redisKey, stocks)){
-            jobContext.put("StockDtoList", redisKey);
+            jobContext.put("DailyTradingInfo", redisKey);
         }else{
             stepExecution.setExitStatus(new ExitStatus("REDIS_FAILED"));
             return RepeatStatus.FINISHED;
         }
-
+        
         return RepeatStatus.FINISHED;
     }
 
@@ -92,6 +92,7 @@ public class FetchDataTasklet implements Tasklet {
         this.apiConfig.setKey(jobParameters.getString("apiKey"));
         this.mktNM = jobParameters.getString("mktNm");
         this.date = jobParameters.getString("yesterday");
+
 
     }
 }

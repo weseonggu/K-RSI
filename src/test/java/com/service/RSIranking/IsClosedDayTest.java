@@ -1,6 +1,6 @@
 package com.service.RSIranking;
 
-import com.service.RSIranking.schedule.IsClosedDay;
+import com.service.RSIranking.util.IsClosedDay;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

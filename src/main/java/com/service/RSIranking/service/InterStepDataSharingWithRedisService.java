@@ -3,7 +3,6 @@ package com.service.RSIranking.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.service.RSIranking.dto.StockDto;
-import com.service.RSIranking.dto.TradingInfoDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,19 +19,14 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class InterStepDataSharingWithRedisService {
-//    private final RedisTemplate<String, List<StockDto>> stockRedisTemplate;
     private final RedisTemplate<String, String > stockRedisTemplate;
-    private final RedisTemplate<String, List<TradingInfoDto>> tradingRedisTemplate;
     private final ObjectMapper objectMapper;
 
     public InterStepDataSharingWithRedisService (
-//            @Qualifier("stockRedisTemplate")RedisTemplate<String, List<StockDto>> stockRedisTemplate,
             @Qualifier("stockRedisTemplate")RedisTemplate<String, String> stockRedisTemplate,
-            @Qualifier("requestDailyTradingInfo")RedisTemplate<String, List<TradingInfoDto>> tradingRedisTemplate,
             ObjectMapper objectMapper
     ){
         this.stockRedisTemplate = stockRedisTemplate;
-        this.tradingRedisTemplate = tradingRedisTemplate;
         this.objectMapper = objectMapper;
     }
 

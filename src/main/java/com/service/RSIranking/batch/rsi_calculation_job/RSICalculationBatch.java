@@ -20,6 +20,7 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
@@ -29,9 +30,11 @@ public class RSICalculationBatch {
     private final SecuritiesStockRepository securitiesStockRepository;
     private final JobExecutionTimeListener jobExecutionTimeListener;
     private final StepExecutionTimeListener stepExecutionTimeListener;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     public RSICalculationBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
+                                 @Qualifier("rsiMessageRedisTemplate") RedisTemplate redisTemplate,
                                  SecuritiesStockRepository securitiesStockRepository,
                                  JobExecutionTimeListener jobExecutionTimeListener,
                                  StepExecutionTimeListener stepExecutionTimeListener)
@@ -41,6 +44,7 @@ public class RSICalculationBatch {
         this.securitiesStockRepository = securitiesStockRepository;
         this.jobExecutionTimeListener = jobExecutionTimeListener;
         this.stepExecutionTimeListener = stepExecutionTimeListener;
+        this.redisTemplate = redisTemplate;
 
     }
     // =======================================JOB=========================================
@@ -78,7 +82,7 @@ public class RSICalculationBatch {
     // 메제시 전송
     @Bean
     public ItemWriter<RSIMessageDTO> produceMessage(){
-        return new MessageProduceWriter();
+        return new MessageProduceWriter(redisTemplate);
     }
 
 }

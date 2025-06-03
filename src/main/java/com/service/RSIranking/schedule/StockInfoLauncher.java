@@ -17,7 +17,7 @@ import java.util.Date;
 @Configuration
 @RequiredArgsConstructor
 @Slf4j
-public class SecuritiesStockLauncher {
+public class StockInfoLauncher {
 
 
     private final JobLauncher jobLauncher;

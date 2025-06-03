@@ -21,48 +21,13 @@ public class DailyTradingInformationJDBCRepository {
 
     }
 
-//    public void bulkInsert(List<DailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos){
-//        String sql =
-//                """
-//                INSERT INTO DailyTradingInformation
-//                (`date`, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc,
-//                tdd_hgprc, tdd_lwprc, acc_trdvol, acc_trdval, isu_cd)
-//                SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?,
-//                s.isu_cd FROM SecuritiesStockEntity
-//                s WHERE s.isu_cd = ?
-//                """;
-//        List<Object[]> batchArgs = IntStream.range(0, newTradingInfo.size())
-//                .mapToObj(i -> {
-//                    DailyTradingInformation stock = newTradingInfo.get(i);
-//                    TradingInfoDto dto = baseInfoDtos.get(i);
-//
-//                    return new Object[] {
-//                            stock.getDate(),
-//                            stock.getTddClsprc(),
-//                            stock.getCmpprevddPrc(),
-//                            stock.getFlucRt(),
-//                            stock.getTddOpnprc(),
-//                            stock.getTddHgprc(),
-//                            stock.getTddLwprc(),
-//                            stock.getAccTrdvol(),
-//                            stock.getAccTedval(),
-//                            dto.getIsuCd()
-//                    };
-//                })
-//                .toList();
-//        try {
-//            jdbcTemplate.batchUpdate(sql, batchArgs);
-//        }catch (Exception e){
-//            throw new RuntimeException(e);
-//        }
-//    }
-    public void bulkInsert(List<DailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) {
+    public void bulkInsert(List<DailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
         String sql =
                 """
-                INSERT INTO DailyTradingInformation
+                INSERT INTO daily_trading_information
                 (date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc, acc_trdvol, acc_trdval, isu_cd)
                 SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS
-                ( SELECT isu_cd FROM SecuritiesStockEntity s WHERE s.isu_cd = ?)
+                ( SELECT isu_cd FROM stock_info s WHERE s.isu_cd = ?)
                 """;
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
@@ -79,7 +44,7 @@ public class DailyTradingInformationJDBCRepository {
                 ps.setInt(6, stock.getTddHgprc());
                 ps.setInt(7, stock.getTddLwprc());
                 ps.setLong(8, stock.getAccTrdvol());
-                ps.setLong(9, stock.getAccTedval());
+                ps.setLong(9, stock.getAccTrdval());
                 ps.setString(10, dto.getIsuCd());
                 ps.setString(11, dto.getIsuCd());
             }

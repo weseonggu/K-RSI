@@ -1,6 +1,6 @@
 package com.service.RSIranking.repository.jdbc;
 
-import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.entity.StockInfoEntity;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -16,8 +16,8 @@ public class SecuritiesStockJDBCRepository {
 
     }
 
-    public void bulkInsert(List<SecuritiesStockEntity> stocks) {
-        String sql = "INSERT INTO SecuritiesStockEntity (isu_cd, isu_nm, mkt_nm, is_public_stock) VALUES (?, ?, ?, ?)";
+    public void bulkInsert(List<StockInfoEntity> stocks) {
+        String sql = "INSERT INTO stock_info (isu_cd, isu_nm, mkt_nm, is_public_stock) VALUES (?, ?, ?, ?)";
 
         List<Object[]> batchArgs = stocks.stream()
                 .map(stock -> new Object[]{

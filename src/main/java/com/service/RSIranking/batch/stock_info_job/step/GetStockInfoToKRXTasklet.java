@@ -8,7 +8,6 @@ import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.*;
-import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ExecutionContext;
@@ -22,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
-public class GetStockInfoToKRXTasklet implements Tasklet {
+public class GetStockInfoToKRXTasklet implements Tasklet, StepExecutionListener {
 
     private StepExecution stepExecution;
     private ApiConfig apiConfig =  new ApiConfig();
@@ -83,8 +82,8 @@ public class GetStockInfoToKRXTasklet implements Tasklet {
         return RepeatStatus.FINISHED;
     }
 
-    @BeforeStep
-    public void saveStepExecution(StepExecution stepExecution) {
+    @Override
+    public void beforeStep(StepExecution stepExecution) {
 
         this.stepExecution = stepExecution;
 

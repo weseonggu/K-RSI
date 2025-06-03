@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -45,7 +44,7 @@ public class RSICalCulationConsumer {
         }
     }
 
-    @Scheduled(fixedDelay = 1000)
+//    @Scheduled(fixedDelay = 1000)
     public void consumeKospi() {
         log.info("Kospi컨슈머 실행");
         try {
@@ -96,7 +95,7 @@ public class RSICalCulationConsumer {
         }
     }
 
-    @Scheduled(fixedDelay = 1000)
+//    @Scheduled(fixedDelay = 1000)
     public void consumeKosdaq() {
         log.info("Kosdaq컨슈머 실행");
         try {

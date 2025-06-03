@@ -2,7 +2,7 @@ package com.service.RSIranking.dto;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.entity.StockInfoEntity;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
@@ -15,5 +15,5 @@ public interface StockDto {
     String getMktNm();
     void updateChecked();
     boolean isChecked();
-    SecuritiesStockEntity toEntity();
+    StockInfoEntity toEntity();
 }

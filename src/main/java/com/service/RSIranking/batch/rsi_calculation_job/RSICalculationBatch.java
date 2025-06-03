@@ -7,7 +7,7 @@ import com.service.RSIranking.batch.rsi_calculation_job.step.MessageProduceWrite
 import com.service.RSIranking.batch.rsi_calculation_job.step.RSIMessageMakeProccess;
 import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToDBReader;
 import com.service.RSIranking.dto.RSIMessageDTO;
-import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.entity.StockInfoEntity;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -61,7 +61,7 @@ public class RSICalculationBatch {
     @Bean
     public Step produceRSIMessageStep() {
         return new StepBuilder("produceRSIMessageStep", jobRepository)
-                .<SecuritiesStockEntity, RSIMessageDTO>chunk(10, platformTransactionManager)
+                .<StockInfoEntity, RSIMessageDTO>chunk(10, platformTransactionManager)
                 .reader(stockEntityItemReader(10))
                 .processor(makeMessage())
                 .writer(produceMessage())
@@ -71,12 +71,12 @@ public class RSICalculationBatch {
     }
     // DB 데이터 읽어 오기
     @Bean(name = "stockEntityItemReaderForRSI")
-    public ItemReader<SecuritiesStockEntity> stockEntityItemReader(int pageSize){
+    public ItemReader<StockInfoEntity> stockEntityItemReader(int pageSize){
         return new GetStockInfoToDBReader(securitiesStockRepository, pageSize);
     }
     // 메세지 만들기 프로세스
     @Bean
-    public ItemProcessor<SecuritiesStockEntity, RSIMessageDTO> makeMessage(){
+    public ItemProcessor<StockInfoEntity, RSIMessageDTO> makeMessage(){
         return new RSIMessageMakeProccess();
     }
     // 메제시 전송

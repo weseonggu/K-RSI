@@ -10,7 +10,6 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
@@ -32,7 +31,7 @@ public class RSICalculationLauncher {
     private final IsClosedDay isClosedDay;
     private final MarketDayForTheLast14Days marketDayForTheLast14Days;
 
-    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
     public void RSICalculationSchedule() throws Exception{
 
 //        String yesterday = dateUtil.yesterday();

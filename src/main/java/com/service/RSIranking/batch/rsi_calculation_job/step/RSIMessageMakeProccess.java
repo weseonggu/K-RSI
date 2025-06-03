@@ -1,7 +1,7 @@
 package com.service.RSIranking.batch.rsi_calculation_job.step;
 
 import com.service.RSIranking.dto.RSIMessageDTO;
-import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.entity.StockInfoEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Slf4j
-public class RSIMessageMakeProccess implements ItemProcessor<SecuritiesStockEntity, RSIMessageDTO> {
+public class RSIMessageMakeProccess implements ItemProcessor<StockInfoEntity, RSIMessageDTO> {
 
     private String targetDate;
     private String mkt_nm;
@@ -35,7 +35,7 @@ public class RSIMessageMakeProccess implements ItemProcessor<SecuritiesStockEnti
 
 
     @Override
-    public RSIMessageDTO process(SecuritiesStockEntity item) throws Exception {
+    public RSIMessageDTO process(StockInfoEntity item) throws Exception {
         log.info("종목코드: " + item.getId() + " 종목 명: "+ item.getIsuNm() + " 메세지 생성 중");
         RSIMessageDTO messageDTO = new RSIMessageDTO(item.getId(), this.targetDate, this.mkt_nm, this.marketDate);
         log.info("종목코드: " + item.getId() + " 종목 명: "+ item.getIsuNm() + " 메세지 생성 완료");

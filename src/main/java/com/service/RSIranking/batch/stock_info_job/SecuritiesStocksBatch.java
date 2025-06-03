@@ -6,7 +6,7 @@ import com.service.RSIranking.batch.stock_info_job.step.CompareAndUpdateProcesso
 import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToDBReader;
 import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToKRXTasklet;
 import com.service.RSIranking.batch.stock_info_job.step.UpdateStockInfoWriter;
-import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.entity.StockInfoEntity;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
@@ -98,7 +98,7 @@ public class SecuritiesStocksBatch {
     @Bean
     public Step updateDatabaseStep() {
         return new StepBuilder("updateDatabaseStep", jobRepository)
-                .<SecuritiesStockEntity, SecuritiesStockEntity>chunk(10, platformTransactionManager)
+                .<StockInfoEntity, StockInfoEntity>chunk(10, platformTransactionManager)
                 .reader(stockEntityItemReader(10))
                 .processor(compareAndUpdateProcessor()) // 기존 processor 추가
                 .writer(newStockWriter())
@@ -109,17 +109,17 @@ public class SecuritiesStocksBatch {
     }
     // DB 데이터 읽어 오기
     @Bean(name = "stockEntityItemReaderForSecurities")
-    public ItemReader<SecuritiesStockEntity> stockEntityItemReader(int pageSize){
+    public ItemReader<StockInfoEntity> stockEntityItemReader(int pageSize){
         return new GetStockInfoToDBReader(securitiesStockRepository, pageSize);
     }
     // DB 데이터랑 api요청으로 가져온 데이터 비교하기
     @Bean
-    public ItemProcessor<SecuritiesStockEntity, SecuritiesStockEntity> compareAndUpdateProcessor(){
+    public ItemProcessor<StockInfoEntity, StockInfoEntity> compareAndUpdateProcessor(){
         return new CompareAndUpdateProcessor(interStepDataSharingWithRedisService,stockBulkInsertService, securitiesStockRepository);
     }
     // proccess 결과 DB에 저장하기
     @Bean
-    public ItemWriter<SecuritiesStockEntity> newStockWriter() {
+    public ItemWriter<StockInfoEntity> newStockWriter() {
         return new UpdateStockInfoWriter(securitiesStockRepository);
     }
 

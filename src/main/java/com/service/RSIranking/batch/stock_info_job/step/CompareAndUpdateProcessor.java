@@ -2,17 +2,12 @@ package com.service.RSIranking.batch.stock_info_job.step;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.StockDto;
-import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.entity.StockInfoEntity;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.StockBulkInsertService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.BatchStatus;
-import org.springframework.batch.core.ExitStatus;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.core.*;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemProcessor;
 
@@ -22,7 +17,7 @@ import java.util.stream.Collectors;
 
 
 @RequiredArgsConstructor
-public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockEntity, SecuritiesStockEntity> {
+public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity, StockInfoEntity>, StepExecutionListener {
 
     private List<StockDto> dtoList;
 
@@ -31,8 +26,9 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
     private final StockBulkInsertService stockBulkInsertService;
     private final SecuritiesStockRepository securitiesStockRepository;
 
-    @BeforeStep
-    public void retrieveInterStepData(StepExecution stepExecution) {
+
+    @Override
+    public void beforeStep(StepExecution stepExecution) {
         try {
             final JobExecution jobExecution = stepExecution.getJobExecution();
             final ExecutionContext jobContext = jobExecution.getExecutionContext();
@@ -48,7 +44,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
     }
 
     @Override
-    public SecuritiesStockEntity process(SecuritiesStockEntity entity) throws Exception {
+    public StockInfoEntity process(StockInfoEntity entity) throws Exception {
         // dtoList와 비교하여 변경 사항 처리
         // todo dtoList가 null일 경우의 처리를 해야 함
         Optional<StockDto> matchedDto = dtoList.stream()
@@ -75,30 +71,29 @@ public class CompareAndUpdateProcessor implements ItemProcessor<SecuritiesStockE
             return entity;
         }
     }
-    private boolean compareStockData(SecuritiesStockEntity entity, StockDto dto){
+    private boolean compareStockData(StockInfoEntity entity, StockDto dto){
         return !entity.getIsuNm().equals(dto.getIsuNm());
     }
 
     // jdbc를 사용한 신규 종목 저장
-    @AfterStep
-    public ExitStatus collectNewStocks(StepExecution stepExecution) {
-
-        // 이전 작업에서 문제가 발생할 경우 그냥 종료
+    @Override
+    public ExitStatus afterStep(StepExecution stepExecution) {
         if (stepExecution.getExitStatus().getExitCode().equals(ExitStatus.FAILED.getExitCode())) {
             return ExitStatus.FAILED;
         }
+
         List<StockDto> newStockDtos = dtoList.stream()
-                .filter(dto -> !dto.isChecked()) // 확인되지 않은 DTO (신규 데이터)
+                .filter(dto -> !dto.isChecked())
                 .collect(Collectors.toList());
 
-        // DB에 신규 데이터 저장
-        List<SecuritiesStockEntity> newStockEntities = newStockDtos.stream()
-                .map(SecuritiesStockEntity::new) // DTO -> Entity 변환
+        List<StockInfoEntity> newStockEntities = newStockDtos.stream()
+                .map(StockInfoEntity::new)
                 .collect(Collectors.toList());
 
         if (!newStockEntities.isEmpty()) {
             stockBulkInsertService.stocksInsert(newStockEntities);
         }
+
         return ExitStatus.COMPLETED;
     }
 

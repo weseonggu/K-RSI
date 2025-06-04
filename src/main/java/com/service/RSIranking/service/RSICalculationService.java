@@ -7,7 +7,6 @@ import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,27 +25,30 @@ public class RSICalculationService {
     private final SecuritiesStockRepository securitiesStockRepository;
     private final DailyTradingInformationRepository dailyTradingInformationRepository;
 
+    /**
+     * RSI 계산 도메인 로직
+     * @param isuCd 종목 코드
+     * @param targetDate 업데이트 날짜
+     * @param marketDate 과거 14일 장날 문자열
+     */
     public void rsiCalculation(String isuCd, String targetDate, String marketDate){
 
         List<LocalDate> dates = new ArrayList<>();
+        // 업데이트할 장 날짜 문자열 타입 변환
         dates.add(LocalDate.parse(targetDate, formatter));
-
+        // 과거 장 날짜 문자열 타입 변환
         List<LocalDate> marketDates = Arrays.stream(marketDate.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(dateStr -> LocalDate.parse(dateStr, formatter))
                 .collect(Collectors.toList());
-
+        // 14일 날짜 합치기
         dates.addAll(marketDates);
 
+        // 종목 코드와 14일 날짜를 사용해서 매매 정보 조회 JDBC사용
         List<DailyTradingInformation> tradingInfo = dailyTradingJDBCRepository.findByIsuCdAndDateIn(isuCd, dates);
 
-        // todo 임시로 출력
-        for (DailyTradingInformation data : tradingInfo){
-            System.out.println("종목 코드: "+isuCd+" 상승,하락: "+data.getCmpprevddPrc()+" 비율: "+data.getFlucRt());
-        }
-
-        // todo tradingInfo의 사이즈에 따라 신규 기존을 구분하여 동작하도록
+        // tradingInfo의 사이즈가 14이면 메세지 처리 안함 신규 종목이여서
         if(tradingInfo.size() != 14){
             log.info("신규 종목 이므로 데이터가 더 필요합니다.");
             return;
@@ -60,16 +62,18 @@ public class RSICalculationService {
         }catch (NoSuchElementException e){
             return;
         }
-        log.info("신규 종목인가요? "+ isNew);
+
+        // RSI를 계산하기 위해서 평균 종가 상승/하락폭 계산 후 RSI 계산
+        // todo 고도화 필요 변수가 많음
         Double Ag = null;
         Double Al = null;
         Double RSI = null;
         if(isNew){
-            // todo 일반적인 RSI계산
+            // 일반적인 RSI계산 신규 종목 일때 실행되는 곳
             Ag = simpleAGCalculation(tradingInfo);
             Al = simpleALCalculation(tradingInfo);
         }else {
-            // todo 전일 평균 종가 상/하를 반영하기
+            // 기존 RSI 계산이 필요한 경우 전일 평균 종가 상/하를 반영하여 계산
             Ag = agCalculationWellesWilder(tradingInfo);
             Al = alCalculationWellesWilder(tradingInfo);
         }
@@ -81,13 +85,18 @@ public class RSICalculationService {
         }
 
         log.info("Ag: "+Ag + " Al: "+ Al + " RSI: " + RSI);
-        updateTradingInfo(isuCd, targetDate, Ag, Al,RSI);
+        try {
+            updateTradingInfo(isuCd, targetDate, Ag, Al,RSI);
+
+        }catch (RuntimeException e){
+            throw e;
+        }
 
     }
 
-//=========================================== 업데이트 ===================================
+//=========================================== RSI 업데이트 =========================================================
     @Transactional
-    public void updateTradingInfo(String isuCD, String targetDate, Double Ag, Double Al, Double RSI){
+    public void updateTradingInfo(String isuCD, String targetDate, Double Ag, Double Al, Double RSI) throws  RuntimeException{
         LocalDate date = LocalDate.parse(targetDate, formatter);
         DailyTradingInformation dailyInfo = securitiesStockRepository.findTradingInfoWithStock(isuCD, date)
                 .orElseThrow(()-> new NoSuchElementException());
@@ -96,7 +105,7 @@ public class RSICalculationService {
         dailyTradingInformationRepository.save(dailyInfo);
     }
 
-// ==========================================================================================================================
+// ===============================================신규 종목인지 아닌지 파악하는 메소드===============================================
 
     /**
      * 신규 종목인지 아닌지 파악하는 메소드
@@ -112,7 +121,6 @@ public class RSICalculationService {
 
         if (targetData.isPresent()) {
             DailyTradingInformation data = targetData.get();
-            log.info("첫 번째 마켓 날짜에 해당하는 데이터: " + data.getTddClsprc());
             if(data.getAvgClosingGain() == null || data.getAvgClosingLoss() == null){
                 return true;
             }else {
@@ -123,7 +131,7 @@ public class RSICalculationService {
             throw new NoSuchElementException("해당 날짜의 데이터가 없습니다.");
         }
     }
-
+//======================================================RSI 계산===============================================================
     /**
      * Average Gain 계산
      * @param datas 데이터

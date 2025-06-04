@@ -57,7 +57,8 @@ public class BatchTest {
                 20250425,
                 20250424,
                 20250423,
-                20250422};
+                20250422
+        };
         try{
             for(Integer date: marketDay){
                 dailyTradingInfoLauncher.dailyTradingInfoJobLauncher(date.toString());

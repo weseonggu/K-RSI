@@ -76,7 +76,7 @@ public class RSICalCulationConsumer {
             for (MapRecord<String, Object, Object> message : messages) {
                 try {
                     Map<Object, Object> value = message.getValue();
-                    log.info("Processing KOSPI RSI message - isu_cd: {}, targetDate: {}, marketDate: {}", 
+                    log.info("KOSPI RSI 메세지 - isu_cd: {}, targetDate: {}, marketDate: {}",
                             value.get("isu_cd"),
                             value.get("targetDate"),
                             value.get("marketDate"));
@@ -90,7 +90,7 @@ public class RSICalCulationConsumer {
                     // 처리 성공 시 ACK + 삭제
                     redisTemplate.opsForStream().acknowledge(KOSPI_STREAM, CONSUMER_GROUP, message.getId());
                     redisTemplate.opsForStream().delete(KOSPI_STREAM, message.getId());
-                    log.info("KOSPI message processed and deleted: {}", message.getId());
+                    log.info("KOSPI 메세지 처리 후 삭제: {}", message.getId());
 
                 } catch (Exception e) {
                     log.error("Error processing KOSPI message: {}", e.getMessage(), e);
@@ -130,7 +130,7 @@ public class RSICalCulationConsumer {
             for (MapRecord<String, Object, Object> message : messages) {
                 try {
                     Map<Object, Object> value = message.getValue();
-                    log.info("Processing KOSDAQ RSI message - isu_cd: {}, targetDate: {}, marketDate: {}", 
+                    log.info("KOSDAQ RSI 메세지 - isu_cd: {}, targetDate: {}, marketDate: {}",
                             value.get("isu_cd"),
                             value.get("targetDate"),
                             value.get("marketDate"));
@@ -139,12 +139,11 @@ public class RSICalCulationConsumer {
                     callRSICalculationService(value.get("isu_cd").toString(),
                             value.get("targetDate").toString(),
                             value.get("marketDate").toString());
-                    // processKosdaqRSIMessage(value);
 
                     // 처리 성공 시 ACK + 삭제
                     redisTemplate.opsForStream().acknowledge(KOSDAQ_STREAM, CONSUMER_GROUP, message.getId());
                     redisTemplate.opsForStream().delete(KOSDAQ_STREAM, message.getId());
-                    log.info("KOSDAQ message processed and deleted: {}", message.getId());
+                    log.info("KOSDAQ  메세지 처리 후 삭제: {}", message.getId());
 
                 } catch (Exception e) {
                     log.error("Error processing KOSDAQ message: {}", e.getMessage(), e);

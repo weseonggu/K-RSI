@@ -20,7 +20,7 @@ public class MarketDayForTheLast14Days {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         LocalDate currentDate = LocalDate.parse(batchDate, formatter);
         
-        while (marketDays.size() < 14) {
+        while (marketDays.size() < 13) {
             currentDate = currentDate.minusDays(1);
             String dateStr = currentDate.format(formatter);
             

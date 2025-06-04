@@ -1,5 +1,6 @@
 package com.service.RSIranking.consumer;
 
+import com.service.RSIranking.service.RSICalculationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.stream.*;
@@ -16,6 +17,7 @@ import java.util.Map;
 public class RSICalCulationConsumer {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RSICalculationService rsiCalculationService;
     private static final String STREAM_KEY_PREFIX = "rsi:calculation:stream:";
     private static final String KOSPI_STREAM = STREAM_KEY_PREFIX + "KOSPI";
     private static final String KOSDAQ_STREAM = STREAM_KEY_PREFIX + "KOSDAQ";
@@ -23,8 +25,10 @@ public class RSICalCulationConsumer {
     private static final String CONSUMER_NAME = "rsiConsumer";
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    public RSICalCulationConsumer(@Qualifier("rsiMessageRedisTemplate") RedisTemplate redisTemplate) {
+    public RSICalCulationConsumer(@Qualifier("rsiMessageRedisTemplate") RedisTemplate redisTemplate,
+                                  RSICalculationService rsiCalculationService) {
         this.redisTemplate = redisTemplate;
+        this.rsiCalculationService = rsiCalculationService;
         initializeConsumerGroups();
     }
 
@@ -78,6 +82,9 @@ public class RSICalCulationConsumer {
                             value.get("marketDate"));
 
                     // 여기에 KOSPI RSI 계산 로직 추가
+                    callRSICalculationService(value.get("isu_cd").toString(),
+                            value.get("targetDate").toString(),
+                            value.get("marketDate").toString());
                     // processKospiRSIMessage(value);
 
                     // 처리 성공 시 ACK + 삭제
@@ -129,6 +136,9 @@ public class RSICalCulationConsumer {
                             value.get("marketDate"));
 
                     // 여기에 KOSDAQ RSI 계산 로직 추가
+                    callRSICalculationService(value.get("isu_cd").toString(),
+                            value.get("targetDate").toString(),
+                            value.get("marketDate").toString());
                     // processKosdaqRSIMessage(value);
 
                     // 처리 성공 시 ACK + 삭제
@@ -144,5 +154,9 @@ public class RSICalCulationConsumer {
         } catch (Exception e) {
             log.error("Error reading from KOSDAQ stream: {}", e.getMessage(), e);
         }
+    }
+
+    private void callRSICalculationService(String isuCD, String targetDate, String marketDate){
+        rsiCalculationService.rsiCalculation(isuCD, targetDate, marketDate);
     }
 }

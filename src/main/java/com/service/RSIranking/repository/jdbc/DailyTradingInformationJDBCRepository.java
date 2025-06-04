@@ -10,7 +10,11 @@ import org.springframework.stereotype.Repository;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Repository
 public class DailyTradingInformationJDBCRepository {
@@ -55,5 +59,47 @@ public class DailyTradingInformationJDBCRepository {
             }
         });
     }
+
+    public List<DailyTradingInformation> findByIsuCdAndDateIn(String isuCd, List<LocalDate> dates) {
+        if (dates == null || dates.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String inSql = dates.stream()
+                .map(d -> "?")
+                .collect(Collectors.joining(", "));
+
+        String sql = String.format("""
+        SELECT 
+            id, date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc, 
+            rsi, acc_trdvol, acc_trdval, avg_closing_gain, avg_closing_loss
+        FROM daily_trading_information
+        WHERE isu_cd = ? AND date IN (%s)
+        ORDER BY date DESC
+        """, inSql);
+
+        List<Object> params = new ArrayList<>();
+        params.add(isuCd);
+        params.addAll(dates);
+
+        return jdbcTemplate.query(sql, params.toArray(), (rs, rowNum) -> {
+            return DailyTradingInformation.builder()
+                    .id(rs.getLong("id"))
+                    .date(rs.getDate("date").toLocalDate())
+                    .tddClsprc(rs.getInt("tdd_clsprc"))
+                    .cmpprevddPrc(rs.getInt("cmpprevdd_prc"))
+                    .flucRt(rs.getDouble("fluc_rt"))
+                    .tddOpnprc(rs.getInt("tdd_opnprc"))
+                    .tddHgprc(rs.getInt("tdd_hgprc"))
+                    .tddLwprc(rs.getInt("tdd_lwprc"))
+                    .rsi(rs.getDouble("rsi"))
+                    .accTrdvol(rs.getLong("acc_trdvol"))
+                    .accTrdval(rs.getLong("acc_trdval"))
+                    .avgClosingGain(rs.getObject("avg_closing_gain", Double.class))
+                    .avgClosingLoss(rs.getObject("avg_closing_loss", Double.class))
+                    .build();
+        });
+    }
+
 
 }

@@ -1,6 +1,8 @@
 package com.service.RSIranking;
 
+import com.service.RSIranking.consumer.RSICalCulationConsumer;
 import com.service.RSIranking.schedule.DailyTradingInfoLauncher;
+import com.service.RSIranking.schedule.RSICalculationLauncher;
 import com.service.RSIranking.schedule.StockInfoLauncher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +66,34 @@ public class BatchTest {
         }catch (Exception e){
 
         }
+    }
+
+    @Autowired
+    private RSICalculationLauncher rsiCalculationLauncher;
+
+    @Test
+    public void rsiProducerTest(){
+        try {
+            rsiCalculationLauncher.RSICalculationSchedule();
+
+        }catch (Exception e){
+
+        }
+    }
+
+    @Autowired
+    private RSICalCulationConsumer rsiCalCulationConsumer;
+
+    @Test
+    public void consumerTest(){
+        long start = System.nanoTime();
+
+        rsiCalCulationConsumer.consumeKospi();
+        rsiCalCulationConsumer.consumeKosdaq();
+
+        long end = System.nanoTime();
+        long durationInMillis = (end - start) / 1_000_000;
+        System.out.println("Execution Time: " + durationInMillis + " ms");
     }
 
 }

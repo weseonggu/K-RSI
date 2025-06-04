@@ -35,7 +35,7 @@ public class RSICalculationLauncher {
     public void RSICalculationSchedule() throws Exception{
 
 //        String yesterday = dateUtil.yesterday();
-        String yesterday = "20250530";
+        String yesterday = "20250602";
         if(dateUtil.isWeekend(yesterday)){
             log.info("주말 입니다. RSI 지표 계산 배치를 실행하지 않습니다.");
             return;

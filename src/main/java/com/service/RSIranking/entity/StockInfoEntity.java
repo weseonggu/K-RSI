@@ -14,7 +14,10 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Builder
-public class SecuritiesStockEntity {
+@Table(
+        name = "stock_info"
+)
+public class StockInfoEntity {
     @Id
     @Column(name = "isu_cd", length = 100, nullable = false)
     private String id;  // 표준코드
@@ -46,7 +49,7 @@ public class SecuritiesStockEntity {
             this.mktNm = dto.getMktNm();
         }
     }
-    public SecuritiesStockEntity(StockDto dto) {
+    public StockInfoEntity(StockDto dto) {
         this.id = dto.getIsuCd();
         this.isuNm = dto.getIsuNm();
         this.mktNm = dto.getMktNm();

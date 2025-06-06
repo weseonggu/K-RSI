@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 
 @Service
@@ -22,7 +23,15 @@ public class UpdateDailyTradingInfoService {
      * @param tradingInfoDtos 일별 매매정보
      */
     @Transactional
-    public void tradingInfoInsert(List<DailyTradingInformation> tradingInfoDtos, List<TradingInfoDto> baseDto){
-        dailyTradingInformationJDBCRepository.bulkInsert(tradingInfoDtos, baseDto);
+    public void tradingInfoInsert(List<DailyTradingInformation> tradingInfoDtos, List<TradingInfoDto> baseDto) throws Exception {
+        try{
+            dailyTradingInformationJDBCRepository.bulkInsert(tradingInfoDtos, baseDto);
+        }catch (SQLIntegrityConstraintViolationException e){
+            log.info("이미 저장된 데이터 입니다.");
+            throw e;
+        }
+        catch (Exception e){
+            throw e;
+        }
     }
 }

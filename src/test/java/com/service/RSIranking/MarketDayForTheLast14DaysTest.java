@@ -15,7 +15,7 @@ public class MarketDayForTheLast14DaysTest {
 
     @Test
     public void test(){
-        List<LocalDate> date = marketDayForTheLast14Days.getMarketDayForTheLast14Days("20250602");
+        List<LocalDate> date = marketDayForTheLast14Days.getMarketDayForTheLast14Days("20250114");
         date.forEach(date1 -> System.out.println(date1.toString()));
     }
 }

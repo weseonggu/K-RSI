@@ -1,12 +1,12 @@
 package com.service.RSIranking.batch.stock_info_job.step;
 
-import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.entity.StockInfoEntity;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemStreamException;
@@ -18,22 +18,22 @@ import java.util.Iterator;
 
 @RequiredArgsConstructor
 @Slf4j
-public class GetStockInfoToDBReader implements ItemReader<SecuritiesStockEntity>, ItemStreamReader<SecuritiesStockEntity> {
+public class GetStockInfoToDBReader implements ItemReader<StockInfoEntity>, ItemStreamReader<StockInfoEntity>, StepExecutionListener {
 
     private StepExecution stepExecution;
     private String mktNm;
     private int currentPage = 0;
-    private Iterator<SecuritiesStockEntity> currentIterator = null;
+    private Iterator<StockInfoEntity> currentIterator = null;
 
     private final SecuritiesStockRepository securitiesStockRepository;
     private final int pageSize;
 
     @Override
-    public SecuritiesStockEntity read() throws Exception {
+    public StockInfoEntity read() throws Exception {
         if (currentIterator == null || !currentIterator.hasNext()) {
             // 새 페이지 로드
             // todo 페이징 크기 chunk 크기와 같아야 하기 때문에 yml파일에서 관리하도록 변경이 필요
-            Page<SecuritiesStockEntity> currentBatch = securitiesStockRepository.findByMktNm(mktNm, PageRequest.of(currentPage, pageSize));
+            Page<StockInfoEntity> currentBatch = securitiesStockRepository.findByMktNmAndIsPublicStockTrue(mktNm, PageRequest.of(currentPage, pageSize));
 
             if (currentBatch.isEmpty()) {
                 return null; // 더 이상 읽을 데이터 없음
@@ -45,8 +45,8 @@ public class GetStockInfoToDBReader implements ItemReader<SecuritiesStockEntity>
         return currentIterator.hasNext() ? currentIterator.next() : null;
     }
 
-    @BeforeStep
-    public void saveStepExecution(StepExecution stepExecution) {
+    @Override
+    public void beforeStep(StepExecution stepExecution) {
         this.stepExecution = stepExecution;
         JobParameters jobParameters = stepExecution.getJobParameters();
         this.mktNm = jobParameters.getString("mktNm");

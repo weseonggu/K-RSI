@@ -15,6 +15,12 @@ import java.time.format.DateTimeFormatter;
 @AllArgsConstructor
 @Getter
 @Builder
+@Table(
+        name = "daily_trading_information",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"date", "isu_cd"})
+        }
+)
 public class DailyTradingInformation {
 
     @Id
@@ -49,13 +55,19 @@ public class DailyTradingInformation {
     private Long accTrdvol;// 거래량
 
     @Column(name = "acc_trdval")
-    private Long accTedval;// 거래 대금
+    private Long accTrdval;// 거래 대금
+
+    @Column(name = "avg_closing_gain")
+    private Double avgClosingGain;
+
+    @Column(name = "avg_closing_loss")
+    private Double avgClosingLoss;
 
     //================================================================
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "isu_cd")
-    private SecuritiesStockEntity stock;
+    private StockInfoEntity stock;
 
     //================================================================
 
@@ -70,6 +82,11 @@ public class DailyTradingInformation {
         this.tddHgprc = Integer.parseInt(dto.getTddHgprc());
         this.tddLwprc = Integer.parseInt(dto.getTddLwprc());
         this.accTrdvol = Long.parseLong(dto.getAccTrdvol());
-        this.accTedval =  Long.parseLong(dto.getAccTrdval());
+        this.accTrdval =  Long.parseLong(dto.getAccTrdval());
+    }
+    public void updateRSIInfo(Double Ag, Double Al, Double RSI){
+        this.avgClosingGain = Ag;
+        this.avgClosingLoss = Al;
+        this.rsi = RSI;
     }
 }

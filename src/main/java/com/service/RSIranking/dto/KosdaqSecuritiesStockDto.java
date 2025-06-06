@@ -1,7 +1,7 @@
 package com.service.RSIranking.dto;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.service.RSIranking.entity.SecuritiesStockEntity;
+import com.service.RSIranking.entity.StockInfoEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,8 +42,8 @@ public class KosdaqSecuritiesStockDto implements Serializable, StockDto {
      * DTO를 엔티티로 변환
      * @return SecuritiesStockEntity
      */
-    public SecuritiesStockEntity toEntity() {
-        return SecuritiesStockEntity.builder()
+    public StockInfoEntity toEntity() {
+        return StockInfoEntity.builder()
                 .id(this.isuCd)
                 .isuNm(this.isuNm)
                 .mktNm(this.mktNm)

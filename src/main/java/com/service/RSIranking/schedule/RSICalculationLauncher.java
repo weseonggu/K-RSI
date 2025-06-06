@@ -32,10 +32,15 @@ public class RSICalculationLauncher {
     private final MarketDayForTheLast14Days marketDayForTheLast14Days;
 
 //    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
-    public void RSICalculationSchedule() throws Exception{
+    public void RSICalculationSchedule() throws Exception {
+        String yesterday = dateUtil.yesterday();
+        executeRSICalculation(yesterday);
+    }
 
-//        String yesterday = dateUtil.yesterday();
-        String yesterday = "20250602";
+//    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
+    public void executeRSICalculation(String date) throws Exception {
+
+        String yesterday = date;
         if(dateUtil.isWeekend(yesterday)){
             log.info("주말 입니다. RSI 지표 계산 배치를 실행하지 않습니다.");
             return;

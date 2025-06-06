@@ -7,6 +7,7 @@ import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -53,6 +54,10 @@ public class RSICalculationService {
             log.info("신규 종목 이므로 데이터가 더 필요합니다.");
             return;
         }
+        if(areAllFieldsZero(tradingInfo)){
+            log.info("거래 정지 종목 입니다.");
+            return;
+        }
 
         boolean isNew = true;
 
@@ -70,10 +75,12 @@ public class RSICalculationService {
         Double RSI = null;
         if(isNew){
             // 일반적인 RSI계산 신규 종목 일때 실행되는 곳
+            log.info("일반적인 RSI계산 신규 종목");
             Ag = simpleAGCalculation(tradingInfo);
             Al = simpleALCalculation(tradingInfo);
         }else {
             // 기존 RSI 계산이 필요한 경우 전일 평균 종가 상/하를 반영하여 계산
+            log.info("기존 RSI 계산이 필요한 경우 전일 평균 종가 상/하를 반영");
             Ag = agCalculationWellesWilder(tradingInfo);
             Al = alCalculationWellesWilder(tradingInfo);
         }
@@ -131,6 +138,15 @@ public class RSICalculationService {
             throw new NoSuchElementException("해당 날짜의 데이터가 없습니다.");
         }
     }
+    //=================================== 거래 정지 확인=============================================
+    private boolean areAllFieldsZero(List<DailyTradingInformation> tradingInfoList) {
+        return tradingInfoList.stream().allMatch(info ->
+                info.getCmpprevddPrc() == 0 &&
+                        info.getFlucRt() == 0 &&
+                        info.getTddHgprc() == 0 &&
+                        info.getTddLwprc() == 0
+        );
+    }
 //======================================================RSI 계산===============================================================
     /**
      * Average Gain 계산
@@ -175,7 +191,7 @@ public class RSICalculationService {
             }
         }
         avg = sum/14;
-        return avg == 0.0 ? null : avg;
+        return avg;
     }
     /**
      * Welles Wilder Average Loss 계산
@@ -187,7 +203,7 @@ public class RSICalculationService {
         Double cmpprevddPrc = datas.get(0).getCmpprevddPrc() < 0 ? datas.get(0).getCmpprevddPrc()*-1 : 0.0;
         Double sum = (datas.get(1).getAvgClosingLoss()*13) + cmpprevddPrc;
         avg = sum/14;
-        return avg == 0.0 ? null : avg;
+        return avg;
     }
 
     /**
@@ -196,13 +212,24 @@ public class RSICalculationService {
      * @param Al Average Loss
      * @return RSI 지표 값
      */
-    private Double rsiCalculate(Double Ag, Double Al){
+    private Double rsiCalculate(Double Ag, Double Al) {
         try {
-            double rsiRaw = (Ag / (Ag + Al)) * 100;
+            if (Ag == null || Al == null) {
+                return null; // 입력값 중 하나라도 null이면 계산 불가
+            }
+
+            double denominator = Ag + Al;
+
+            if (denominator == 0.0) {
+                return 100.0; // 보통 RSI 계산 시 분모가 0이면 RSI는 100 또는 0으로 정의
+            }
+
+            double rsiRaw = (Ag / denominator) * 100;
             BigDecimal bd = new BigDecimal(rsiRaw).setScale(2, RoundingMode.HALF_UP);
             return bd.doubleValue();
-        }catch (Exception e){
-            return null;
+
+        } catch (Exception e) {
+            return null; // 그 외 예외는 null 반환
         }
     }
 }

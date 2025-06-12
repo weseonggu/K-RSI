@@ -25,6 +25,7 @@ public class StockInfoLauncher {
     private final KrxApiProperties krxApiProperties;
     private final IsClosedDay isClosedDay;
     private final DateUtil dateUtil;
+    private final AsyncJobLanucher asyncJobLanucher;
 
 //    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
     public void infoUpdateSchedule() throws Exception{
@@ -57,7 +58,7 @@ public class StockInfoLauncher {
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 
-        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), kospiJobParameters);
+//        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), kospiJobParameters);
 
         JobParameters kosdaqJobParameters = new JobParametersBuilder()
                 .addString("date", date)
@@ -67,8 +68,13 @@ public class StockInfoLauncher {
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 
-        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), kosdaqJobParameters);
+//        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), kosdaqJobParameters);
+
+        asyncJobLanucher.runKospiJob(kospiJobParameters);
+        asyncJobLanucher.runKosdaqJob(kosdaqJobParameters);
 
     }
 
 }
+
+

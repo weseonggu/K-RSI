@@ -17,9 +17,6 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,6 +34,12 @@ public class SecuritiesStocksBatch {
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
     private final StockBulkInsertService stockBulkInsertService;
 
+    //-------------------------------Step들-----------------------------------------------
+    private final GetStockInfoToKRXTasklet getStockInfoToKRXTasklet;
+    private final GetStockInfoToDBReader getStockInfoToDBReader;
+    private final CompareAndUpdateProcessor compareAndUpdateProcessor;
+    private final UpdateStockInfoWriter updateStockInfoWriter;
+
     public SecuritiesStocksBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
                                  SecuritiesStockRepository securitiesStockRepository,
@@ -44,7 +47,11 @@ public class SecuritiesStocksBatch {
                                  StepExecutionTimeListener stepExecutionTimeListener,
                                  KrxRequestService krxRequestService,
                                  InterStepDataSharingWithRedisService interStepDataSharingWithRedisService,
-                                 StockBulkInsertService stockBulkInsertService)
+                                 StockBulkInsertService stockBulkInsertService,
+                                 GetStockInfoToKRXTasklet getStockInfoToKRXTasklet,
+                                 GetStockInfoToDBReader getStockInfoToDBReader,
+                                 CompareAndUpdateProcessor compareAndUpdateProcessor,
+                                 UpdateStockInfoWriter updateStockInfoWriter)
     {
     this.jobRepository =  jobRepository;
     this.platformTransactionManager = platformTransactionManager;
@@ -54,6 +61,11 @@ public class SecuritiesStocksBatch {
     this.krxRequestService = krxRequestService;
     this.interStepDataSharingWithRedisService = interStepDataSharingWithRedisService;
     this.stockBulkInsertService = stockBulkInsertService;
+
+    this.getStockInfoToKRXTasklet = getStockInfoToKRXTasklet;
+    this.getStockInfoToDBReader = getStockInfoToDBReader;
+    this.compareAndUpdateProcessor = compareAndUpdateProcessor;
+    this.updateStockInfoWriter = updateStockInfoWriter;
     }
 
 // ====================================JoB=================================================
@@ -61,8 +73,8 @@ public class SecuritiesStocksBatch {
     @Bean
     public Job SecuritiesStocksUpdateJob() {
         return new JobBuilder("stockUpdateJob", jobRepository)
-                .listener(jobExecutionTimeListener)
-                .start(requestKRXAPIStep())
+                .listener(jobExecutionTimeListener)// 배치 실행시간 측정 리스너
+                .start(requestKRXAPIStep())// KRX API 데이터 요청
                 .on("NO_DATA").end() // 데이터가 없으면 잡 종료
                 .on("REDIS_FAILED").end()// 레디스 저장 실패 시 잡 종료
                 .from(requestKRXAPIStep())
@@ -75,16 +87,17 @@ public class SecuritiesStocksBatch {
     @Bean
     public Step requestKRXAPIStep() {
         return new StepBuilder("requestKRXAPIStep", jobRepository)
-                .tasklet(fetchDataTasklet() , platformTransactionManager)
-                .listener(fetchDataTasklet())
+                .tasklet(getStockInfoToKRXTasklet , platformTransactionManager)
+                .listener(getStockInfoToKRXTasklet)
                 .listener(fetchDataListener() )
-                .listener(stepExecutionTimeListener)
+                .listener(stepExecutionTimeListener)// 스텝 실행시간 기록 리스너
                 .build();
     }
-    @Bean
-    public GetStockInfoToKRXTasklet fetchDataTasklet() {
-        return new GetStockInfoToKRXTasklet(krxRequestService, interStepDataSharingWithRedisService);
-    }
+//    @Bean
+//    @StepScope
+//    public GetStockInfoToKRXTasklet fetchDataTasklet() {
+//        return new GetStockInfoToKRXTasklet(krxRequestService, interStepDataSharingWithRedisService);
+//    }
     @Bean
     public ExecutionContextPromotionListener fetchDataListener() {
         ExecutionContextPromotionListener listener = new ExecutionContextPromotionListener();
@@ -99,28 +112,30 @@ public class SecuritiesStocksBatch {
     public Step updateDatabaseStep() {
         return new StepBuilder("updateDatabaseStep", jobRepository)
                 .<StockInfoEntity, StockInfoEntity>chunk(10, platformTransactionManager)
-                .reader(stockEntityItemReader(10))
-                .processor(compareAndUpdateProcessor()) // 기존 processor 추가
-                .writer(newStockWriter())
-                .listener(compareAndUpdateProcessor()) // 리스너로 등록해야 @BeforeStep 실행됨
-                .listener(stockEntityItemReader(10))
-                .listener(stepExecutionTimeListener)
+                .reader(getStockInfoToDBReader)
+                .processor(compareAndUpdateProcessor) // 종목 데이터 비교 실행
+                .writer(updateStockInfoWriter)
+                .listener(compareAndUpdateProcessor) // 리스너로 등록해야 beforeStep 실행됨
+                .listener(getStockInfoToDBReader) // DB 읽기전 청크 사이즈에 따라 페이지 사이즈 설정하고 시장 설정
+                .listener(stepExecutionTimeListener)// 스텝 실행시간 기록 리스너
                 .build();
     }
     // DB 데이터 읽어 오기
-    @Bean(name = "stockEntityItemReaderForSecurities")
-    public ItemReader<StockInfoEntity> stockEntityItemReader(int pageSize){
-        return new GetStockInfoToDBReader(securitiesStockRepository, pageSize);
-    }
+//    @Bean(name = "stockEntityItemReaderForSecurities")
+//    @StepScope
+//    public GetStockInfoToDBReader stockEntityItemReader(Integer pageSize){
+//        return new GetStockInfoToDBReader(securitiesStockRepository, pageSize);
+//    }
     // DB 데이터랑 api요청으로 가져온 데이터 비교하기
-    @Bean
-    public ItemProcessor<StockInfoEntity, StockInfoEntity> compareAndUpdateProcessor(){
-        return new CompareAndUpdateProcessor(interStepDataSharingWithRedisService,stockBulkInsertService, securitiesStockRepository);
-    }
+//    @Bean
+//    @StepScope
+//    public CompareAndUpdateProcessor compareAndUpdateProcessor(){
+//        return new CompareAndUpdateProcessor(interStepDataSharingWithRedisService,stockBulkInsertService, securitiesStockRepository);
+//    }
     // proccess 결과 DB에 저장하기
-    @Bean
-    public ItemWriter<StockInfoEntity> newStockWriter() {
-        return new UpdateStockInfoWriter(securitiesStockRepository);
-    }
+//    @Bean
+//    public ItemWriter<StockInfoEntity> newStockWriter() {
+//        return new UpdateStockInfoWriter(securitiesStockRepository);
+//    }
 
 }

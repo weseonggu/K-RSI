@@ -7,15 +7,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.ItemStreamReader;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Component;
 
 import java.util.Iterator;
 
+@StepScope
+@Component
 @RequiredArgsConstructor
 @Slf4j
 public class GetStockInfoToDBReader implements ItemReader<StockInfoEntity>, ItemStreamReader<StockInfoEntity>, StepExecutionListener {
@@ -26,7 +30,7 @@ public class GetStockInfoToDBReader implements ItemReader<StockInfoEntity>, Item
     private Iterator<StockInfoEntity> currentIterator = null;
 
     private final SecuritiesStockRepository securitiesStockRepository;
-    private final int pageSize;
+    private int pageSize;
 
     @Override
     public StockInfoEntity read() throws Exception {
@@ -50,6 +54,7 @@ public class GetStockInfoToDBReader implements ItemReader<StockInfoEntity>, Item
         this.stepExecution = stepExecution;
         JobParameters jobParameters = stepExecution.getJobParameters();
         this.mktNm = jobParameters.getString("mktNm");
+        this.pageSize = 10; // todo 임시 청크 사이즈
     }
 
     @Override

@@ -3,20 +3,24 @@ package com.service.RSIranking.batch.stock_info_job.step;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.StockInfoEntity;
-import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.StockBulkInsertService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-
+@StepScope
+@Component
 @RequiredArgsConstructor
+@Slf4j
 public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity, StockInfoEntity>, StepExecutionListener {
 
     private List<StockDto> dtoList;
@@ -24,7 +28,6 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
 
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedis;
     private final StockBulkInsertService stockBulkInsertService;
-    private final SecuritiesStockRepository securitiesStockRepository;
 
 
     @Override
@@ -67,6 +70,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
             return entity;
         } else {
             // 삭제된 데이터 처리
+            log.info(entity.getId()+" 상장폐지");
             entity.delistStock();
             return entity;
         }
@@ -78,6 +82,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
     // jdbc를 사용한 신규 종목 저장
     @Override
     public ExitStatus afterStep(StepExecution stepExecution) {
+
         if (stepExecution.getExitStatus().getExitCode().equals(ExitStatus.FAILED.getExitCode())) {
             return ExitStatus.FAILED;
         }
@@ -89,7 +94,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
         List<StockInfoEntity> newStockEntities = newStockDtos.stream()
                 .map(StockInfoEntity::new)
                 .collect(Collectors.toList());
-
+        log.info("신규 종목 추가: "+ newStockEntities.size() + "개 추가");
         if (!newStockEntities.isEmpty()) {
             stockBulkInsertService.stocksInsert(newStockEntities);
         }

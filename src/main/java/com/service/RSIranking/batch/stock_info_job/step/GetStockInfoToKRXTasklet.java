@@ -7,20 +7,25 @@ import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+@StepScope
+@Component
 @RequiredArgsConstructor
+@Slf4j
 public class GetStockInfoToKRXTasklet implements Tasklet, StepExecutionListener {
 
     private StepExecution stepExecution;
@@ -33,6 +38,8 @@ public class GetStockInfoToKRXTasklet implements Tasklet, StepExecutionListener 
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+
+        log.info(mktNM + ": 데이터 KRX API 요청");
 
         JobExecution jobExecution = contribution.getStepExecution().getJobExecution();
         ExecutionContext jobContext = jobExecution.getExecutionContext();
@@ -78,7 +85,7 @@ public class GetStockInfoToKRXTasklet implements Tasklet, StepExecutionListener 
             stepExecution.setStatus(BatchStatus.FAILED);
             throw new RuntimeException("Redis 저장 실패");
         }
-
+        log.info(mktNM + ": 데이터 Redis 임지 저장 완료");
         return RepeatStatus.FINISHED;
     }
 

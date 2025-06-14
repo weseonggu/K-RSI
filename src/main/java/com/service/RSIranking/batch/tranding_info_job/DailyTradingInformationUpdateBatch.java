@@ -4,16 +4,12 @@ import com.service.RSIranking.batch.measurement.JobExecutionTimeListener;
 import com.service.RSIranking.batch.measurement.StepExecutionTimeListener;
 import com.service.RSIranking.batch.tranding_info_job.step.RequestDailyTradingInfoTasklet;
 import com.service.RSIranking.batch.tranding_info_job.step.UpdateDailyTradingInfoTasklet;
-import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
-import com.service.RSIranking.service.KrxRequestService;
-import com.service.RSIranking.service.UpdateDailyTradingInfoService;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,26 +22,25 @@ public class DailyTradingInformationUpdateBatch {
     private final PlatformTransactionManager platformTransactionManager;
     private final JobExecutionTimeListener jobExecutionTimeListener;
     private final StepExecutionTimeListener stepExecutionTimeListener;
-    private final KrxRequestService krxRequestService;
-    private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
-    private final UpdateDailyTradingInfoService updateDailyTradingInfoService;
+
+    private final RequestDailyTradingInfoTasklet requestDailyTradingInfoTasklet;
+    private final UpdateDailyTradingInfoTasklet updateDailyTradingInfoTasklet;
 
 
     public DailyTradingInformationUpdateBatch(JobRepository jobRepository,
                                               @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
                                               JobExecutionTimeListener jobExecutionTimeListener,
                                               StepExecutionTimeListener stepExecutionTimeListener,
-                                              KrxRequestService krxRequestService,
-                                              InterStepDataSharingWithRedisService interStepDataSharingWithRedisService,
-                                              UpdateDailyTradingInfoService updateDailyTradingInfoService)
+                                              RequestDailyTradingInfoTasklet requestDailyTradingInfoTasklet,
+                                              UpdateDailyTradingInfoTasklet updateDailyTradingInfoTasklet)
     {
         this.jobRepository =  jobRepository;
         this.platformTransactionManager = platformTransactionManager;
         this.jobExecutionTimeListener = jobExecutionTimeListener;
         this.stepExecutionTimeListener = stepExecutionTimeListener;
-        this.krxRequestService = krxRequestService;
-        this.interStepDataSharingWithRedisService = interStepDataSharingWithRedisService;
-        this.updateDailyTradingInfoService = updateDailyTradingInfoService;
+
+        this.requestDailyTradingInfoTasklet = requestDailyTradingInfoTasklet;
+        this.updateDailyTradingInfoTasklet = updateDailyTradingInfoTasklet;
 
     }
 
@@ -53,7 +48,7 @@ public class DailyTradingInformationUpdateBatch {
     @Bean
     public Job DailyTradingInformationUpdateJob() {
         return new JobBuilder("dailyTradingInformationUpdateJob", jobRepository)
-                .listener(jobExecutionTimeListener)
+                .listener(jobExecutionTimeListener)// 잡 리스너 실행 시간 측정
                 .start(requestDailyTradingInfoStep())
                 .on("NO_DATA").end() // 데이터가 없으면 잡 종료
                 .on("REDIS_FAILED").end()// 레디스 저장 실패 시 잡 종료
@@ -69,16 +64,16 @@ public class DailyTradingInformationUpdateBatch {
     @Bean
     public Step requestDailyTradingInfoStep() {
         return new StepBuilder("requestKRXAPITradingStep", jobRepository)
-                .tasklet( requestDailyTradingInfoTasklet(), platformTransactionManager)
-                .listener(requestDailyTradingInfoTasklet())
+                .tasklet( requestDailyTradingInfoTasklet, platformTransactionManager) // 일별 데이터 요청
+                .listener(requestDailyTradingInfoTasklet)
                 .listener(requestDailyTradingInfoListener() )
-                .listener(stepExecutionTimeListener)
+                .listener(stepExecutionTimeListener) // 스탭 리스너 실행 시간 측정
                 .build();
     }
-    @Bean
-    public Tasklet requestDailyTradingInfoTasklet() {
-        return new RequestDailyTradingInfoTasklet(krxRequestService, interStepDataSharingWithRedisService);
-    }
+//    @Bean
+//    public Tasklet requestDailyTradingInfoTasklet() {
+//        return new RequestDailyTradingInfoTasklet(krxRequestService, interStepDataSharingWithRedisService);
+//    }
     @Bean
     public ExecutionContextPromotionListener requestDailyTradingInfoListener() {
         ExecutionContextPromotionListener listener = new ExecutionContextPromotionListener();
@@ -88,17 +83,17 @@ public class DailyTradingInformationUpdateBatch {
 
     //=============================STEP2================================================
 
-    // todo 일별 매맴 정보 DB에 저장 step
+    // 일별 매맴 정보 DB에 저장 step
     @Bean
     public Step updateDailyTradingInfoStep() {
         return new StepBuilder("updateKRXAPITradingStep", jobRepository)
-                .tasklet( udateDailyTradingInfoTasklet(), platformTransactionManager)
-                .listener(udateDailyTradingInfoTasklet())
+                .tasklet( updateDailyTradingInfoTasklet, platformTransactionManager)
+                .listener(updateDailyTradingInfoTasklet)
                 .listener(stepExecutionTimeListener)
                 .build();
     }
-    @Bean
-    public Tasklet udateDailyTradingInfoTasklet() {
-        return new UpdateDailyTradingInfoTasklet(interStepDataSharingWithRedisService, updateDailyTradingInfoService);
-    }
+//    @Bean
+//    public Tasklet udateDailyTradingInfoTasklet() {
+//        return new UpdateDailyTradingInfoTasklet(interStepDataSharingWithRedisService, updateDailyTradingInfoService);
+//    }
 }

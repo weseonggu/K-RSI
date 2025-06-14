@@ -70,8 +70,8 @@ public class StockInfoLauncher {
 
 //        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), kosdaqJobParameters);
 
-        asyncJobLanucher.runKospiJob(kospiJobParameters);
-        asyncJobLanucher.runKosdaqJob(kosdaqJobParameters);
+        asyncJobLanucher.runKospiInfoJob(kospiJobParameters);
+        asyncJobLanucher.runKosdaqInfoJob(kosdaqJobParameters);
 
     }
 

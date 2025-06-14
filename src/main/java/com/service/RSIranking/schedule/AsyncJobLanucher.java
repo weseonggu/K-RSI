@@ -15,12 +15,22 @@ public class AsyncJobLanucher {
     private final JobRegistry jobRegistry;
 
     @Async("asyncExecutor")
-    public void runKospiJob(JobParameters parameters) throws Exception{
+    public void runKospiInfoJob(JobParameters parameters) throws Exception{
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
     }
 
     @Async("asyncExecutor")
-    public void runKosdaqJob(JobParameters parameters) throws Exception{
+    public void runKosdaqInfoJob(JobParameters parameters) throws Exception{
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
+    }
+
+    @Async("asyncExecutor")
+    public void runKospiTradingJob(JobParameters parameters) throws Exception{
+        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
+    }
+
+    @Async("asyncExecutor")
+    public void runKosdaqTradingJob(JobParameters parameters) throws Exception{
+        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
     }
 }

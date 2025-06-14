@@ -17,16 +17,10 @@ public class AsyncJobLanucher {
     @Async("asyncExecutor")
     public void runKospiJob(JobParameters parameters) throws Exception{
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
-//        for (int i=0; i<10; i++){
-//            System.out.println("kospi: "+i);
-//        }
     }
 
     @Async("asyncExecutor")
     public void runKosdaqJob(JobParameters parameters) throws Exception{
         jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
-//        for (int i=0; i<10; i++){
-//            System.out.println("kosdaq: "+i);
-//        }
     }
 }

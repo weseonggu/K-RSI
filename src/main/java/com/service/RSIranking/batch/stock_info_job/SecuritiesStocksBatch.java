@@ -7,10 +7,6 @@ import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToDBReader;
 import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToKRXTasklet;
 import com.service.RSIranking.batch.stock_info_job.step.UpdateStockInfoWriter;
 import com.service.RSIranking.entity.StockInfoEntity;
-import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
-import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
-import com.service.RSIranking.service.KrxRequestService;
-import com.service.RSIranking.service.StockBulkInsertService;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -27,14 +23,9 @@ public class SecuritiesStocksBatch {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
-    private final SecuritiesStockRepository securitiesStockRepository;
     private final JobExecutionTimeListener jobExecutionTimeListener;
     private final StepExecutionTimeListener stepExecutionTimeListener;
-    private final KrxRequestService krxRequestService;
-    private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
-    private final StockBulkInsertService stockBulkInsertService;
 
-    //-------------------------------Step들-----------------------------------------------
     private final GetStockInfoToKRXTasklet getStockInfoToKRXTasklet;
     private final GetStockInfoToDBReader getStockInfoToDBReader;
     private final CompareAndUpdateProcessor compareAndUpdateProcessor;
@@ -42,12 +33,8 @@ public class SecuritiesStocksBatch {
 
     public SecuritiesStocksBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
-                                 SecuritiesStockRepository securitiesStockRepository,
                                  JobExecutionTimeListener jobExecutionTimeListener,
                                  StepExecutionTimeListener stepExecutionTimeListener,
-                                 KrxRequestService krxRequestService,
-                                 InterStepDataSharingWithRedisService interStepDataSharingWithRedisService,
-                                 StockBulkInsertService stockBulkInsertService,
                                  GetStockInfoToKRXTasklet getStockInfoToKRXTasklet,
                                  GetStockInfoToDBReader getStockInfoToDBReader,
                                  CompareAndUpdateProcessor compareAndUpdateProcessor,
@@ -55,12 +42,8 @@ public class SecuritiesStocksBatch {
     {
     this.jobRepository =  jobRepository;
     this.platformTransactionManager = platformTransactionManager;
-    this.securitiesStockRepository = securitiesStockRepository;
     this.jobExecutionTimeListener = jobExecutionTimeListener;
     this.stepExecutionTimeListener = stepExecutionTimeListener;
-    this.krxRequestService = krxRequestService;
-    this.interStepDataSharingWithRedisService = interStepDataSharingWithRedisService;
-    this.stockBulkInsertService = stockBulkInsertService;
 
     this.getStockInfoToKRXTasklet = getStockInfoToKRXTasklet;
     this.getStockInfoToDBReader = getStockInfoToDBReader;
@@ -93,11 +76,6 @@ public class SecuritiesStocksBatch {
                 .listener(stepExecutionTimeListener)// 스텝 실행시간 기록 리스너
                 .build();
     }
-//    @Bean
-//    @StepScope
-//    public GetStockInfoToKRXTasklet fetchDataTasklet() {
-//        return new GetStockInfoToKRXTasklet(krxRequestService, interStepDataSharingWithRedisService);
-//    }
     @Bean
     public ExecutionContextPromotionListener fetchDataListener() {
         ExecutionContextPromotionListener listener = new ExecutionContextPromotionListener();
@@ -107,7 +85,6 @@ public class SecuritiesStocksBatch {
 
 // ==============================STEP2=====================================================
     // DB에 있는 데이터 업데이트 step
-    // todo chunk 크기 yml 파일 에서 관리하도록 변경 필요
     @Bean
     public Step updateDatabaseStep() {
         return new StepBuilder("updateDatabaseStep", jobRepository)
@@ -120,22 +97,4 @@ public class SecuritiesStocksBatch {
                 .listener(stepExecutionTimeListener)// 스텝 실행시간 기록 리스너
                 .build();
     }
-    // DB 데이터 읽어 오기
-//    @Bean(name = "stockEntityItemReaderForSecurities")
-//    @StepScope
-//    public GetStockInfoToDBReader stockEntityItemReader(Integer pageSize){
-//        return new GetStockInfoToDBReader(securitiesStockRepository, pageSize);
-//    }
-    // DB 데이터랑 api요청으로 가져온 데이터 비교하기
-//    @Bean
-//    @StepScope
-//    public CompareAndUpdateProcessor compareAndUpdateProcessor(){
-//        return new CompareAndUpdateProcessor(interStepDataSharingWithRedisService,stockBulkInsertService, securitiesStockRepository);
-//    }
-    // proccess 결과 DB에 저장하기
-//    @Bean
-//    public ItemWriter<StockInfoEntity> newStockWriter() {
-//        return new UpdateStockInfoWriter(securitiesStockRepository);
-//    }
-
 }

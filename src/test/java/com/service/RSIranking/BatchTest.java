@@ -16,7 +16,7 @@ public class BatchTest {
     @Test
     public void stockInfoUpdateTest(){
         try {
-            stockInfoLauncher.infoUpdateJobLauncher("20250612");
+            stockInfoLauncher.infoUpdateJobLauncher("20250613");
         }catch (Exception e){
             System.out.println(e.getMessage());
         }

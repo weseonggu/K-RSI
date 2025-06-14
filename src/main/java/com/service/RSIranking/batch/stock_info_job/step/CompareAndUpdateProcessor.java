@@ -60,9 +60,11 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
 
             if (compareStockData(entity, matchedDto.get())){
                 // 기존 데이터 업데이트
+                log.info(entity.getId() + "변경사항 업데이트");
                 entity.updateFromDto(matchedDto.get());
             }
             else{
+                log.info(entity.getId() + "변경사항 없음 null 반환");
                 return null;
             }
 

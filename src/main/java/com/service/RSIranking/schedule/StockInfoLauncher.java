@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.CompletableFuture;
 
 @Configuration
 @RequiredArgsConstructor
@@ -70,8 +71,29 @@ public class StockInfoLauncher {
 
 //        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), kosdaqJobParameters);
 
-        asyncJobLanucher.runKospiInfoJob(kospiJobParameters);
-        asyncJobLanucher.runKosdaqInfoJob(kosdaqJobParameters);
+        CompletableFuture<Void> kospiFuture = asyncJobLanucher.runKospiInfoJob(kospiJobParameters);
+        CompletableFuture<Void> kosdaqFuture = asyncJobLanucher.runKosdaqInfoJob(kosdaqJobParameters);
+
+// 개별 완료 후 처리
+        kospiFuture.whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.info("KOSPI Job 실패: " + ex.getMessage());
+            } else {
+                log.info("KOSPI Job 완료");
+            }
+        });
+
+        kosdaqFuture.whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.info("KOSDAQ Job 실패: " + ex.getMessage());
+            } else {
+                log.info("KOSDAQ Job 완료");
+            }
+        });
+
+// 또는 두 작업 모두 완료된 후 실행
+        CompletableFuture.allOf(kospiFuture, kosdaqFuture)
+                .thenRun(() -> log.info("모든 배치 작업 완료!"));
 
     }
 

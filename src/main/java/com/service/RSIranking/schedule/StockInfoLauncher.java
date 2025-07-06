@@ -72,28 +72,29 @@ public class StockInfoLauncher {
 //        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), kosdaqJobParameters);
 
         CompletableFuture<Void> kospiFuture = asyncJobLanucher.runKospiInfoJob(kospiJobParameters);
+        Thread.sleep(200);
         CompletableFuture<Void> kosdaqFuture = asyncJobLanucher.runKosdaqInfoJob(kosdaqJobParameters);
 
-// 개별 완료 후 처리
+        // 개별 완료 후 처리
         kospiFuture.whenComplete((result, ex) -> {
             if (ex != null) {
-                log.info("KOSPI Job 실패: " + ex.getMessage());
+                log.info("KOSPI Stock Job 실패: " + ex.getMessage());
             } else {
-                log.info("KOSPI Job 완료");
+                log.info("KOSPI Stock Job 완료");
             }
         });
 
         kosdaqFuture.whenComplete((result, ex) -> {
             if (ex != null) {
-                log.info("KOSDAQ Job 실패: " + ex.getMessage());
+                log.info("KOSDAQ Stock Job 실패: " + ex.getMessage());
             } else {
-                log.info("KOSDAQ Job 완료");
+                log.info("KOSDAQ Stock Job 완료");
             }
         });
 
-// 또는 두 작업 모두 완료된 후 실행
+        // 또는 두 작업 모두 완료된 후 실행
         CompletableFuture.allOf(kospiFuture, kosdaqFuture)
-                .thenRun(() -> log.info("모든 배치 작업 완료!"));
+                .thenRun(() -> log.info("모든 Stock 배치 작업 완료!"));
 
     }
 

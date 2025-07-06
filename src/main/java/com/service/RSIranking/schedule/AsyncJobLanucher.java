@@ -28,7 +28,7 @@ public class AsyncJobLanucher {
     }
 
     @Async("asyncExecutor")
-    public CompletableFuture<Void> runKosdaqInfoJob(JobParameters parameters) throws Exception{
+    public CompletableFuture<Void> runKosdaqInfoJob(JobParameters parameters){
         try {
             jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
             return CompletableFuture.completedFuture(null);
@@ -38,12 +38,22 @@ public class AsyncJobLanucher {
     }
 
     @Async("asyncExecutor")
-    public void runKospiTradingJob(JobParameters parameters) throws Exception{
+    public CompletableFuture<Void> runKospiTradingJob(JobParameters parameters){
+        try {
         jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
+            return CompletableFuture.completedFuture(null);
+        }catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @Async("asyncExecutor")
-    public void runKosdaqTradingJob(JobParameters parameters) throws Exception{
-        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
+    public CompletableFuture<Void> runKosdaqTradingJob(JobParameters parameters){
+        try {
+            jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
+            return CompletableFuture.completedFuture(null);
+        }catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
     }
 }

@@ -13,6 +13,8 @@ import org.springframework.context.annotation.Configuration;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Configuration
 @RequiredArgsConstructor
@@ -48,6 +50,7 @@ public class DailyTradingInfoLauncher {
         String date = dateFormat.format(new Date());
 
         JobParameters kospiJobParameters = new JobParametersBuilder()
+                .addString("uuid", UUID.randomUUID().toString())
                 .addString("date", date)
                 .addString("apiUrl", krxApiProperties.getKospiTradingInfoUrl())
                 .addString("apiKey", krxApiProperties.getKey())
@@ -58,6 +61,7 @@ public class DailyTradingInfoLauncher {
 //        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), kospiJobParameters);
 
         JobParameters kosdaqJobParameters = new JobParametersBuilder()
+                .addString("uuid", UUID.randomUUID().toString())
                 .addString("date", date)
                 .addString("apiUrl", krxApiProperties.getKosdaqTradingInfoUrl())
                 .addString("apiKey", krxApiProperties.getKey())
@@ -66,7 +70,28 @@ public class DailyTradingInfoLauncher {
                 .toJobParameters();
 
 //        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), kosdaqJobParameters);
-        asyncJobLanucher.runKospiTradingJob(kospiJobParameters);
-        asyncJobLanucher.runKosdaqTradingJob(kosdaqJobParameters);
+        CompletableFuture<Void> kospiFuture = asyncJobLanucher.runKospiTradingJob(kospiJobParameters);
+        Thread.sleep(200);
+        CompletableFuture<Void> kosdaqFuture = asyncJobLanucher.runKosdaqTradingJob(kosdaqJobParameters);
+        // 개별 완료 후 처리
+        kospiFuture.whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.info("KOSPI Tranding Job 실패: " + ex.getMessage());
+            } else {
+                log.info("KOSPI Tranding Job 완료");
+            }
+        });
+
+        kosdaqFuture.whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.info("KOSDAQ Tranding Job 실패: " + ex.getMessage());
+            } else {
+                log.info("KOSDAQ Tranding Job 완료");
+            }
+        });
+
+        // 또는 두 작업 모두 완료된 후 실행
+        CompletableFuture.allOf(kospiFuture, kosdaqFuture)
+                .thenRun(() -> log.info("모든 Tranding 배치 작업 완료!"));
     }
 }

@@ -16,7 +16,7 @@ public class BatchTest {
     @Test
     public void stockInfoUpdateTest(){
         try {
-            stockInfoLauncher.infoUpdateJobLauncher("20250630");
+            stockInfoLauncher.infoUpdateJobLauncher("20250708");
         }catch (Exception e){
             System.out.println(e.getMessage());
         }
@@ -27,20 +27,33 @@ public class BatchTest {
     private DailyTradingInfoLauncher dailyTradingInfoLauncher;
     // 매매데이터 수집
     @Test
-    public void tradingIngoUpdateTest(){
-        Integer marketDay[] = {
-            20250611
+    public void tradingIngoUpdateTest() {
+        Integer[] marketDay = {
+                20250708,
+                20250707,
+                20250704,
+                20250703,
+                20250702,
+                20250701
         };
-        try{
-            for(Integer date: marketDay){
+
+        long startTime = System.nanoTime(); // 시작 시간 측정
+
+        try {
+            for (Integer date : marketDay) {
                 dailyTradingInfoLauncher.dailyTradingInfoJobLauncher(date.toString());
-                Thread.sleep(500);
             }
-        }catch (Exception e){
-            System.out.println(e);
+        } catch (Exception e) {
+            System.out.println("예외 발생: " + e.getMessage());
         }
-        System.out.println("업데이트한 날짜: "+marketDay.length);
+
+        long endTime = System.nanoTime(); // 종료 시간 측정
+        long durationInMillis = (endTime - startTime) / 1_000_000; // ms 단위 변환
+
+        System.out.println("업데이트한 날짜: " + marketDay.length);
+        System.out.println("총 실행 시간: " + durationInMillis + "ms");
     }
+
 
     @Autowired
     private RSICalculationLauncher rsiCalculationLauncher;

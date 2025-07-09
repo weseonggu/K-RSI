@@ -72,7 +72,11 @@ public class UpdateDailyTradingInfoTasklet implements Tasklet {
             log.info("매매정보 병렬 저장 완료");
         } catch (ExecutionException | InterruptedException e) {
             // 예외 발생 시 전체 롤백
-            throw new RuntimeException("매매정보 비동기 저장 중 오류 발생, 전체 롤백", e);
+//            throw new RuntimeException("매매정보 비동기 저장 중 오류 발생, 전체 롤백", e);
+            log.info("매매정보 비동기 저장 중 오류 발생, 전체 롤백");
+            tradingInfoDtos.get(0).getBasDd();
+            updateDailyTradingInfoService.tradingInfoInsertRollback(tradingInfoDtos.get(0).getBasDd());
+
         }
         return RepeatStatus.FINISHED;
     }

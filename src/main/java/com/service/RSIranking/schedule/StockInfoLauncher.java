@@ -75,6 +75,10 @@ public class StockInfoLauncher {
         Thread.sleep(200);
         CompletableFuture<Void> kosdaqFuture = asyncJobLanucher.runKosdaqInfoJob(kosdaqJobParameters);
 
+        // 모든 작업 완료를 기다림 (blocking)
+        CompletableFuture.allOf(kospiFuture, kosdaqFuture).get();
+
+
         // 개별 완료 후 처리
         kospiFuture.whenComplete((result, ex) -> {
             if (ex != null) {

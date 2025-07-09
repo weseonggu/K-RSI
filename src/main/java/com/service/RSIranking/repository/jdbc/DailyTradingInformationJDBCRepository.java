@@ -25,6 +25,12 @@ public class DailyTradingInformationJDBCRepository {
 
     }
 
+    /**
+     * 일일 매매 정보 벌크 인서트 메소드
+     * @param newTradingInfo
+     * @param baseInfoDtos
+     * @throws Exception
+     */
     public void bulkInsert(List<DailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
         String sql =
                 """
@@ -60,6 +66,12 @@ public class DailyTradingInformationJDBCRepository {
         });
     }
 
+    /**
+     * 14일 매매 거래 조회 메소드
+     * @param isuCd
+     * @param dates
+     * @return
+     */
     public List<DailyTradingInformation> findByIsuCdAndDateIn(String isuCd, List<LocalDate> dates) {
         if (dates == null || dates.isEmpty()) {
             return Collections.emptyList();
@@ -101,5 +113,13 @@ public class DailyTradingInformationJDBCRepository {
         });
     }
 
+    public void insertRollback(LocalDate date) {
+        String sql = "DELETE FROM daily_trading_information WHERE date = ?";
+        try {
+            int deletedCount = jdbcTemplate.update(sql, date);
+        } catch (Exception e) {
+            throw new RuntimeException("롤백 실패", e);
+        }
+    }
 
 }

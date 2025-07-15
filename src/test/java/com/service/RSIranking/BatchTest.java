@@ -29,11 +29,11 @@ public class BatchTest {
     @Test
     public void tradingIngoUpdateTest() {
         Integer[] marketDay = {
-//                20250708,
-//                20250707,
-//                20250704,
-//                20250703,
-//                20250702,
+                20250708,
+                20250707,
+                20250704,
+                20250703,
+                20250702,
                 20250701
         };
 
@@ -42,6 +42,7 @@ public class BatchTest {
         try {
             for (Integer date : marketDay) {
                 dailyTradingInfoLauncher.dailyTradingInfoJobLauncher(date.toString());
+                Thread.sleep(60000);
             }
         } catch (Exception e) {
             System.out.println("예외 발생: " + e.getMessage());

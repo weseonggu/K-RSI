@@ -29,11 +29,11 @@ public class BatchTest {
     @Test
     public void tradingIngoUpdateTest() {
         Integer[] marketDay = {
-                20250708,
-                20250707,
-                20250704,
-                20250703,
-                20250702,
+//                20250708,
+//                20250707,
+//                20250704,
+//                20250703,
+//                20250702,
                 20250701
         };
 

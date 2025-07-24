@@ -1,6 +1,7 @@
 package com.service.RSIranking.service;
 
-import com.service.RSIranking.entity.StockInfoEntity;
+
+import com.service.RSIranking.entity.inter.StockInfoEntity;
 import com.service.RSIranking.repository.jdbc.SecuritiesStockJDBCRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -2,7 +2,9 @@ package com.service.RSIranking.batch.stock_info_job.step;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.StockDto;
-import com.service.RSIranking.entity.StockInfoEntity;
+
+import com.service.RSIranking.entity.KospiStockInfoEntity;
+import com.service.RSIranking.entity.inter.StockInfoEntity;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.StockBulkInsertService;
 import lombok.RequiredArgsConstructor;
@@ -92,9 +94,9 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
         List<StockDto> newStockDtos = dtoList.stream()
                 .filter(dto -> !dto.isChecked())
                 .collect(Collectors.toList());
-
+        // todo 변경 사항 있음 .map(KospiStockInfoEntity::new)
         List<StockInfoEntity> newStockEntities = newStockDtos.stream()
-                .map(StockInfoEntity::new)
+                .map(KospiStockInfoEntity::new)
                 .collect(Collectors.toList());
         log.info("신규 종목 추가: "+ newStockEntities.size() + "개 추가");
         if (!newStockEntities.isEmpty()) {

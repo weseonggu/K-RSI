@@ -1,6 +1,7 @@
 package com.service.RSIranking.batch.stock_info_job.step;
 
-import com.service.RSIranking.entity.StockInfoEntity;
+
+import com.service.RSIranking.entity.inter.StockInfoEntity;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

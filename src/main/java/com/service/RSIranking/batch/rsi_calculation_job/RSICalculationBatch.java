@@ -7,7 +7,8 @@ import com.service.RSIranking.batch.rsi_calculation_job.step.MessageProduceWrite
 import com.service.RSIranking.batch.rsi_calculation_job.step.RSIMessageMakeProccess;
 import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToDBReader;
 import com.service.RSIranking.dto.RSIMessageDTO;
-import com.service.RSIranking.entity.StockInfoEntity;
+
+import com.service.RSIranking.entity.inter.StockInfoEntity;
 import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;

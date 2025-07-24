@@ -1,7 +1,8 @@
 package com.service.RSIranking.repository.jpa;
 
 import com.service.RSIranking.entity.DailyTradingInformation;
-import com.service.RSIranking.entity.StockInfoEntity;
+import com.service.RSIranking.entity.KospiStockInfoEntity;
+import com.service.RSIranking.entity.inter.StockInfoEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,8 +15,8 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 @Repository
-public interface SecuritiesStockRepository extends JpaRepository<StockInfoEntity, String> {
-    Page<StockInfoEntity> findAll(Pageable pageable);
+public interface SecuritiesStockRepository extends JpaRepository<KospiStockInfoEntity, String> {
+    Page<KospiStockInfoEntity> findAll(Pageable pageable);
     Page<StockInfoEntity> findByMktNmAndIsPublicStockTrue(String mktNm, Pageable pageable);
     @Query("""
         SELECT t 

@@ -1,6 +1,7 @@
 package com.service.RSIranking.repository.jdbc;
 
-import com.service.RSIranking.entity.StockInfoEntity;
+
+import com.service.RSIranking.entity.inter.StockInfoEntity;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,11 +21,18 @@ public class SecuritiesStockJDBCRepository {
     }
 
     public void bulkInsert(List<StockInfoEntity> stocks) {
+//        String sql = """
+//                INSERT INTO stock_info (isu_cd, isu_nm, mkt_nm, is_public_stock)
+//                SELECT ?, ?, ?, ?
+//                WHERE NOT EXISTS (
+//                    SELECT 1 FROM stock_info s WHERE s.isu_cd = ?
+//                )
+//                """;
         String sql = """
-                INSERT INTO stock_info (isu_cd, isu_nm, mkt_nm, is_public_stock)
+                INSERT INTO kospi_stock_info (isu_cd, isu_nm, mkt_nm, is_public_stock)
                 SELECT ?, ?, ?, ?
                 WHERE NOT EXISTS (
-                    SELECT 1 FROM stock_info s WHERE s.isu_cd = ?
+                    SELECT 1 FROM kospi_stock_info s WHERE s.isu_cd = ?
                 )
                 """;
 

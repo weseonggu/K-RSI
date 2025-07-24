@@ -18,7 +18,10 @@ import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @StepScope
@@ -49,11 +52,32 @@ public class UpdateDailyTradingInfoTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-        // todo 매매정보 업데이트 로직 try-catch 사용하기
-        List<DailyTradingInformation> dailyTradingInformationList =  tradingInfoDtos.stream()
-                .map(DailyTradingInformation :: new)
+        // 레디스에서 가져온 데이터 엔티티로 변환
+        List<DailyTradingInformation> dailyTradingInformationList = tradingInfoDtos.stream()
+                .map(DailyTradingInformation::new)
                 .collect(Collectors.toList());
-        updateDailyTradingInfoService.tradingInfoInsert(dailyTradingInformationList, tradingInfoDtos);
+        // todo 병렬 작업할 데이터 수 정하기 설정 파일에서 값가져 오도록 변경하기
+        int batchSize = 100;
+        // 비동기 병렬 처리한 결과 저장
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        // 비동기 병렬 반복문
+        for (int i = 0; i < dailyTradingInformationList.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, dailyTradingInformationList.size());
+            List<DailyTradingInformation> subList = dailyTradingInformationList.subList(i, end);
+            List<TradingInfoDto> subDtoList = tradingInfoDtos.subList(i, end);
+            futures.add(updateDailyTradingInfoService.tradingInfoInsert(subList, subDtoList));
+        }
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+            log.info("매매정보 병렬 저장 완료");
+        } catch (ExecutionException | InterruptedException e) {
+            // 예외 발생 시 전체 롤백
+//            throw new RuntimeException("매매정보 비동기 저장 중 오류 발생, 전체 롤백", e);
+            log.info("매매정보 비동기 저장 중 오류 발생, 전체 롤백");
+            tradingInfoDtos.get(0).getBasDd();
+            updateDailyTradingInfoService.tradingInfoInsertRollback(tradingInfoDtos.get(0).getBasDd());
+
+        }
         return RepeatStatus.FINISHED;
     }
 }

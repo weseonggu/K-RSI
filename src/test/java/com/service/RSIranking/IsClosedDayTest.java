@@ -5,6 +5,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
 public class IsClosedDayTest {
@@ -25,40 +30,25 @@ public class IsClosedDayTest {
     }
 
     @Test
-    public void test(){
-        Integer marketDay[] = {
-                20250602,
-                20250530,
-                20250529,
-                20250528,
-                20250527,
-                20250526,
-                20250523,
-                20250522,
-                20250521,
-                20250520,
-                20250519,
-                20250516,
-                20250515,
-                20250514,
-                20250513,
-                20250512,
-                20250509,
-                20250508,
-                20250507,
-                20250502,
-                20250501,
-                20250430,
-                20250429,
-                20250428,
-                20250425,
-                20250424,
-                20250423,
-                20250422};
-        for(Integer date : marketDay){
-            boolean isClosed = isClosedDay.isClosedDay(date.toString());
-            System.out.println("날짜: "+date+" "+isClosed);
+    public void testFindMarketDays() {
+        List<Integer> openMarketDays = new ArrayList<>();
+        LocalDate date = LocalDate.now().minusDays(1); // 어제부터 시작
+
+        while (openMarketDays.size() < 100) {
+            int formattedDate = Integer.parseInt(date.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+            boolean isClosed = isClosedDay.isClosedDay(String.valueOf(formattedDate));
+
+            if (!isClosed) {
+                openMarketDays.add(formattedDate);
+            }
+
+            date = date.minusDays(1);
         }
 
+        // 출력
+        System.out.println("최근 100일간의 거래일:");
+        for (Integer marketDay : openMarketDays) {
+            System.out.println(marketDay+",");
+        }
     }
 }

@@ -9,14 +9,18 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.CompletableFuture;
 
 @Configuration
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "scheduler.stockinfo.enabled", havingValue = "true", matchIfMissing = false)
 public class StockInfoLauncher {
 
 
@@ -27,7 +31,7 @@ public class StockInfoLauncher {
     private final DateUtil dateUtil;
     private final AsyncJobLanucher asyncJobLanucher;
 
-//    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
     public void infoUpdateSchedule() throws Exception{
 
         String yesterday = dateUtil.yesterday();
@@ -70,8 +74,34 @@ public class StockInfoLauncher {
 
 //        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), kosdaqJobParameters);
 
-        asyncJobLanucher.runKospiInfoJob(kospiJobParameters);
-        asyncJobLanucher.runKosdaqInfoJob(kosdaqJobParameters);
+        CompletableFuture<Void> kospiFuture = asyncJobLanucher.runKospiInfoJob(kospiJobParameters);
+        Thread.sleep(200);
+        CompletableFuture<Void> kosdaqFuture = asyncJobLanucher.runKosdaqInfoJob(kosdaqJobParameters);
+
+        // 모든 작업 완료를 기다림 (blocking)
+        CompletableFuture.allOf(kospiFuture, kosdaqFuture).get();
+
+
+        // 개별 완료 후 처리
+        kospiFuture.whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.info("KOSPI Stock Job 실패: " + ex.getMessage());
+            } else {
+                log.info("KOSPI Stock Job 완료");
+            }
+        });
+
+        kosdaqFuture.whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.info("KOSDAQ Stock Job 실패: " + ex.getMessage());
+            } else {
+                log.info("KOSDAQ Stock Job 완료");
+            }
+        });
+
+        // 또는 두 작업 모두 완료된 후 실행
+        CompletableFuture.allOf(kospiFuture, kosdaqFuture)
+                .thenRun(() -> log.info("모든 Stock 배치 작업 완료!"));
 
     }
 

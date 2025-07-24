@@ -7,6 +7,8 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.CompletableFuture;
+
 @Service
 @RequiredArgsConstructor
 public class AsyncJobLanucher {
@@ -15,22 +17,61 @@ public class AsyncJobLanucher {
     private final JobRegistry jobRegistry;
 
     @Async("asyncExecutor")
-    public void runKospiInfoJob(JobParameters parameters) throws Exception{
-        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
+    public CompletableFuture<Void> runKospiInfoJob(JobParameters parameters){
+        try {
+            jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
+            return CompletableFuture.completedFuture(null);
+        }catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
+
     }
 
     @Async("asyncExecutor")
-    public void runKosdaqInfoJob(JobParameters parameters) throws Exception{
-        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
+    public CompletableFuture<Void> runKosdaqInfoJob(JobParameters parameters){
+        try {
+            jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
+            return CompletableFuture.completedFuture(null);
+        }catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @Async("asyncExecutor")
-    public void runKospiTradingJob(JobParameters parameters) throws Exception{
+    public CompletableFuture<Void> runKospiTradingJob(JobParameters parameters){
+        try {
         jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
+            return CompletableFuture.completedFuture(null);
+        }catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @Async("asyncExecutor")
-    public void runKosdaqTradingJob(JobParameters parameters) throws Exception{
-        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
+    public CompletableFuture<Void> runKosdaqTradingJob(JobParameters parameters){
+        try {
+            jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
+            return CompletableFuture.completedFuture(null);
+        }catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+    @Async("asyncExecutor")
+    public CompletableFuture<Void> runKospiRSICalculationJob(JobParameters parameters){
+        try {
+            jobLauncher.run(jobRegistry.getJob("RSICalculationJob"), parameters);
+            return CompletableFuture.completedFuture(null);
+        }catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+    @Async("asyncExecutor")
+    public CompletableFuture<Void> runKosdaqRSICalculationJob(JobParameters parameters){
+        try {
+            jobLauncher.run(jobRegistry.getJob("RSICalculationJob"), parameters);
+            return CompletableFuture.completedFuture(null);
+        }catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
     }
 }

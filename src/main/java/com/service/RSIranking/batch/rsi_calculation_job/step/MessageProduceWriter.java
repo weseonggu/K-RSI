@@ -2,17 +2,21 @@ package com.service.RSIranking.batch.rsi_calculation_job.step;
 
 import com.service.RSIranking.dto.RSIMessageDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+@StepScope
+@Component
 @Slf4j
 public class MessageProduceWriter implements ItemWriter<RSIMessageDTO> {
 
@@ -20,7 +24,7 @@ public class MessageProduceWriter implements ItemWriter<RSIMessageDTO> {
     private static final String STREAM_KEY = "rsi:calculation:stream:";
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    public MessageProduceWriter(RedisTemplate redisTemplate){
+    public MessageProduceWriter(@Qualifier("rsiMessageRedisTemplate")RedisTemplate redisTemplate){
         this.redisTemplate = redisTemplate;
     }
 

@@ -3,6 +3,7 @@ package com.service.RSIranking.consumer;
 import com.service.RSIranking.service.RSICalculationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@ConditionalOnProperty(name = "scheduler.rsiconsumer.enabled", havingValue = "true", matchIfMissing = false)
 public class RSICalCulationConsumer {
 
     private final RedisTemplate<String, Object> redisTemplate;

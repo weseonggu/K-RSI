@@ -28,7 +28,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
 
     private List<StockDto> dtoList;
     private int del =0;
-
+    private String mktNm;
 
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedis;
     private final StockBulkInsertService stockBulkInsertService;
@@ -40,6 +40,9 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
             final JobExecution jobExecution = stepExecution.getJobExecution();
             final ExecutionContext jobContext = jobExecution.getExecutionContext();
             String redisKey = (String) jobContext.get("StockDtoList");
+
+            JobParameters jobParameters = stepExecution.getJobParameters();
+            this.mktNm = jobParameters.getString("mktNm");
 
             this.dtoList = interStepDataSharingWithRedis
                     .getStockToRedis(redisKey, new TypeReference<List<StockDto>>() {})
@@ -98,11 +101,10 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
                 .filter(dto -> !dto.isChecked())
                 .collect(Collectors.toList());
         if(newStockDtos.isEmpty()){
-            log.info("종목: "+ del + "개 폐지");
-            log.info("신규 종목 추가 없음");
+            log.info(mktNm + ": 종목: "+ del + "개 폐지");
+            log.info(mktNm + ": 신규 종목 추가 없음");
             return ExitStatus.COMPLETED;
         }
-        String mktNm = newStockDtos.get(0).getMktNm();
         List<StockInfoEntity> newStockEntities = null;
         // 코스피, 코스닥 분기 처리
         if(mktNm.equals("KOSPI")){

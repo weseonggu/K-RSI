@@ -54,7 +54,7 @@ public class GetStockInfoToDBReader implements ItemReader<StockInfoEntity>, Item
         this.stepExecution = stepExecution;
         JobParameters jobParameters = stepExecution.getJobParameters();
         this.mktNm = jobParameters.getString("mktNm");
-        this.pageSize = 10; // todo 임시 청크 사이즈
+        this.pageSize = 50; // todo 임시 청크 사이즈
     }
 
     @Override

@@ -7,14 +7,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
+@StepScope
+@Component
 @RequiredArgsConstructor
 @Slf4j
 public class RSIMessageMakeProccess implements ItemProcessor<StockInfoEntity, RSIMessageDTO> {
@@ -36,9 +39,7 @@ public class RSIMessageMakeProccess implements ItemProcessor<StockInfoEntity, RS
 
     @Override
     public RSIMessageDTO process(StockInfoEntity item) throws Exception {
-        log.info("종목코드: " + item.getId() + " 종목 명: "+ item.getIsuNm() + " 메세지 생성 중");
         RSIMessageDTO messageDTO = new RSIMessageDTO(item.getId(), this.targetDate, this.mkt_nm, this.marketDate);
-        log.info("종목코드: " + item.getId() + " 종목 명: "+ item.getIsuNm() + " 메세지 생성 완료");
         return messageDTO;
     }
 

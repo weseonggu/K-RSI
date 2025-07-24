@@ -32,7 +32,7 @@ scheduler:
   rsiproducer:
     enabled: false
   rsiconsumer:
-    enabled: false
+    enabled: true
 
 
 server:

@@ -26,9 +26,9 @@ spring:
       timeout: 3000
 scheduler:
   stockinfo:
-    enabled: true
+    enabled: false
   dailytranding:
-    enabled: true
+    enabled: false
   rsiproducer:
     enabled: true
   rsiconsumer:

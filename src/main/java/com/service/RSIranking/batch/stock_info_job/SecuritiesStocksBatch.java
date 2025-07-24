@@ -88,7 +88,7 @@ public class SecuritiesStocksBatch {
     @Bean
     public Step updateDatabaseStep() {
         return new StepBuilder("updateDatabaseStep", jobRepository)
-                .<StockInfoEntity, StockInfoEntity>chunk(10, platformTransactionManager)
+                .<StockInfoEntity, StockInfoEntity>chunk(50, platformTransactionManager)
                 .reader(getStockInfoToDBReader)
                 .processor(compareAndUpdateProcessor) // 종목 데이터 비교 실행
                 .writer(updateStockInfoWriter)

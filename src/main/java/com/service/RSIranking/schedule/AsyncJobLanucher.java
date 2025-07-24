@@ -56,4 +56,22 @@ public class AsyncJobLanucher {
             return CompletableFuture.failedFuture(e);
         }
     }
+    @Async("asyncExecutor")
+    public CompletableFuture<Void> runKospiRSICalculationJob(JobParameters parameters){
+        try {
+            jobLauncher.run(jobRegistry.getJob("RSICalculationJob"), parameters);
+            return CompletableFuture.completedFuture(null);
+        }catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+    @Async("asyncExecutor")
+    public CompletableFuture<Void> runKosdaqRSICalculationJob(JobParameters parameters){
+        try {
+            jobLauncher.run(jobRegistry.getJob("RSICalculationJob"), parameters);
+            return CompletableFuture.completedFuture(null);
+        }catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
+    }
 }

@@ -2,7 +2,8 @@ package com.service.RSIranking.batch.stock_info_job.step;
 
 
 import com.service.RSIranking.entity.inter.StockInfoEntity;
-import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
+import com.service.RSIranking.repository.jpa.KosdaqStockRepository;
+import com.service.RSIranking.repository.jpa.KospiStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.Chunk;
@@ -15,7 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class UpdateStockInfoWriter implements ItemWriter<StockInfoEntity> {
 
-    private final SecuritiesStockRepository securitiesStockRepository;
+    private final KospiStockRepository kospiStockRepository;
+    private final KosdaqStockRepository kosdaqStockRepository;
 
     @Override
     @Transactional("dataTransactionManager")// 트랜잭션 매니저 빈 직접 지정해줘야함
@@ -29,12 +31,22 @@ public class UpdateStockInfoWriter implements ItemWriter<StockInfoEntity> {
                 }
                 // 이 repository는 위에서 정의한 update JPQL 메서드를 호출
                 log.info(entity.getId() + "변경사항 저장");
-                securitiesStockRepository.updateStockInfoByCode(
-                        entity.getId(),
-                        entity.getIsuNm(),
-                        entity.getMktNm(),
-                        entity.getIsPublicStock()
-                );
+                // 코스피, 코스닥 분기 처리
+                if(entity.getMktNm().equals("KOSPI")){
+                    kospiStockRepository.updateStockInfoByCode(
+                            entity.getId(),
+                            entity.getIsuNm(),
+                            entity.getMktNm(),
+                            entity.getIsPublicStock()
+                    );
+                }else{
+                    kosdaqStockRepository.updateStockInfoByCode(
+                            entity.getId(),
+                            entity.getIsuNm(),
+                            entity.getMktNm(),
+                            entity.getIsPublicStock()
+                    );
+                }
             } // 실제 DB 저장
             log.info("DB업데이트 끝");
         } catch (Exception e) {

@@ -3,7 +3,7 @@ package com.service.RSIranking.service;
 import com.service.RSIranking.entity.DailyTradingInformation;
 import com.service.RSIranking.repository.jdbc.DailyTradingInformationJDBCRepository;
 import com.service.RSIranking.repository.jpa.DailyTradingInformationRepository;
-import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
+import com.service.RSIranking.repository.jpa.KospiStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ public class RSICalculationService {
 
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
     private final DailyTradingInformationJDBCRepository dailyTradingJDBCRepository;
-    private final SecuritiesStockRepository securitiesStockRepository;
+    private final KospiStockRepository kospiStockRepository;
     private final DailyTradingInformationRepository dailyTradingInformationRepository;
 
     /**
@@ -105,7 +105,7 @@ public class RSICalculationService {
     @Transactional
     public void updateTradingInfo(String isuCD, String targetDate, Double Ag, Double Al, Double RSI) throws  RuntimeException{
         LocalDate date = LocalDate.parse(targetDate, formatter);
-        DailyTradingInformation dailyInfo = securitiesStockRepository.findTradingInfoWithStock(isuCD, date)
+        DailyTradingInformation dailyInfo = kospiStockRepository.findTradingInfoWithStock(isuCD, date)
                 .orElseThrow(()-> new NoSuchElementException());
         log.info("종목: "+dailyInfo.getStock().getId());
         dailyInfo.updateRSIInfo(Ag,Al,RSI);

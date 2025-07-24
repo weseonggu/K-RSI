@@ -15,7 +15,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 @Repository
-public interface SecuritiesStockRepository extends JpaRepository<KospiStockInfoEntity, String> {
+public interface KospiStockRepository extends JpaRepository<KospiStockInfoEntity, String> {
     Page<KospiStockInfoEntity> findAll(Pageable pageable);
     Page<StockInfoEntity> findByMktNmAndIsPublicStockTrue(String mktNm, Pageable pageable);
     @Query("""
@@ -31,7 +31,7 @@ public interface SecuritiesStockRepository extends JpaRepository<KospiStockInfoE
     );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE StockInfoEntity s SET s.isuNm = :isuNm, s.mktNm = :mktNm, s.isPublicStock = :isPublicStock WHERE s.id = :id")
+    @Query("UPDATE KospiStockInfoEntity s SET s.isuNm = :isuNm, s.mktNm = :mktNm, s.isPublicStock = :isPublicStock WHERE s.id = :id")
     int updateStockInfoByCode(@Param("id") String id,
                               @Param("isuNm") String isuNm,
                               @Param("mktNm") String mktNm,

@@ -6,8 +6,11 @@ import com.service.RSIranking.schedule.StockInfoLauncher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Profile;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
+@ActiveProfiles("dev")
 public class BatchTest {
 
     @Autowired
@@ -16,7 +19,7 @@ public class BatchTest {
     @Test
     public void stockInfoUpdateTest(){
         try {
-            stockInfoLauncher.infoUpdateJobLauncher("20250715");
+            stockInfoLauncher.infoUpdateJobLauncher("20250723");
         }catch (Exception e){
             System.out.println(e.getMessage());
         }

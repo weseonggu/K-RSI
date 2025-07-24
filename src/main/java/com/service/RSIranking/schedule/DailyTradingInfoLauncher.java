@@ -9,7 +9,9 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -19,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 @Configuration
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "scheduler.dailytranding.enabled", havingValue = "true", matchIfMissing = false)
 public class DailyTradingInfoLauncher {
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
@@ -27,7 +30,7 @@ public class DailyTradingInfoLauncher {
     private final IsClosedDay isClosedDay;
     private final AsyncJobLanucher asyncJobLanucher;
 
-//    @Scheduled(cron = "45 * * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "30 * * * * *", zone = "Asia/Seoul")
     public void dailyTradingInfoSchedule() throws Exception{
 
         String yesterday = dateUtil.yesterday();

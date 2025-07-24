@@ -10,6 +10,8 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "scheduler.rsiproducer.enabled", havingValue = "true", matchIfMissing = false)
 public class RSICalculationLauncher {
 
     private final JobLauncher jobLauncher;
@@ -31,13 +34,12 @@ public class RSICalculationLauncher {
     private final IsClosedDay isClosedDay;
     private final MarketDayForTheLast14Days marketDayForTheLast14Days;
 
-//    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "50 * * * * *", zone = "Asia/Seoul")
     public void RSICalculationSchedule() throws Exception {
         String yesterday = dateUtil.yesterday();
         executeRSICalculation(yesterday);
     }
 
-//    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
     public void executeRSICalculation(String date) throws Exception {
 
         String yesterday = date;

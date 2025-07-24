@@ -9,7 +9,9 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -18,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 @Configuration
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "scheduler.stockinfo.enabled", havingValue = "true", matchIfMissing = false)
 public class StockInfoLauncher {
 
 
@@ -28,7 +31,7 @@ public class StockInfoLauncher {
     private final DateUtil dateUtil;
     private final AsyncJobLanucher asyncJobLanucher;
 
-//    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
     public void infoUpdateSchedule() throws Exception{
 
         String yesterday = dateUtil.yesterday();

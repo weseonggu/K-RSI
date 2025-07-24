@@ -1,4 +1,4 @@
-package com.service.RSIranking;
+package com.service.RSIranking.batch_test;
 
 import com.service.RSIranking.schedule.DailyTradingInfoLauncher;
 import com.service.RSIranking.schedule.RSICalculationLauncher;
@@ -6,12 +6,11 @@ import com.service.RSIranking.schedule.StockInfoLauncher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
-@ActiveProfiles("dev")
-public class BatchTest {
+@ActiveProfiles("test")
+public class StockInfoBatchTest {
 
     @Autowired
     private StockInfoLauncher stockInfoLauncher;
@@ -25,60 +24,7 @@ public class BatchTest {
         }
 
     }
-
-    @Autowired
-    private DailyTradingInfoLauncher dailyTradingInfoLauncher;
-    // 매매데이터 수집
-    @Test
-    public void tradingIngoUpdateTest() {
-
-        long startTime = System.nanoTime(); // 시작 시간 측정
-
-        try {
-            for (Integer date : marketDay) {
-                dailyTradingInfoLauncher.dailyTradingInfoJobLauncher(date.toString());
-                Thread.sleep(1000);
-            }
-        } catch (Exception e) {
-            System.out.println("예외 발생: " + e.getMessage());
-        }
-
-        long endTime = System.nanoTime(); // 종료 시간 측정
-        long durationInMillis = (endTime - startTime) / 1_000_000;
-
-        long seconds = durationInMillis / 1000;
-        long minutes = seconds / 60;
-        long hours = minutes / 60;
-
-        seconds %= 60;
-        minutes %= 60;
-
-        System.out.println("업데이트한 날짜: " + marketDay.length);
-        System.out.println(String.format("총 실행 시간: %02d시간 %02d분 %02d초", hours, minutes, seconds));
-    }
-
-
-    @Autowired
-    private RSICalculationLauncher rsiCalculationLauncher;
-    // RSI 프로듀서 메세지 생성
-    @Test
-    public void rsiProducerTest(){
-        Integer marketDay[] = {
-                20250611
-        };
-
-        try {
-            for(Integer date: marketDay){
-                rsiCalculationLauncher.executeRSICalculation(date.toString());
-                Thread.sleep(500);
-            }
-
-        }catch (Exception e){
-
-        }
-    }
-
-    private Integer[] marketDay = {
+    public static final Integer[] marketDay = {
             20250715,
             20250714,
             20250711,

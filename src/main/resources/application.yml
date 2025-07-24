@@ -3,4 +3,5 @@ spring:
     group:
       dev: dev
       prod: prod
+      test: test
     active: :dev

@@ -1,6 +1,7 @@
 package com.service.RSIranking.service;
 
 import com.service.RSIranking.dto.TradingInfoDto;
+import com.service.RSIranking.entity.KosdaqDailyTradingInformation;
 import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import com.service.RSIranking.repository.jdbc.DailyTradingInformationJDBCRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,14 +26,38 @@ public class UpdateDailyTradingInfoService {
     private final DailyTradingInformationJDBCRepository dailyTradingInformationJDBCRepository;
 
     /**
-     * 일별 매매 정보 업데이트
+     * 코스피 일별 매매 정보 업데이트
      * @param tradingInfoDtos 일별 매매정보
      */
     @Async("dailtTrandingExecutor")
-    public CompletableFuture<Void> tradingInfoInsert(List<KospiDailyTradingInformation> tradingInfoDtos, List<TradingInfoDto> baseDto){
+    public CompletableFuture<Void> kospiTradingInfoInsert(List<KospiDailyTradingInformation> tradingInfoDtos, List<TradingInfoDto> baseDto){
         try{
 
-            dailyTradingInformationJDBCRepository.bulkInsert(tradingInfoDtos, baseDto);
+            dailyTradingInformationJDBCRepository.kospiBulkInsert(tradingInfoDtos, baseDto);
+            return CompletableFuture.completedFuture(null);
+
+        }catch (SQLIntegrityConstraintViolationException e){
+            log.info("이미 저장된 데이터 입니다.");
+            return CompletableFuture.failedFuture(e);
+        }
+        catch (RuntimeException e){
+            log.info("이미 저장된 데이터 입니다.");
+            return CompletableFuture.failedFuture(e);
+        }
+        catch (Exception e){
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    /**
+     * 코스닥 일별 매매 정보 업데이트
+     * @param tradingInfoDtos 일별 매매정보
+     */
+    @Async("dailtTrandingExecutor")
+    public CompletableFuture<Void> kosdaqTradingInfoInsert(List<KosdaqDailyTradingInformation> tradingInfoDtos, List<TradingInfoDto> baseDto){
+        try{
+
+            dailyTradingInformationJDBCRepository.kosdaqBulkInsert(tradingInfoDtos, baseDto);
             return CompletableFuture.completedFuture(null);
 
         }catch (SQLIntegrityConstraintViolationException e){
@@ -50,7 +75,7 @@ public class UpdateDailyTradingInfoService {
 //=======================================================롤백=========================================================
 
     /**
-     * 일일 매매 정보 롤백
+     * 코스피 일일 매매 정보 롤백
      * @param date
      */
     @Retryable(recover = "failToRollback",
@@ -58,11 +83,30 @@ public class UpdateDailyTradingInfoService {
                     RuntimeException.class
             }
             , maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public void tradingInfoInsertRollback(String date){
+    public void kospiTradingInfoInsertRollback(String date){
         try{
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
             LocalDate localDate = LocalDate.parse(date, formatter);
-            dailyTradingInformationJDBCRepository.insertRollback(localDate);
+            dailyTradingInformationJDBCRepository.kospiInsertRollback(localDate);
+        }catch (Exception e){
+            throw new RuntimeException("일일 매매 롤백 예외 발생"+e);
+        }
+    }
+
+    /**
+     * 코스닥 일일 매매 정보 롤백
+     * @param date
+     */
+    @Retryable(recover = "failToRollback",
+            retryFor = {
+                    RuntimeException.class
+            }
+            , maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    public void kosdaqTradingInfoInsertRollback(String date){
+        try{
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+            LocalDate localDate = LocalDate.parse(date, formatter);
+            dailyTradingInformationJDBCRepository.kosdaqInsertRollback(localDate);
         }catch (Exception e){
             throw new RuntimeException("일일 매매 롤백 예외 발생"+e);
         }

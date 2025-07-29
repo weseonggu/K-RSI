@@ -2,14 +2,13 @@ package com.service.RSIranking.entity;
 
 import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.entity.inter.StockInfoEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -35,8 +34,8 @@ public class KosdaqStockInfoEntity implements StockInfoEntity {
 
     //==============================================================================
 
-//    @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    private List<DailyTradingInformation> tradingInfo;
+    @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<KosdaqDailyTradingInformation> tradingInfo;
 
     //==============================================================================
 

@@ -1,8 +1,7 @@
 package com.service.RSIranking.service;
 
-import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.dto.TradingInfoDto;
-import com.service.RSIranking.entity.DailyTradingInformation;
+import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import com.service.RSIranking.repository.jdbc.DailyTradingInformationJDBCRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +10,6 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDate;
@@ -31,7 +29,7 @@ public class UpdateDailyTradingInfoService {
      * @param tradingInfoDtos 일별 매매정보
      */
     @Async("dailtTrandingExecutor")
-    public CompletableFuture<Void> tradingInfoInsert(List<DailyTradingInformation> tradingInfoDtos, List<TradingInfoDto> baseDto){
+    public CompletableFuture<Void> tradingInfoInsert(List<KospiDailyTradingInformation> tradingInfoDtos, List<TradingInfoDto> baseDto){
         try{
 
             dailyTradingInformationJDBCRepository.bulkInsert(tradingInfoDtos, baseDto);

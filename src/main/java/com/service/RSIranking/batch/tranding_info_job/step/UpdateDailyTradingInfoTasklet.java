@@ -2,7 +2,7 @@ package com.service.RSIranking.batch.tranding_info_job.step;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.TradingInfoDto;
-import com.service.RSIranking.entity.DailyTradingInformation;
+import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.UpdateDailyTradingInfoService;
 import lombok.RequiredArgsConstructor;
@@ -53,17 +53,17 @@ public class UpdateDailyTradingInfoTasklet implements Tasklet {
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
         // 레디스에서 가져온 데이터 엔티티로 변환
-        List<DailyTradingInformation> dailyTradingInformationList = tradingInfoDtos.stream()
-                .map(DailyTradingInformation::new)
+        List<KospiDailyTradingInformation> kospiDailyTradingInformationList = tradingInfoDtos.stream()
+                .map(KospiDailyTradingInformation::new)
                 .collect(Collectors.toList());
         // todo 병렬 작업할 데이터 수 정하기 설정 파일에서 값가져 오도록 변경하기
         int batchSize = 100;
         // 비동기 병렬 처리한 결과 저장
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         // 비동기 병렬 반복문
-        for (int i = 0; i < dailyTradingInformationList.size(); i += batchSize) {
-            int end = Math.min(i + batchSize, dailyTradingInformationList.size());
-            List<DailyTradingInformation> subList = dailyTradingInformationList.subList(i, end);
+        for (int i = 0; i < kospiDailyTradingInformationList.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, kospiDailyTradingInformationList.size());
+            List<KospiDailyTradingInformation> subList = kospiDailyTradingInformationList.subList(i, end);
             List<TradingInfoDto> subDtoList = tradingInfoDtos.subList(i, end);
             futures.add(updateDailyTradingInfoService.tradingInfoInsert(subList, subDtoList));
         }

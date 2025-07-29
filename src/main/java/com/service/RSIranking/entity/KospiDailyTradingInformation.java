@@ -1,6 +1,8 @@
 package com.service.RSIranking.entity;
 
 import com.service.RSIranking.dto.TradingInfoDto;
+import com.service.RSIranking.entity.inter.DailyTradingInformation;
+import com.service.RSIranking.entity.inter.StockInfoEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +23,7 @@ import java.time.format.DateTimeFormatter;
                 @UniqueConstraint(columnNames = {"date", "isu_cd"})
         }
 )
-public class DailyTradingInformation implements com.service.RSIranking.entity.inter.DailyTradingInformation {
+public class KospiDailyTradingInformation implements DailyTradingInformation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -67,12 +69,12 @@ public class DailyTradingInformation implements com.service.RSIranking.entity.in
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "isu_cd")
-    private StockInfoEntity stock;
+    private KospiStockInfoEntity stock;
 
     //================================================================
 
     // dto -> entity로 변경하기
-    public DailyTradingInformation(TradingInfoDto dto){
+    public KospiDailyTradingInformation(TradingInfoDto dto){
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         this.date = LocalDate.parse(dto.getBasDd(),formatter);
         this.tddClsprc = Integer.parseInt(dto.getTddClsprc());

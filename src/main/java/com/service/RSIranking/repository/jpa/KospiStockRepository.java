@@ -1,6 +1,6 @@
 package com.service.RSIranking.repository.jpa;
 
-import com.service.RSIranking.entity.DailyTradingInformation;
+import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import com.service.RSIranking.entity.KospiStockInfoEntity;
 import com.service.RSIranking.entity.inter.StockInfoEntity;
 import org.springframework.data.domain.Page;
@@ -25,7 +25,7 @@ public interface KospiStockRepository extends JpaRepository<KospiStockInfoEntity
         WHERE s.id = :isuCd 
         AND t.date = :date
         """)
-    Optional<DailyTradingInformation> findTradingInfoWithStock(
+    Optional<KospiDailyTradingInformation> findTradingInfoWithStock(
             @Param("isuCd") String isuCd,
             @Param("date") LocalDate date
     );

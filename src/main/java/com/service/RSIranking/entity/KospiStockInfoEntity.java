@@ -33,8 +33,8 @@ public class KospiStockInfoEntity implements StockInfoEntity {
 
     //==============================================================================
 
-//    @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    private List<DailyTradingInformation> tradingInfo;
+    @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<KospiDailyTradingInformation> tradingInfo;
 
     //==============================================================================
 

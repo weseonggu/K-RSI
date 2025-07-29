@@ -1,6 +1,6 @@
 package com.service.RSIranking.service;
 
-import com.service.RSIranking.entity.DailyTradingInformation;
+import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import com.service.RSIranking.repository.jdbc.DailyTradingInformationJDBCRepository;
 import com.service.RSIranking.repository.jpa.DailyTradingInformationRepository;
 import com.service.RSIranking.repository.jpa.KospiStockRepository;
@@ -47,7 +47,7 @@ public class RSICalculationService {
         dates.addAll(marketDates);
 
         // 종목 코드와 14일 날짜를 사용해서 매매 정보 조회 JDBC사용
-        List<DailyTradingInformation> tradingInfo = dailyTradingJDBCRepository.findByIsuCdAndDateIn(isuCd, dates);
+        List<KospiDailyTradingInformation> tradingInfo = dailyTradingJDBCRepository.findByIsuCdAndDateIn(isuCd, dates);
 
         // tradingInfo의 사이즈가 14이면 메세지 처리 안함 신규 종목이여서
         if(tradingInfo.size() != 14){
@@ -105,9 +105,9 @@ public class RSICalculationService {
     @Transactional
     public void updateTradingInfo(String isuCD, String targetDate, Double Ag, Double Al, Double RSI) throws  RuntimeException{
         LocalDate date = LocalDate.parse(targetDate, formatter);
-        DailyTradingInformation dailyInfo = kospiStockRepository.findTradingInfoWithStock(isuCD, date)
+        KospiDailyTradingInformation dailyInfo = kospiStockRepository.findTradingInfoWithStock(isuCD, date)
                 .orElseThrow(()-> new NoSuchElementException());
-        log.info("종목: "+dailyInfo.getStock().getId());
+//        log.info("종목: "+dailyInfo.getStock().getId());
         dailyInfo.updateRSIInfo(Ag,Al,RSI);
         dailyTradingInformationRepository.save(dailyInfo);
     }
@@ -121,13 +121,13 @@ public class RSICalculationService {
      * @return T/F
      * @throws NoSuchElementException
      */
-    private boolean findYesterdayAvgClosedInfo(LocalDate yesterday, List<DailyTradingInformation> tradingInfo) throws NoSuchElementException{
-        Optional<DailyTradingInformation> targetData = tradingInfo.stream()
+    private boolean findYesterdayAvgClosedInfo(LocalDate yesterday, List<KospiDailyTradingInformation> tradingInfo) throws NoSuchElementException{
+        Optional<KospiDailyTradingInformation> targetData = tradingInfo.stream()
                 .filter(info -> info.getDate().equals(yesterday))
                 .findFirst();
 
         if (targetData.isPresent()) {
-            DailyTradingInformation data = targetData.get();
+            KospiDailyTradingInformation data = targetData.get();
             if(data.getAvgClosingGain() == null || data.getAvgClosingLoss() == null){
                 return true;
             }else {
@@ -139,7 +139,7 @@ public class RSICalculationService {
         }
     }
     //=================================== 거래 정지 확인=============================================
-    private boolean areAllFieldsZero(List<DailyTradingInformation> tradingInfoList) {
+    private boolean areAllFieldsZero(List<KospiDailyTradingInformation> tradingInfoList) {
         return tradingInfoList.stream().allMatch(info ->
                 info.getCmpprevddPrc() == 0 &&
                         info.getFlucRt() == 0 &&
@@ -153,10 +153,10 @@ public class RSICalculationService {
      * @param datas 데이터
      * @return Average Gain
      */
-    private Double simpleAGCalculation(List<DailyTradingInformation> datas){
+    private Double simpleAGCalculation(List<KospiDailyTradingInformation> datas){
         Double avg = 0.0;
         Double sum = 0.0;
-        for(DailyTradingInformation data : datas){
+        for(KospiDailyTradingInformation data : datas){
             if(data.getCmpprevddPrc()>=0){
                 sum += data.getCmpprevddPrc();
             }
@@ -169,7 +169,7 @@ public class RSICalculationService {
      * @param datas 데이터
      * @return Welles Wilder Average Gain
      */
-    private Double agCalculationWellesWilder(List<DailyTradingInformation> datas){
+    private Double agCalculationWellesWilder(List<KospiDailyTradingInformation> datas){
         Double avg = 0.0;
         Double cmpprevddPrc = datas.get(0).getCmpprevddPrc() > 0 ? datas.get(0).getCmpprevddPrc() : 0.0;
         Double sum = (datas.get(1).getAvgClosingGain()*13) + cmpprevddPrc;
@@ -182,10 +182,10 @@ public class RSICalculationService {
      * @param datas 데이터
      * @return Average Loss
      */
-    private Double simpleALCalculation(List<DailyTradingInformation> datas){
+    private Double simpleALCalculation(List<KospiDailyTradingInformation> datas){
         Double avg = 0.0;
         Double sum = 0.0;
-        for(DailyTradingInformation data : datas){
+        for(KospiDailyTradingInformation data : datas){
             if(data.getCmpprevddPrc()<=0){
                 sum += data.getCmpprevddPrc()*-1;
             }
@@ -198,7 +198,7 @@ public class RSICalculationService {
      * @param datas 데이터
      * @return Average Loss
      */
-    private Double alCalculationWellesWilder(List<DailyTradingInformation> datas){
+    private Double alCalculationWellesWilder(List<KospiDailyTradingInformation> datas){
         Double avg = 0.0;
         Double cmpprevddPrc = datas.get(0).getCmpprevddPrc() < 0 ? datas.get(0).getCmpprevddPrc()*-1 : 0.0;
         Double sum = (datas.get(1).getAvgClosingLoss()*13) + cmpprevddPrc;

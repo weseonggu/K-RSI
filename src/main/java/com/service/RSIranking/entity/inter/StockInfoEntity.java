@@ -1,9 +1,6 @@
 package com.service.RSIranking.entity.inter;
 
 import com.service.RSIranking.dto.StockDto;
-import com.service.RSIranking.entity.DailyTradingInformation;
-
-import java.util.List;
 
 public interface StockInfoEntity {
 

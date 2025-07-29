@@ -1,7 +1,7 @@
 package com.service.RSIranking.repository.jdbc;
 
 import com.service.RSIranking.dto.TradingInfoDto;
-import com.service.RSIranking.entity.DailyTradingInformation;
+import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -31,7 +31,7 @@ public class DailyTradingInformationJDBCRepository {
      * @param baseInfoDtos
      * @throws Exception
      */
-    public void bulkInsert(List<DailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
+    public void bulkInsert(List<KospiDailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
         String sql =
                 """
                 INSERT INTO daily_trading_information
@@ -43,7 +43,7 @@ public class DailyTradingInformationJDBCRepository {
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
-                DailyTradingInformation stock = newTradingInfo.get(i);
+                KospiDailyTradingInformation stock = newTradingInfo.get(i);
                 TradingInfoDto dto = baseInfoDtos.get(i);
 
                 ps.setDate(1, Date.valueOf(stock.getDate()));
@@ -72,7 +72,7 @@ public class DailyTradingInformationJDBCRepository {
      * @param dates
      * @return
      */
-    public List<DailyTradingInformation> findByIsuCdAndDateIn(String isuCd, List<LocalDate> dates) {
+    public List<KospiDailyTradingInformation> findByIsuCdAndDateIn(String isuCd, List<LocalDate> dates) {
         if (dates == null || dates.isEmpty()) {
             return Collections.emptyList();
         }
@@ -95,7 +95,7 @@ public class DailyTradingInformationJDBCRepository {
         params.addAll(dates);
 
         return jdbcTemplate.query(sql, params.toArray(), (rs, rowNum) -> {
-            return DailyTradingInformation.builder()
+            return KospiDailyTradingInformation.builder()
                     .id(rs.getLong("id"))
                     .date(rs.getDate("date").toLocalDate())
                     .tddClsprc(rs.getInt("tdd_clsprc"))

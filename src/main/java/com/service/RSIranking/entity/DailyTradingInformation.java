@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter;
 @Getter
 @Builder
 @Table(
-        name = "kospi_daily_trading_information",
+        name = "daily_trading_information",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"date", "isu_cd"})
         }

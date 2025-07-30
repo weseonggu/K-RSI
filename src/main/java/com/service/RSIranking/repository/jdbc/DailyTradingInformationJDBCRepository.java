@@ -38,7 +38,7 @@ public class DailyTradingInformationJDBCRepository {
                 INSERT INTO kospi_daily_trading_information
                 (date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc, acc_trdvol, acc_trdval, isu_cd)
                 SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS
-                ( SELECT isu_cd FROM stock_info s WHERE s.isu_cd = ?)
+                ( SELECT isu_cd FROM kospi_stock_info s WHERE s.isu_cd = ?)
                 """;
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
@@ -78,7 +78,7 @@ public class DailyTradingInformationJDBCRepository {
                 INSERT INTO kosdaq_daily_trading_information
                 (date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc, acc_trdvol, acc_trdval, isu_cd)
                 SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS
-                ( SELECT isu_cd FROM stock_info s WHERE s.isu_cd = ?)
+                ( SELECT isu_cd FROM kosdaq_stock_info s WHERE s.isu_cd = ?)
                 """;
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {

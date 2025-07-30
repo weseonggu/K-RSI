@@ -45,6 +45,7 @@ public class UpdateDailyTradingInfoService {
             return CompletableFuture.failedFuture(e);
         }
         catch (Exception e){
+            log.info("예상치 못한 데이터 저장 문제 발생");
             return CompletableFuture.failedFuture(e);
         }
     }
@@ -69,6 +70,7 @@ public class UpdateDailyTradingInfoService {
             return CompletableFuture.failedFuture(e);
         }
         catch (Exception e){
+            log.info("예상치 못한 데이터 저장 문제 발생");
             return CompletableFuture.failedFuture(e);
         }
     }

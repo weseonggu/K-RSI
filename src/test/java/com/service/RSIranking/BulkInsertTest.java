@@ -1,6 +1,6 @@
 package com.service.RSIranking;
 
-import com.service.RSIranking.repository.jdbc.SecuritiesStockJDBCRepository;
+import com.service.RSIranking.repository.jdbc.StockJDBCRepository;
 import com.service.RSIranking.service.StockBulkInsertService;
 import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +13,7 @@ public class BulkInsertTest {
     private StockBulkInsertService stockBulkInsertService;
 
     @Autowired
-    private SecuritiesStockJDBCRepository securitiesStockJDBCRepository;
+    private StockJDBCRepository stockJDBCRepository;
 
 //    @Test
 //    void bulkInsertRollbackTest() {

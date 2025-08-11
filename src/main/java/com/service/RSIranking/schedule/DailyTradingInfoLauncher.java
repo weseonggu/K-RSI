@@ -30,7 +30,7 @@ public class DailyTradingInfoLauncher {
     private final IsClosedDay isClosedDay;
     private final AsyncJobLanucher asyncJobLanucher;
 
-    @Scheduled(cron = "30 * * * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "30 * * * * *", zone = "Asia/Seoul")
     public void dailyTradingInfoSchedule() throws Exception{
 
         String yesterday = dateUtil.yesterday();

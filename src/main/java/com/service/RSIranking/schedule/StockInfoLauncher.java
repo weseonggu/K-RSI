@@ -31,7 +31,7 @@ public class StockInfoLauncher {
     private final DateUtil dateUtil;
     private final AsyncJobLanucher asyncJobLanucher;
 
-    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "5 * * * * *", zone = "Asia/Seoul")
     public void infoUpdateSchedule() throws Exception{
 
         String yesterday = dateUtil.yesterday();

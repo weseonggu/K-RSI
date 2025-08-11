@@ -1,7 +1,8 @@
 package com.service.RSIranking.batch.rsi_calculation_job.step;
 
 import com.service.RSIranking.dto.RSIMessageDTO;
-import com.service.RSIranking.entity.StockInfoEntity;
+
+import com.service.RSIranking.entity.inter.StockInfoEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;

@@ -5,6 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -12,20 +13,21 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import javax.sql.DataSource;
 
 @Configuration
+@Profile({"dev", "prod", "test"})
 @EnableJdbcRepositories(
         basePackages = "com.yourpackage.repository",
         jdbcOperationsRef = "jdbcDataJdbcOperations"
 )
 public class JDBCDataDBConfig {
-
-    @Bean(name = "jdbcDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource-data")
-    public DataSource dataSource() {
-        return DataSourceBuilder.create().build();
-    }
+// data source 하나로 변경으로인한 미사용 주석 처리
+//    @Bean(name = "jdbcDataSource")
+//    @ConfigurationProperties(prefix = "spring.datasource-data")
+//    public DataSource dataSource() {
+//        return DataSourceBuilder.create().build();
+//    }
 
     @Bean(name = "jdbcDataTemplate")
-    public JdbcTemplate jdbcTemplate(@Qualifier("jdbcDataSource") DataSource dataSource) {
+    public JdbcTemplate jdbcTemplate(@Qualifier("dataDBSource") DataSource dataSource) {
         return new JdbcTemplate(dataSource);
     }
 

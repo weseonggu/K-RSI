@@ -1,7 +1,9 @@
 package com.service.RSIranking.batch.stock_info_job.step;
 
-import com.service.RSIranking.entity.StockInfoEntity;
-import com.service.RSIranking.repository.jpa.SecuritiesStockRepository;
+
+import com.service.RSIranking.entity.inter.StockInfoEntity;
+import com.service.RSIranking.repository.jpa.KosdaqStockRepository;
+import com.service.RSIranking.repository.jpa.KospiStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
@@ -29,7 +31,8 @@ public class GetStockInfoToDBReader implements ItemReader<StockInfoEntity>, Item
     private int currentPage = 0;
     private Iterator<StockInfoEntity> currentIterator = null;
 
-    private final SecuritiesStockRepository securitiesStockRepository;
+    private final KospiStockRepository kospiStockRepository;
+    private final KosdaqStockRepository kosdaqStockRepository;
     private int pageSize;
 
     @Override
@@ -37,7 +40,15 @@ public class GetStockInfoToDBReader implements ItemReader<StockInfoEntity>, Item
         if (currentIterator == null || !currentIterator.hasNext()) {
             // 새 페이지 로드
             // todo 페이징 크기 chunk 크기와 같아야 하기 때문에 yml파일에서 관리하도록 변경이 필요
-            Page<StockInfoEntity> currentBatch = securitiesStockRepository.findByMktNmAndIsPublicStockTrue(mktNm, PageRequest.of(currentPage, pageSize));
+            Page<StockInfoEntity> currentBatch = null;
+            // 코스피, 코스닥 분기 처리
+            if(mktNm.equals("KOSPI")){
+                currentBatch = kospiStockRepository.findByMktNmAndIsPublicStockTrue(mktNm, PageRequest.of(currentPage, pageSize));
+            }else {
+                currentBatch = kosdaqStockRepository.findByMktNmAndIsPublicStockTrue(mktNm, PageRequest.of(currentPage, pageSize));
+            }
+
+
 
             if (currentBatch.isEmpty()) {
                 return null; // 더 이상 읽을 데이터 없음

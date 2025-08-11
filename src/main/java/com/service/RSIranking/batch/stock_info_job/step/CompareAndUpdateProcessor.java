@@ -2,7 +2,10 @@ package com.service.RSIranking.batch.stock_info_job.step;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.StockDto;
-import com.service.RSIranking.entity.StockInfoEntity;
+
+import com.service.RSIranking.entity.KosdaqStockInfoEntity;
+import com.service.RSIranking.entity.KospiStockInfoEntity;
+import com.service.RSIranking.entity.inter.StockInfoEntity;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.StockBulkInsertService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +27,8 @@ import java.util.stream.Collectors;
 public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity, StockInfoEntity>, StepExecutionListener {
 
     private List<StockDto> dtoList;
-
+    private int del =0;
+    private String mktNm;
 
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedis;
     private final StockBulkInsertService stockBulkInsertService;
@@ -36,6 +40,9 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
             final JobExecution jobExecution = stepExecution.getJobExecution();
             final ExecutionContext jobContext = jobExecution.getExecutionContext();
             String redisKey = (String) jobContext.get("StockDtoList");
+
+            JobParameters jobParameters = stepExecution.getJobParameters();
+            this.mktNm = jobParameters.getString("mktNm");
 
             this.dtoList = interStepDataSharingWithRedis
                     .getStockToRedis(redisKey, new TypeReference<List<StockDto>>() {})
@@ -74,6 +81,7 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
             // 삭제된 데이터 처리
             log.info(entity.getId()+" 상장폐지");
             entity.delistStock();
+            del++;
             return entity;
         }
     }
@@ -92,14 +100,31 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
         List<StockDto> newStockDtos = dtoList.stream()
                 .filter(dto -> !dto.isChecked())
                 .collect(Collectors.toList());
-
-        List<StockInfoEntity> newStockEntities = newStockDtos.stream()
-                .map(StockInfoEntity::new)
-                .collect(Collectors.toList());
-        log.info("신규 종목 추가: "+ newStockEntities.size() + "개 추가");
-        if (!newStockEntities.isEmpty()) {
-            stockBulkInsertService.stocksInsert(newStockEntities);
+        if(newStockDtos.isEmpty()){
+            log.info(mktNm + ": 종목: "+ del + "개 폐지");
+            log.info(mktNm + ": 신규 종목 추가 없음");
+            return ExitStatus.COMPLETED;
         }
+        List<StockInfoEntity> newStockEntities = null;
+        // 코스피, 코스닥 분기 처리
+        if(mktNm.equals("KOSPI")){
+            newStockEntities = newStockDtos.stream()
+                    .map(KospiStockInfoEntity::new)
+                    .collect(Collectors.toList());
+            if (!newStockEntities.isEmpty()) {
+                stockBulkInsertService.KospiStocksInsert(newStockEntities);
+            }
+        }else{
+            newStockEntities = newStockDtos.stream()
+                    .map(KosdaqStockInfoEntity::new)
+                    .collect(Collectors.toList());
+            if (!newStockEntities.isEmpty()) {
+                stockBulkInsertService.KosdaqStocksInsert(newStockEntities);
+            }
+        }
+        log.info(mktNm+": 종목: "+ del + "개 폐지");
+        log.info(mktNm+": 신규 종목 추가: "+ newStockEntities.size() + "개 추가");
+
 
         return ExitStatus.COMPLETED;
     }

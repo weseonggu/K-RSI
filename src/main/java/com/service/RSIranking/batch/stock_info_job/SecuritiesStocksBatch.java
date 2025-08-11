@@ -6,7 +6,8 @@ import com.service.RSIranking.batch.stock_info_job.step.CompareAndUpdateProcesso
 import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToDBReader;
 import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToKRXTasklet;
 import com.service.RSIranking.batch.stock_info_job.step.UpdateStockInfoWriter;
-import com.service.RSIranking.entity.StockInfoEntity;
+
+import com.service.RSIranking.entity.inter.StockInfoEntity;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;

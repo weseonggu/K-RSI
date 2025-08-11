@@ -1,7 +1,7 @@
 package com.service.RSIranking;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.service.RSIranking.entity.DailyTradingInformation;
+import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import com.service.RSIranking.repository.jdbc.DailyTradingInformationJDBCRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +35,8 @@ public class TradingDataSelect {
                 LocalDate.of(2025, 4, 22)
         );
         ObjectMapper mapper = new ObjectMapper();
-        List<DailyTradingInformation> infoList = dailyTradingInformationJDBCRepository.findByIsuCdAndDateIn("000020", dates);
-        for (DailyTradingInformation data : infoList){
+        List<KospiDailyTradingInformation> infoList = dailyTradingInformationJDBCRepository.findByIsuCdAndDateIn("000020", dates);
+        for (KospiDailyTradingInformation data : infoList){
             System.out.println(data.getId()+" "+data.getCmpprevddPrc()+" "+data.getFlucRt());
         }
     }

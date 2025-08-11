@@ -2,12 +2,14 @@ package com.service.RSIranking.batch.tranding_info_job.step;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.TradingInfoDto;
-import com.service.RSIranking.entity.DailyTradingInformation;
+import com.service.RSIranking.entity.KosdaqDailyTradingInformation;
+import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.UpdateDailyTradingInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 public class UpdateDailyTradingInfoTasklet implements Tasklet {
 
     private List<TradingInfoDto> tradingInfoDtos;
+    private String mktNm;
 
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedis;
     private final UpdateDailyTradingInfoService updateDailyTradingInfoService;
@@ -41,6 +44,8 @@ public class UpdateDailyTradingInfoTasklet implements Tasklet {
             final JobExecution jobExecution = stepExecution.getJobExecution();
             final ExecutionContext jobContext = jobExecution.getExecutionContext();
             String redisKey = (String) jobContext.get("DailyTradingInfo");
+            JobParameters jobParameters = stepExecution.getJobParameters();
+            this.mktNm = jobParameters.getString("mktNm");
 
             this.tradingInfoDtos = interStepDataSharingWithRedis
                     .getStockToRedis(redisKey, new TypeReference<List<TradingInfoDto>>() {})
@@ -52,32 +57,62 @@ public class UpdateDailyTradingInfoTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-        // 레디스에서 가져온 데이터 엔티티로 변환
-        List<DailyTradingInformation> dailyTradingInformationList = tradingInfoDtos.stream()
-                .map(DailyTradingInformation::new)
-                .collect(Collectors.toList());
-        // todo 병렬 작업할 데이터 수 정하기 설정 파일에서 값가져 오도록 변경하기
-        int batchSize = 100;
-        // 비동기 병렬 처리한 결과 저장
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        // 비동기 병렬 반복문
-        for (int i = 0; i < dailyTradingInformationList.size(); i += batchSize) {
-            int end = Math.min(i + batchSize, dailyTradingInformationList.size());
-            List<DailyTradingInformation> subList = dailyTradingInformationList.subList(i, end);
-            List<TradingInfoDto> subDtoList = tradingInfoDtos.subList(i, end);
-            futures.add(updateDailyTradingInfoService.tradingInfoInsert(subList, subDtoList));
-        }
-        try {
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
-            log.info("매매정보 병렬 저장 완료");
-        } catch (ExecutionException | InterruptedException e) {
-            // 예외 발생 시 전체 롤백
+        if(mktNm.equals("KOSPI")){
+            // 레디스에서 가져온 데이터 엔티티로 변환
+            List<KospiDailyTradingInformation> kospiDailyTradingInformationList = tradingInfoDtos.stream()
+                    .map(KospiDailyTradingInformation::new)
+                    .collect(Collectors.toList());
+            // todo 병렬 작업할 데이터 수 정하기 설정 파일에서 값가져 오도록 변경하기
+            int batchSize = 100;
+            // 비동기 병렬 처리한 결과 저장
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
+            // 비동기 병렬 반복문
+            for (int i = 0; i < kospiDailyTradingInformationList.size(); i += batchSize) {
+                int end = Math.min(i + batchSize, kospiDailyTradingInformationList.size());
+                List<KospiDailyTradingInformation> subList = kospiDailyTradingInformationList.subList(i, end);
+                List<TradingInfoDto> subDtoList = tradingInfoDtos.subList(i, end);
+                futures.add(updateDailyTradingInfoService.kospiTradingInfoInsert(subList, subDtoList));
+            }
+            try {
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+                log.info("매매정보 병렬 저장 완료");
+            } catch (ExecutionException | InterruptedException e) {
+                // 예외 발생 시 전체 롤백
 //            throw new RuntimeException("매매정보 비동기 저장 중 오류 발생, 전체 롤백", e);
-            log.info("매매정보 비동기 저장 중 오류 발생, 전체 롤백");
-            tradingInfoDtos.get(0).getBasDd();
-            updateDailyTradingInfoService.tradingInfoInsertRollback(tradingInfoDtos.get(0).getBasDd());
+                log.info("매매정보 비동기 저장 중 오류 발생, 전체 롤백");
+                tradingInfoDtos.get(0).getBasDd();
+                updateDailyTradingInfoService.kospiTradingInfoInsertRollback(tradingInfoDtos.get(0).getBasDd());
 
+            }
+        }else{
+            // 레디스에서 가져온 데이터 엔티티로 변환
+            List<KosdaqDailyTradingInformation> kosdaqDailyTradingInformationList = tradingInfoDtos.stream()
+                    .map(KosdaqDailyTradingInformation::new)
+                    .collect(Collectors.toList());
+            // todo 병렬 작업할 데이터 수 정하기 설정 파일에서 값가져 오도록 변경하기
+            int batchSize = 100;
+            // 비동기 병렬 처리한 결과 저장
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
+            // 비동기 병렬 반복문
+            for (int i = 0; i < kosdaqDailyTradingInformationList.size(); i += batchSize) {
+                int end = Math.min(i + batchSize, kosdaqDailyTradingInformationList.size());
+                List<KosdaqDailyTradingInformation> subList = kosdaqDailyTradingInformationList.subList(i, end);
+                List<TradingInfoDto> subDtoList = tradingInfoDtos.subList(i, end);
+                futures.add(updateDailyTradingInfoService.kosdaqTradingInfoInsert(subList, subDtoList));
+            }
+            try {
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+                log.info("매매정보 병렬 저장 완료");
+            } catch (ExecutionException | InterruptedException e) {
+                // 예외 발생 시 전체 롤백
+//            throw new RuntimeException("매매정보 비동기 저장 중 오류 발생, 전체 롤백", e);
+                log.info("매매정보 비동기 저장 중 오류 발생, 전체 롤백");
+                tradingInfoDtos.get(0).getBasDd();
+                updateDailyTradingInfoService.kosdaqTradingInfoInsertRollback(tradingInfoDtos.get(0).getBasDd());
+
+            }
         }
+
         return RepeatStatus.FINISHED;
     }
 }

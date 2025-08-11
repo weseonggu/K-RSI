@@ -1,7 +1,8 @@
 package com.service.RSIranking.repository.jdbc;
 
 import com.service.RSIranking.dto.TradingInfoDto;
-import com.service.RSIranking.entity.DailyTradingInformation;
+import com.service.RSIranking.entity.KosdaqDailyTradingInformation;
+import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,24 +27,64 @@ public class DailyTradingInformationJDBCRepository {
     }
 
     /**
-     * 일일 매매 정보 벌크 인서트 메소드
+     * 코스피 일일 매매 정보 벌크 인서트 메소드
      * @param newTradingInfo
      * @param baseInfoDtos
      * @throws Exception
      */
-    public void bulkInsert(List<DailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
+    public void kospiBulkInsert(List<KospiDailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
         String sql =
                 """
-                INSERT INTO daily_trading_information
+                INSERT INTO kospi_daily_trading_information
                 (date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc, acc_trdvol, acc_trdval, isu_cd)
                 SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS
-                ( SELECT isu_cd FROM stock_info s WHERE s.isu_cd = ?)
+                ( SELECT isu_cd FROM kospi_stock_info s WHERE s.isu_cd = ?)
                 """;
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
-                DailyTradingInformation stock = newTradingInfo.get(i);
+                KospiDailyTradingInformation stock = newTradingInfo.get(i);
+                TradingInfoDto dto = baseInfoDtos.get(i);
+
+                ps.setDate(1, Date.valueOf(stock.getDate()));
+                ps.setInt(2, stock.getTddClsprc());
+                ps.setInt(3, stock.getCmpprevddPrc());
+                ps.setDouble(4, stock.getFlucRt());
+                ps.setInt(5, stock.getTddOpnprc());
+                ps.setInt(6, stock.getTddHgprc());
+                ps.setInt(7, stock.getTddLwprc());
+                ps.setLong(8, stock.getAccTrdvol());
+                ps.setLong(9, stock.getAccTrdval());
+                ps.setString(10, dto.getIsuCd());
+                ps.setString(11, dto.getIsuCd());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return newTradingInfo.size();
+            }
+        });
+    }
+    /**
+     * 일일 매매 정보 벌크 인서트 메소드
+     * @param newTradingInfo
+     * @param baseInfoDtos
+     * @throws Exception
+     */
+    public void kosdaqBulkInsert(List<KosdaqDailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
+        String sql =
+                """
+                INSERT INTO kosdaq_daily_trading_information
+                (date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc, acc_trdvol, acc_trdval, isu_cd)
+                SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS
+                ( SELECT isu_cd FROM kosdaq_stock_info s WHERE s.isu_cd = ?)
+                """;
+
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                KosdaqDailyTradingInformation stock = newTradingInfo.get(i);
                 TradingInfoDto dto = baseInfoDtos.get(i);
 
                 ps.setDate(1, Date.valueOf(stock.getDate()));
@@ -72,7 +113,8 @@ public class DailyTradingInformationJDBCRepository {
      * @param dates
      * @return
      */
-    public List<DailyTradingInformation> findByIsuCdAndDateIn(String isuCd, List<LocalDate> dates) {
+    // todo 테이블 분리로 인한 수정 필요
+    public List<KospiDailyTradingInformation> findByIsuCdAndDateIn(String isuCd, List<LocalDate> dates) {
         if (dates == null || dates.isEmpty()) {
             return Collections.emptyList();
         }
@@ -95,7 +137,7 @@ public class DailyTradingInformationJDBCRepository {
         params.addAll(dates);
 
         return jdbcTemplate.query(sql, params.toArray(), (rs, rowNum) -> {
-            return DailyTradingInformation.builder()
+            return KospiDailyTradingInformation.builder()
                     .id(rs.getLong("id"))
                     .date(rs.getDate("date").toLocalDate())
                     .tddClsprc(rs.getInt("tdd_clsprc"))
@@ -113,8 +155,16 @@ public class DailyTradingInformationJDBCRepository {
         });
     }
 
-    public void insertRollback(LocalDate date) {
-        String sql = "DELETE FROM daily_trading_information WHERE date = ?";
+    public void kospiInsertRollback(LocalDate date) {
+        String sql = "DELETE FROM kospi_daily_trading_information WHERE date = ?";
+        try {
+            int deletedCount = jdbcTemplate.update(sql, date);
+        } catch (Exception e) {
+            throw new RuntimeException("롤백 실패", e);
+        }
+    }
+    public void kosdaqInsertRollback(LocalDate date) {
+        String sql = "DELETE FROM kosdaq_daily_trading_information WHERE date = ?";
         try {
             int deletedCount = jdbcTemplate.update(sql, date);
         } catch (Exception e) {

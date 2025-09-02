@@ -51,7 +51,7 @@ public class RSICalCulationConsumer {
         }
     }
 
-    @Scheduled(fixedDelay = 1000)
+//    @Scheduled(fixedDelay = 1000)
     public void consumeKospi() {
         log.info("Kospi컨슈머 실행");
         try {
@@ -105,7 +105,7 @@ public class RSICalCulationConsumer {
         }
     }
 
-    @Scheduled(fixedDelay = 1000)
+//    @Scheduled(fixedDelay = 1000)
     public void consumeKosdaq() {
         log.info("Kosdaq컨슈머 실행");
         try {

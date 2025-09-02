@@ -1,17 +1,25 @@
 package com.service.RSIranking;
 
+import com.service.RSIranking.config.krx_api.ApiConfig;
+import com.service.RSIranking.config.krx_api.KrxApiProperties;
+import com.service.RSIranking.service.KrxRequestService;
 import com.service.RSIranking.util.IsClosedDay;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
+@ActiveProfiles("test")
 public class IsClosedDayTest {
 
     @Autowired
@@ -51,4 +59,17 @@ public class IsClosedDayTest {
             System.out.println(marketDay+",");
         }
     }
+
+    @Autowired
+    private KrxRequestService krxRequestService;
+    @Autowired
+    private KrxApiProperties krxApiProperties;
+    @Test
+    @DisplayName("krx요청 테스트")
+    public void krxRequestTest(){
+        ApiConfig apiConfig = new ApiConfig(krxApiProperties.getKey(), krxApiProperties.getKospiInfoUrl());
+        ResponseEntity<Map> response = krxRequestService.krxRequest(apiConfig, "20250709");
+        System.out.println(response.getBody());
+    }
+
 }

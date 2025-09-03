@@ -4,6 +4,7 @@ import com.service.RSIranking.dto.RSIMessageDTO;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ObjectRecord;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 
@@ -11,16 +12,6 @@ import java.time.Duration;
 
 @Configuration
 public class RSIResdisStreamConfig {
-
-//    @Bean(name = "RSIStreamMessageListenerContainer")
-//    public StreamMessageListenerContainer<String, ?> streamMessageListenerContainer(RedisConnectionFactory connectionFactory) {
-//        StreamMessageListenerContainer.StreamMessageListenerContainerOptions<String, ?> options =
-//                StreamMessageListenerContainer.StreamMessageListenerContainerOptions.builder()
-//                        .pollTimeout(Duration.ofSeconds(1))  // polling 주기
-//                        .build();
-//
-//        return StreamMessageListenerContainer.create(connectionFactory, options);
-//    }
 
     /**
      * 레디스 스트림 컨테이너: RSI지표 계산 전용 스트림 컨테이너 빈
@@ -33,13 +24,26 @@ public class RSIResdisStreamConfig {
      *
      * 컨슈머 로직(StreamListener 구현체)은 이 컨테이너에 등록해서 메시지를 처리하게 됩니다.
      */
+//    @Bean(name = "RSIStreamMessageListenerContainer")
+//    public StreamMessageListenerContainer<String, ObjectRecord<String, RSIMessageDTO>> streamMessageListenerContainer(RedisConnectionFactory connectionFactory) {
+//        StreamMessageListenerContainer.StreamMessageListenerContainerOptions<String, ObjectRecord<String, RSIMessageDTO>> options =
+//                StreamMessageListenerContainer.StreamMessageListenerContainerOptions
+//                        .<String, ObjectRecord<String, RSIMessageDTO>>builder()
+//                        .pollTimeout(Duration.ofSeconds(1))  // polling 주기
+//                        .targetType(RSIMessageDTO.class)
+//                        .build();
+//
+//        return StreamMessageListenerContainer.create(connectionFactory, options);
+//    }
+
     @Bean(name = "RSIStreamMessageListenerContainer")
-    public StreamMessageListenerContainer<String, ObjectRecord<String, RSIMessageDTO>> streamMessageListenerContainer(RedisConnectionFactory connectionFactory) {
-        StreamMessageListenerContainer.StreamMessageListenerContainerOptions<String, ObjectRecord<String, RSIMessageDTO>> options =
+    public StreamMessageListenerContainer<String, MapRecord<String, String, String>> streamMessageListenerContainer(
+            RedisConnectionFactory connectionFactory) {
+
+        StreamMessageListenerContainer.StreamMessageListenerContainerOptions<String, MapRecord<String, String, String>> options =
                 StreamMessageListenerContainer.StreamMessageListenerContainerOptions
-                        .<String, ObjectRecord<String, RSIMessageDTO>>builder()
-                        .pollTimeout(Duration.ofSeconds(1))  // polling 주기
-                        .targetType(RSIMessageDTO.class)
+                        .<String, MapRecord<String, String, String>>builder()
+                        .pollTimeout(Duration.ofSeconds(1))
                         .build();
 
         return StreamMessageListenerContainer.create(connectionFactory, options);

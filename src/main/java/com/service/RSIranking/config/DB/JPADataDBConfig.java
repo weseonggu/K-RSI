@@ -22,6 +22,8 @@ import java.util.HashMap;
         entityManagerFactoryRef = "dataEntityManager",
         transactionManagerRef = "dataTransactionManager"
 )
+// basePackages에 있는 리포지터리는 현재 설정 빈을 사용하겠다는 의미 임
+// Spring은 해당 JpaRepository 구현체를 만들 때, dataEntityManager를 자동으로 주입하고 연결해 줍다.
 public class JPADataDBConfig {
 
     @Bean(name = "dataDBSource")
@@ -29,7 +31,7 @@ public class JPADataDBConfig {
     public DataSource dataDBSource() {
         return DataSourceBuilder.create().build();
     }
-
+    // 영속성에 사용할 EntityManagerFactory 설정 들어가면 EntityManagerFactory가 있음
     @Bean(name = "dataEntityManager")
     public LocalContainerEntityManagerFactoryBean dataEntityManager(
             @Qualifier("dataDBSource") DataSource dataSource) {
@@ -48,7 +50,7 @@ public class JPADataDBConfig {
 
         return em;
     }
-
+    // Transactional 어노테이션을 사용할 때 어떤 트랜잭션 매니저를 사용할지 지정하는 역할
     @Bean(name = "dataTransactionManager")
     public PlatformTransactionManager dataTransactionManager(
             @Qualifier("dataEntityManager") LocalContainerEntityManagerFactoryBean entityManagerFactory) {

@@ -56,39 +56,3 @@ public class RSICalculationLauncher {
             log.info("휴장일 RSI 지표 계산 업데이트 없음");
         }
     }
-
-    public void RSICalculationJobLauncher(String targetDate, List<LocalDate> marketDayList) throws Exception {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
-        String jobExecutionTimestamp = dateFormat.format(new Date());
-
-        String marketDayListString = marketDayList.stream()
-                .map(ld -> ld.format(DateTimeFormatter.ofPattern("yyyyMMdd")))
-                .collect(Collectors.joining(","));
-
-        String rsiJobName = "RSICalculationJob";
-
-        // KOSPI Job 런처
-        JobParameters kospiJobParameters = new JobParametersBuilder()
-                .addString("date", jobExecutionTimestamp)
-                .addString("targetDate", targetDate)
-                .addString("apiUrl", krxApiProperties.getKospiInfoUrl())
-                .addString("apiKey", krxApiProperties.getKey())
-                .addString("mktNm", "KOSPI")
-                .addString("marketDayList", marketDayListString)
-                .toJobParameters();
-
-        jobLauncher.run(jobRegistry.getJob(rsiJobName), kospiJobParameters);
-
-        // KOSDAQ Job 런처
-        JobParameters kosdaqJobParameters = new JobParametersBuilder()
-                .addString("date", jobExecutionTimestamp)
-                .addString("targetDate", targetDate)
-                .addString("apiUrl", krxApiProperties.getKosdaqInfoUrl())
-                .addString("apiKey", krxApiProperties.getKey())
-                .addString("mktNm", "KOSDAQ")
-                .addString("marketDayList", marketDayListString)
-                .toJobParameters();
-
-        jobLauncher.run(jobRegistry.getJob(rsiJobName), kosdaqJobParameters);
-    }
-}

@@ -1,5 +1,6 @@
 package com.service.RSIranking.config.DB;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -21,7 +22,9 @@ public class JDBCDataDBConfig {
     @Bean(name = "jdbcDataSource")
     @ConfigurationProperties(prefix = "spring.datasource-data")
     public DataSource dataSource() {
-        return DataSourceBuilder.create().build();
+        DataSource dataSource = DataSourceBuilder.create().type(HikariDataSource.class).build();
+        System.out.println("DataSource Type: " + dataSource.getClass().getName());
+        return dataSource;
     }
 
     @Bean(name = "jdbcDataTemplate")

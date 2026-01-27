@@ -44,3 +44,5 @@ src/main/java/com/service/RSIranking/repository/BeforeRepository.java
 src/main/java/com/service/RSIranking/schedule/FirstSchedule.java
 
 /mysql-backup
+
+/md

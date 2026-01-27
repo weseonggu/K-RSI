@@ -9,20 +9,36 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * 종목 정보 대량 삽입 서비스.
+ *
+ * <p>신규 상장 종목을 데이터베이스에 대량으로 삽입하는 서비스입니다.
+ * JDBC 배치 처리를 통해 효율적인 대량 삽입을 수행합니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ * @see StockJDBCRepository
+ */
 @Service
 @RequiredArgsConstructor
 public class StockBulkInsertService {
     private final StockJDBCRepository stockJDBCRepository;
 
     /**
-     * 신규 종목 벌크 인서트
-     * @param newStocks 신규 종목
+     * KOSPI 신규 종목을 대량으로 삽입합니다.
+     *
+     * @param newStocks 삽입할 신규 종목 목록
      */
     @Transactional
     public void KospiStocksInsert(List<StockInfoEntity> newStocks){
         stockJDBCRepository.kospiBulkInsert(newStocks);
     }
 
+    /**
+     * KOSDAQ 신규 종목을 대량으로 삽입합니다.
+     *
+     * @param newStocks 삽입할 신규 종목 목록
+     */
     @Transactional
     public void KosdaqStocksInsert(List<StockInfoEntity> newStocks){
         stockJDBCRepository.kosdaqBulkInsert(newStocks);

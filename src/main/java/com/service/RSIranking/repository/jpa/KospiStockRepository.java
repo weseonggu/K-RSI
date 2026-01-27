@@ -14,6 +14,14 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.Optional;
 
+/**
+ * KOSPI 종목 정보 JPA 리포지토리.
+ *
+ * <p>KOSPI 종목 정보에 대한 CRUD 및 커스텀 쿼리를 제공합니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Repository
 public interface KospiStockRepository extends JpaRepository<KospiStockInfoEntity, String> {
     Page<KospiStockInfoEntity> findAll(Pageable pageable);

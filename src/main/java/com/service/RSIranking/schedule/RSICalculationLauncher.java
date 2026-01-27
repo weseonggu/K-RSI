@@ -22,6 +22,29 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+/**
+ * RSI 지표 계산 배치 스케줄러.
+ *
+ * <p>매일 정해진 시간에 RSI(Relative Strength Index) 지표 계산 배치 작업을
+ * 실행합니다. 계산에 필요한 최근 14일간의 영업일 정보를 조회하여
+ * 배치 작업에 전달합니다.</p>
+ *
+ * <p>실행 조건:</p>
+ * <ul>
+ *   <li>scheduler.rsiproducer.enabled=true 설정 시에만 활성화</li>
+ *   <li>주말이 아닌 경우에만 실행</li>
+ *   <li>휴장일이 아닌 경우에만 실행</li>
+ * </ul>
+ *
+ * <p>KOSPI와 KOSDAQ 배치 작업을 비동기로 병렬 실행하여
+ * 전체 처리 시간을 단축합니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ * @see AsyncJobLanucher
+ * @see MarketDayForTheLast14Days
+ * @see com.service.RSIranking.batch.rsi_calculation.RSICalculationBatch
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -34,12 +57,29 @@ public class RSICalculationLauncher {
     private final MarketDayForTheLast14Days marketDayForTheLast14Days;
     private final AsyncJobLanucher asyncJobLanucher;
 
+    /**
+     * RSI 지표 계산 스케줄 실행 메서드.
+     *
+     * <p>스케줄러에 의해 호출되어 어제 날짜 기준으로
+     * RSI 지표 계산 배치를 실행합니다.</p>
+     *
+     * @throws Exception 배치 실행 중 오류 발생 시
+     */
 //    @Scheduled(cron = "50 * * * * *", zone = "Asia/Seoul")
     public void RSICalculationSchedule() throws Exception {
         String yesterday = dateUtil.yesterday();
         executeRSICalculation(yesterday);
     }
 
+    /**
+     * RSI 지표 계산을 실행합니다.
+     *
+     * <p>주말 및 휴장일 체크 후 RSI 계산에 필요한 최근 14일간의
+     * 영업일 목록을 조회하여 배치 작업을 실행합니다.</p>
+     *
+     * @param date 계산 대상 날짜 (yyyyMMdd 형식)
+     * @throws Exception 배치 실행 중 오류 발생 시
+     */
     public void executeRSICalculation(String date) throws Exception {
 
         String yesterday = date;
@@ -59,6 +99,24 @@ public class RSICalculationLauncher {
         }
     }
 
+    /**
+     * RSI 지표 계산 배치 작업을 실행합니다.
+     *
+     * <p>KOSPI와 KOSDAQ 배치 작업을 비동기로 병렬 실행합니다.
+     * 각 작업에는 다음 파라미터가 전달됩니다:</p>
+     * <ul>
+     *   <li>date: 실행 시간</li>
+     *   <li>targetDate: RSI 계산 대상 날짜</li>
+     *   <li>apiUrl: KRX API URL</li>
+     *   <li>apiKey: KRX API 키</li>
+     *   <li>mktNm: 시장 구분 (KOSPI/KOSDAQ)</li>
+     *   <li>marketDayList: RSI 계산에 필요한 영업일 목록 (콤마 구분)</li>
+     * </ul>
+     *
+     * @param targetDate RSI 계산 대상 날짜 (yyyyMMdd 형식)
+     * @param marketDayList RSI 계산에 필요한 최근 14일간 영업일 목록
+     * @throws Exception 배치 실행 중 오류 발생 시
+     */
     public void RSICalculationJobLauncher(String targetDate, List<LocalDate> marketDayList) throws Exception {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
         String jobExecutionTimestamp = dateFormat.format(new Date());

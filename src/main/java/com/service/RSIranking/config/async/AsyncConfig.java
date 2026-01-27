@@ -10,6 +10,20 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 
+/**
+ * 비동기 처리 설정 클래스.
+ *
+ * <p>{@code @Async} 어노테이션을 활성화하고, 비동기 작업을 위한 스레드 풀을 구성합니다.</p>
+ *
+ * <h2>제공 Executor</h2>
+ * <ul>
+ *   <li><b>asyncExecutor</b>: 기본 비동기 작업용 (배치 Job 실행)</li>
+ *   <li><b>dailtTrandingExecutor</b>: 일별 매매 정보 저장 전용</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Configuration
 @EnableAsync
 public class AsyncConfig implements AsyncConfigurer {
@@ -45,6 +59,11 @@ public class AsyncConfig implements AsyncConfigurer {
         return executor;
     }
 
+    /**
+     * 비동기 작업 중 발생한 예외를 처리하는 핸들러를 반환합니다.
+     *
+     * @return 예외 핸들러
+     */
     @Override
     public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
         return new SimpleAsyncUncaughtExceptionHandler();

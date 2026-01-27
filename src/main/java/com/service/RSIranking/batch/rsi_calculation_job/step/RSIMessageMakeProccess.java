@@ -17,6 +17,25 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
+/**
+ * RSI 계산 메시지 생성 Processor.
+ *
+ * <p>종목 정보 엔티티를 RSI 계산에 필요한 메시지 DTO로 변환합니다.
+ * Job 파라미터로부터 대상 날짜와 과거 14일 장 날짜 정보를 받아 메시지를 구성합니다.</p>
+ *
+ * <h2>메시지 구성 요소</h2>
+ * <ul>
+ *   <li>종목 코드 (isu_cd)</li>
+ *   <li>대상 날짜 (targetDate)</li>
+ *   <li>시장 구분 (mkt_nm)</li>
+ *   <li>과거 14일 장 날짜 목록 (marketDate)</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ * @see RSIMessageDTO
+ */
 @StepScope
 @Component
 @RequiredArgsConstructor
@@ -28,6 +47,11 @@ public class RSIMessageMakeProccess implements ItemProcessor<StockInfoEntity, RS
     private List<LocalDate> marketDate;
     private StepExecution stepExecution;
 
+    /**
+     * Step 실행 전 Job 파라미터로부터 필요한 정보를 추출합니다.
+     *
+     * @param stepExecution Step 실행 정보
+     */
     @BeforeStep
     public void retrieveMarketDate(StepExecution stepExecution){
         this.stepExecution = stepExecution;
@@ -38,6 +62,13 @@ public class RSIMessageMakeProccess implements ItemProcessor<StockInfoEntity, RS
     }
 
 
+    /**
+     * 종목 정보를 RSI 계산 메시지 DTO로 변환합니다.
+     *
+     * @param item 종목 정보 엔티티
+     * @return RSI 계산 메시지 DTO
+     * @throws Exception 처리 중 예외 발생 시
+     */
     @Override
     public RSIMessageDTO process(StockInfoEntity item) throws Exception {
         RSIMessageDTO messageDTO = new RSIMessageDTO(item.getId(), this.targetDate, this.mkt_nm, this.marketDate);

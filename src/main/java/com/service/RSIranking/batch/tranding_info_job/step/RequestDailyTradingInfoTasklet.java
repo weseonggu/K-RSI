@@ -22,6 +22,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * KRX API에서 일별 매매 정보를 요청하는 Tasklet.
+ *
+ * <p>한국거래소 Open API를 호출하여 일별 매매 정보를 조회하고,
+ * 다음 Step에서 사용할 수 있도록 Redis에 임시 저장합니다.</p>
+ *
+ * <h2>수집 정보</h2>
+ * <ul>
+ *   <li>기준일자 (basDd)</li>
+ *   <li>종목코드/종목명</li>
+ *   <li>종가/시가/고가/저가</li>
+ *   <li>대비/등락률</li>
+ *   <li>거래량/거래대금</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @StepScope
 @Component
 @RequiredArgsConstructor
@@ -37,6 +55,14 @@ public class RequestDailyTradingInfoTasklet implements Tasklet {
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
 
 
+    /**
+     * KRX API를 호출하여 일별 매매 정보를 가져옵니다.
+     *
+     * @param contribution  Step 기여 정보
+     * @param chunkContext  청크 컨텍스트
+     * @return 작업 완료 상태
+     * @throws Exception 처리 중 예외 발생 시
+     */
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 
@@ -86,6 +112,11 @@ public class RequestDailyTradingInfoTasklet implements Tasklet {
         return RepeatStatus.FINISHED;
     }
 
+    /**
+     * Step 실행 전 Job 파라미터에서 API 설정 정보를 추출합니다.
+     *
+     * @param stepExecution Step 실행 정보
+     */
     @BeforeStep
     public void saveStepExecution(StepExecution stepExecution) {
 

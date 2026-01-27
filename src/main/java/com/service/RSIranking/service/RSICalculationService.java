@@ -16,6 +16,28 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * RSI(Relative Strength Index, 상대강도지수) 계산 서비스.
+ *
+ * <p>RSI는 주식의 과매수/과매도 상태를 판단하는 기술적 지표로,
+ * 0~100 사이의 값을 가지며 일반적으로 70 이상은 과매수, 30 이하는 과매도로 해석됩니다.</p>
+ *
+ * <h2>RSI 계산 공식</h2>
+ * <pre>
+ * RSI = 100 - (100 / (1 + RS))
+ * RS = Average Gain / Average Loss
+ * </pre>
+ *
+ * <h2>지원하는 계산 방식</h2>
+ * <ul>
+ *   <li><b>단순 평균 방식</b> - 신규 종목에 적용, 14일간의 단순 평균</li>
+ *   <li><b>Welles Wilder 방식</b> - 기존 종목에 적용, 지수이동평균(EMA) 기반</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ * @see <a href="https://www.investopedia.com/terms/r/rsi.asp">RSI 설명</a>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -102,6 +124,17 @@ public class RSICalculationService {
     }
 
 //=========================================== RSI 업데이트 =========================================================
+    /**
+     * 계산된 RSI 정보를 데이터베이스에 업데이트합니다.
+     *
+     * @param isuCD      종목 코드
+     * @param targetDate 업데이트 대상 날짜 (yyyyMMdd 형식)
+     * @param Ag         평균 상승폭 (Average Gain)
+     * @param Al         평균 하락폭 (Average Loss)
+     * @param RSI        계산된 RSI 값
+     * @throws RuntimeException 업데이트 실패 시 발생
+     * @throws NoSuchElementException 해당 종목/날짜의 거래 정보가 없을 경우 발생
+     */
     @Transactional
     public void updateTradingInfo(String isuCD, String targetDate, Double Ag, Double Al, Double RSI) throws  RuntimeException{
         LocalDate date = LocalDate.parse(targetDate, formatter);
@@ -139,6 +172,14 @@ public class RSICalculationService {
         }
     }
     //=================================== 거래 정지 확인=============================================
+    /**
+     * 거래 정지 종목 여부를 확인합니다.
+     *
+     * <p>모든 거래 정보의 대비, 등락률, 고가, 저가가 0인 경우 거래 정지 종목으로 판단합니다.</p>
+     *
+     * @param tradingInfoList 거래 정보 목록
+     * @return 거래 정지 종목이면 {@code true}, 아니면 {@code false}
+     */
     private boolean areAllFieldsZero(List<KospiDailyTradingInformation> tradingInfoList) {
         return tradingInfoList.stream().allMatch(info ->
                 info.getCmpprevddPrc() == 0 &&

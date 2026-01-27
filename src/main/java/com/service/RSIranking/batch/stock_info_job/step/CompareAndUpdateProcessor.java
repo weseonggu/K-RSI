@@ -20,6 +20,23 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * 종목 정보 비교 및 업데이트 Processor.
+ *
+ * <p>KRX API에서 가져온 종목 정보와 DB의 기존 정보를 비교하여
+ * 변경사항을 처리합니다.</p>
+ *
+ * <h2>처리 로직</h2>
+ * <ul>
+ *   <li>종목명 변경: 엔티티 업데이트 후 반환</li>
+ *   <li>변경 없음: null 반환 (Writer 스킵)</li>
+ *   <li>상장폐지: 상장 상태 false로 변경</li>
+ *   <li>신규 상장: afterStep에서 벌크 삽입 처리</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @StepScope
 @Component
 @RequiredArgsConstructor
@@ -34,6 +51,11 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
     private final StockBulkInsertService stockBulkInsertService;
 
 
+    /**
+     * Step 실행 전 Redis에서 KRX 데이터를 조회합니다.
+     *
+     * @param stepExecution Step 실행 정보
+     */
     @Override
     public void beforeStep(StepExecution stepExecution) {
         try {
@@ -53,6 +75,13 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
         }
     }
 
+    /**
+     * DB 종목 정보와 KRX 데이터를 비교하여 처리합니다.
+     *
+     * @param entity DB의 종목 정보 엔티티
+     * @return 변경된 엔티티 또는 null (변경 없음)
+     * @throws Exception 처리 중 예외 발생 시
+     */
     @Override
     public StockInfoEntity process(StockInfoEntity entity) throws Exception {
         // dtoList와 비교하여 변경 사항 처리
@@ -85,11 +114,26 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
             return entity;
         }
     }
+    /**
+     * 종목 정보 변경 여부를 비교합니다.
+     *
+     * @param entity DB 엔티티
+     * @param dto    KRX DTO
+     * @return 변경 여부 (true: 변경됨)
+     */
     private boolean compareStockData(StockInfoEntity entity, StockDto dto){
         return !entity.getIsuNm().equals(dto.getIsuNm());
     }
 
-    // jdbc를 사용한 신규 종목 저장
+    /**
+     * Step 완료 후 신규 종목을 벌크 삽입합니다.
+     *
+     * <p>KRX 데이터 중 DB에 없는 종목(checked=false)을 신규 종목으로 판단하여
+     * 대량 삽입합니다.</p>
+     *
+     * @param stepExecution Step 실행 정보
+     * @return Step 종료 상태
+     */
     @Override
     public ExitStatus afterStep(StepExecution stepExecution) {
 

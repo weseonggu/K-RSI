@@ -17,6 +17,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 일별 매매 정보 JDBC 리포지토리.
+ *
+ * <p>일별 매매 정보의 대량 삽입 및 조회를 위한 JDBC 기반 리포지토리입니다.
+ * JPA의 성능 제한을 우회하여 효율적인 벌크 처리를 수행합니다.</p>
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>KOSPI/KOSDAQ 일별 매매 정보 벌크 삽입</li>
+ *   <li>특정 종목의 14일간 매매 정보 조회 (RSI 계산용)</li>
+ *   <li>삽입 실패 시 롤백 처리</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ * @see com.service.RSIranking.entity.KospiDailyTradingInformation
+ * @see com.service.RSIranking.entity.KosdaqDailyTradingInformation
+ */
 @Repository
 public class DailyTradingInformationJDBCRepository {
     private final JdbcTemplate jdbcTemplate;
@@ -27,10 +45,14 @@ public class DailyTradingInformationJDBCRepository {
     }
 
     /**
-     * 코스피 일일 매매 정보 벌크 인서트 메소드
-     * @param newTradingInfo
-     * @param baseInfoDtos
-     * @throws Exception
+     * KOSPI 일별 매매 정보를 대량 삽입합니다.
+     *
+     * <p>종목 정보 테이블(kospi_stock_info)에 존재하는 종목에 대해서만 삽입을 수행합니다.
+     * EXISTS 서브쿼리를 사용하여 데이터 무결성을 보장합니다.</p>
+     *
+     * @param newTradingInfo 삽입할 매매 정보 엔티티 목록
+     * @param baseInfoDtos 원본 DTO 목록 (종목 코드 참조용)
+     * @throws Exception 데이터베이스 삽입 중 오류 발생 시
      */
     public void kospiBulkInsert(List<KospiDailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
         String sql =
@@ -67,10 +89,14 @@ public class DailyTradingInformationJDBCRepository {
         });
     }
     /**
-     * 일일 매매 정보 벌크 인서트 메소드
-     * @param newTradingInfo
-     * @param baseInfoDtos
-     * @throws Exception
+     * KOSDAQ 일별 매매 정보를 대량 삽입합니다.
+     *
+     * <p>종목 정보 테이블(kosdaq_stock_info)에 존재하는 종목에 대해서만 삽입을 수행합니다.
+     * EXISTS 서브쿼리를 사용하여 데이터 무결성을 보장합니다.</p>
+     *
+     * @param newTradingInfo 삽입할 매매 정보 엔티티 목록
+     * @param baseInfoDtos 원본 DTO 목록 (종목 코드 참조용)
+     * @throws Exception 데이터베이스 삽입 중 오류 발생 시
      */
     public void kosdaqBulkInsert(List<KosdaqDailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
         String sql =
@@ -108,12 +134,17 @@ public class DailyTradingInformationJDBCRepository {
     }
 
     /**
-     * 14일 매매 거래 조회 메소드
-     * @param isuCd
-     * @param dates
-     * @return
+     * 특정 종목의 지정된 날짜들에 대한 매매 정보를 조회합니다.
+     *
+     * <p>RSI 계산을 위해 최근 14일간의 매매 정보를 조회하는 데 사용됩니다.
+     * 결과는 날짜 기준 내림차순으로 정렬됩니다.</p>
+     *
+     * <p><b>TODO:</b> 테이블 분리로 인한 수정 필요 - 현재 daily_trading_information 테이블 참조</p>
+     *
+     * @param isuCd 종목 코드
+     * @param dates 조회할 날짜 목록
+     * @return 해당 종목의 매매 정보 목록 (날짜 내림차순)
      */
-    // todo 테이블 분리로 인한 수정 필요
     public List<KospiDailyTradingInformation> findByIsuCdAndDateIn(String isuCd, List<LocalDate> dates) {
         if (dates == null || dates.isEmpty()) {
             return Collections.emptyList();
@@ -155,6 +186,15 @@ public class DailyTradingInformationJDBCRepository {
         });
     }
 
+    /**
+     * KOSPI 일별 매매 정보 삽입을 롤백합니다.
+     *
+     * <p>특정 날짜에 삽입된 모든 KOSPI 매매 정보를 삭제합니다.
+     * 배치 처리 중 오류 발생 시 데이터 일관성을 유지하기 위해 사용됩니다.</p>
+     *
+     * @param date 롤백할 날짜
+     * @throws RuntimeException 롤백 실패 시
+     */
     public void kospiInsertRollback(LocalDate date) {
         String sql = "DELETE FROM kospi_daily_trading_information WHERE date = ?";
         try {
@@ -163,6 +203,16 @@ public class DailyTradingInformationJDBCRepository {
             throw new RuntimeException("롤백 실패", e);
         }
     }
+
+    /**
+     * KOSDAQ 일별 매매 정보 삽입을 롤백합니다.
+     *
+     * <p>특정 날짜에 삽입된 모든 KOSDAQ 매매 정보를 삭제합니다.
+     * 배치 처리 중 오류 발생 시 데이터 일관성을 유지하기 위해 사용됩니다.</p>
+     *
+     * @param date 롤백할 날짜
+     * @throws RuntimeException 롤백 실패 시
+     */
     public void kosdaqInsertRollback(LocalDate date) {
         String sql = "DELETE FROM kosdaq_daily_trading_information WHERE date = ?";
         try {

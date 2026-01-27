@@ -12,6 +12,21 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.stereotype.Service;
 
+/**
+ * Redis Stream Consumer 서비스.
+ *
+ * <p>StreamMessageListenerContainer를 사용하여 Redis Stream의 메시지를
+ * 비동기적으로 수신하고 처리합니다.</p>
+ *
+ * <h2>Consumer Group 구성</h2>
+ * <ul>
+ *   <li>KOSPI: RSI-Kospi-Group / RSI-Kospi-consumer-01</li>
+ *   <li>KOSDAQ: RSI-Kosdaq-Group / RSI-Kosdaq-consumer-01</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Service
 @Slf4j
 public class RSIRedisStreamConsumerService {
@@ -39,6 +54,9 @@ public class RSIRedisStreamConsumerService {
         initializeConsumerGroups();
     }
 
+    /**
+     * Consumer Group을 초기화합니다.
+     */
     private void initializeConsumerGroups() {
         try {
             redisTemplate.opsForStream().createGroup(KOSPI_STREAM, KOSPI_CONSUMER_GROUP);
@@ -55,6 +73,9 @@ public class RSIRedisStreamConsumerService {
         }
     }
 
+    /**
+     * KOSPI 스트림 Consumer를 시작합니다.
+     */
     @PostConstruct
     public void startKospi() {
         try{
@@ -72,6 +93,9 @@ public class RSIRedisStreamConsumerService {
 
     }
 
+    /**
+     * KOSDAQ 스트림 Consumer를 시작합니다.
+     */
     @PostConstruct
     public void startKosdaq() {
         try{

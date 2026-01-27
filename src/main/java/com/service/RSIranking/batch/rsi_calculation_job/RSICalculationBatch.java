@@ -19,6 +19,29 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
+/**
+ * RSI 계산 배치 Job 설정 클래스.
+ *
+ * <p>데이터베이스에서 종목 정보를 읽어 RSI 계산 메시지를 생성하고,
+ * Redis Stream에 발행하는 배치 작업을 구성합니다.</p>
+ *
+ * <h2>Job 구성</h2>
+ * <pre>
+ * RSICalculationJob
+ *   └── produceRSIMessageStep
+ *         ├── Reader: GetStockInfoToDBReader (DB에서 종목 정보 읽기)
+ *         ├── Processor: RSIMessageMakeProccess (RSI 메시지 DTO 생성)
+ *         └── Writer: MessageProduceWriter (Redis Stream에 메시지 발행)
+ * </pre>
+ *
+ * <h2>청크 처리</h2>
+ * <p>50개 단위로 청크 처리하여 메모리 효율성을 확보합니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ * @see RSIMessageMakeProccess
+ * @see MessageProduceWriter
+ */
 @Configuration
 public class RSICalculationBatch {
     private final JobRepository jobRepository;
@@ -51,6 +74,14 @@ public class RSICalculationBatch {
     }
     // =======================================JOB=========================================
 
+    /**
+     * RSI 계산 메시지 생성 Job을 정의합니다.
+     *
+     * <p>종목 정보를 읽어 RSI 계산에 필요한 메시지를 생성하고
+     * Redis Stream에 발행하는 Job입니다.</p>
+     *
+     * @return RSI 계산 Job
+     */
     @Bean
     public Job RSICalculationJob(){
         return new JobBuilder("RSICalculationJob", jobRepository)
@@ -60,6 +91,14 @@ public class RSICalculationBatch {
     }
 
     // =======================================Step========================================
+    /**
+     * RSI 메시지 생성 Step을 정의합니다.
+     *
+     * <p>DB에서 종목 정보를 읽어 RSI 계산 메시지를 생성하고
+     * Redis Stream에 발행합니다.</p>
+     *
+     * @return RSI 메시지 생성 Step
+     */
     @Bean
     public Step produceRSIMessageStep() {
         return new StepBuilder("produceRSIMessageStep", jobRepository)

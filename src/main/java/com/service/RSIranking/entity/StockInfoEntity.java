@@ -9,6 +9,22 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 종목 정보 엔티티 (범용).
+ *
+ * <p>주식 종목의 기본 정보를 저장하는 JPA 엔티티입니다.</p>
+ *
+ * <h2>저장 정보</h2>
+ * <ul>
+ *   <li>종목 코드 (Primary Key)</li>
+ *   <li>종목명</li>
+ *   <li>시장 구분</li>
+ *   <li>상장 여부</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor

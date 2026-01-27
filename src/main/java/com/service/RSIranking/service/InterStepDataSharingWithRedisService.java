@@ -16,6 +16,25 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 배치 Step 간 데이터 공유를 위한 Redis 서비스.
+ *
+ * <p>Spring Batch의 Step 간에 대량의 데이터를 공유하기 위해 Redis를 활용합니다.
+ * ExecutionContext의 크기 제한을 우회하고, Step 간 데이터 전달을 효율적으로 처리합니다.</p>
+ *
+ * <h2>주요 기능</h2>
+ * <ul>
+ *   <li>Step 간 데이터 Redis 저장 (3시간 TTL)</li>
+ *   <li>Step 간 데이터 Redis 조회</li>
+ *   <li>저장/조회 실패 시 재시도 (최대 3회)</li>
+ * </ul>
+ *
+ * <h2>데이터 직렬화</h2>
+ * <p>Jackson ObjectMapper를 사용하여 JSON 형태로 직렬화/역직렬화합니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Service
 @Slf4j
 public class InterStepDataSharingWithRedisService {

@@ -22,6 +22,30 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+/**
+ * KRX API에서 종목 정보를 가져오는 Tasklet.
+ *
+ * <p>한국거래소 Open API를 호출하여 KOSPI/KOSDAQ 종목 정보를 조회하고,
+ * 다음 Step에서 사용할 수 있도록 Redis에 임시 저장합니다.</p>
+ *
+ * <h2>처리 흐름</h2>
+ * <ol>
+ *   <li>KRX API 호출 (재시도 포함)</li>
+ *   <li>응답 데이터 DTO 변환</li>
+ *   <li>Redis 임시 저장</li>
+ *   <li>Job ExecutionContext에 Redis 키 저장</li>
+ * </ol>
+ *
+ * <h2>종료 상태</h2>
+ * <ul>
+ *   <li>NO_DATA: API 응답에 데이터 없음</li>
+ *   <li>REDIS_FAILED: Redis 저장 실패</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @StepScope
 @Component
 @RequiredArgsConstructor
@@ -36,6 +60,14 @@ public class GetStockInfoToKRXTasklet implements Tasklet, StepExecutionListener 
     private final KrxRequestService krxRequestService;
     private final InterStepDataSharingWithRedisService interStepDataSharingWithRedisService;
 
+    /**
+     * KRX API를 호출하여 종목 정보를 가져옵니다.
+     *
+     * @param contribution  Step 기여 정보
+     * @param chunkContext  청크 컨텍스트
+     * @return 작업 완료 상태
+     * @throws Exception 처리 중 예외 발생 시
+     */
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 
@@ -89,6 +121,11 @@ public class GetStockInfoToKRXTasklet implements Tasklet, StepExecutionListener 
         return RepeatStatus.FINISHED;
     }
 
+    /**
+     * Step 실행 전 Job 파라미터에서 API 설정 정보를 추출합니다.
+     *
+     * @param stepExecution Step 실행 정보
+     */
     @Override
     public void beforeStep(StepExecution stepExecution) {
 

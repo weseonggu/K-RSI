@@ -12,6 +12,21 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import javax.sql.DataSource;
 
+/**
+ * JDBC 데이터 DB 설정 클래스.
+ *
+ * <p>대량 데이터 처리를 위한 JDBC Template 설정을 제공합니다.
+ * JPA의 N+1 문제를 회피하고 벌크 연산 성능을 최적화하기 위해 사용됩니다.</p>
+ *
+ * <h2>제공 빈</h2>
+ * <ul>
+ *   <li>JdbcTemplate: 기본 JDBC 작업용</li>
+ *   <li>NamedParameterJdbcTemplate: 명명된 파라미터 지원</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Configuration
 @Profile({"dev", "prod", "test"})
 @EnableJdbcRepositories(
@@ -26,12 +41,24 @@ public class JDBCDataDBConfig {
 //        return DataSourceBuilder.create().build();
 //    }
 
+    /**
+     * JDBC Template을 생성합니다.
+     *
+     * @param dataSource 데이터 DataSource
+     * @return JdbcTemplate 빈
+     */
     @Bean(name = "jdbcDataTemplate")
     public JdbcTemplate jdbcTemplate(@Qualifier("dataDBSource") DataSource dataSource) {
         return new JdbcTemplate(dataSource);
     }
 
 
+    /**
+     * 명명된 파라미터를 지원하는 JDBC Template을 생성합니다.
+     *
+     * @param jdbcTemplate 기본 JdbcTemplate
+     * @return NamedParameterJdbcTemplate 빈
+     */
     @Bean
     public NamedParameterJdbcTemplate namedParameterJdbcTemplate(
             @Qualifier("jdbcDataTemplate") JdbcTemplate jdbcTemplate) {

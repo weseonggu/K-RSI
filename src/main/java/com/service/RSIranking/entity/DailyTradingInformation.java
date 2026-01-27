@@ -10,6 +10,24 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * 일별 매매 정보 엔티티 (범용).
+ *
+ * <p>주식의 일별 매매 정보를 저장하는 JPA 엔티티입니다.
+ * 날짜와 종목코드의 조합이 유일합니다.</p>
+ *
+ * <h2>저장 정보</h2>
+ * <ul>
+ *   <li>거래일자</li>
+ *   <li>종가/시가/고가/저가</li>
+ *   <li>대비/등락률</li>
+ *   <li>거래량/거래대금</li>
+ *   <li>RSI 지표 (평균상승폭/평균하락폭 포함)</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor

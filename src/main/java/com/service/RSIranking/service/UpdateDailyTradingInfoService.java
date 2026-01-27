@@ -18,6 +18,27 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * 일별 매매 정보 업데이트 서비스.
+ *
+ * <p>KRX API로부터 수집한 일별 매매 정보를 데이터베이스에 저장하는 서비스입니다.
+ * 비동기 처리를 통해 대량의 데이터를 효율적으로 처리합니다.</p>
+ *
+ * <h2>주요 기능</h2>
+ * <ul>
+ *   <li>KOSPI 일별 매매 정보 비동기 저장</li>
+ *   <li>KOSDAQ 일별 매매 정보 비동기 저장</li>
+ *   <li>저장 실패 시 롤백 처리 (재시도 포함)</li>
+ * </ul>
+ *
+ * <h2>비동기 처리</h2>
+ * <p>{@code @Async("dailtTrandingExecutor")} 어노테이션을 통해
+ * 별도의 스레드 풀에서 비동기로 실행됩니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ * @see DailyTradingInformationJDBCRepository
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

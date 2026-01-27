@@ -14,6 +14,31 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * RSI 계산 메시지 Consumer 서비스.
+ *
+ * <p>Redis Stream에서 RSI 계산 메시지를 소비하고,
+ * RSI 계산 서비스를 호출하여 지표를 계산합니다.</p>
+ *
+ * <h2>처리 흐름</h2>
+ * <ol>
+ *   <li>Redis Stream에서 메시지 읽기 (Consumer Group 사용)</li>
+ *   <li>RSI 계산 서비스 호출</li>
+ *   <li>처리 완료 시 ACK 및 메시지 삭제</li>
+ * </ol>
+ *
+ * <h2>Consumer Group</h2>
+ * <ul>
+ *   <li>그룹명: rsiGroup</li>
+ *   <li>Consumer명: rsiConsumer</li>
+ * </ul>
+ *
+ * <h2>활성화 조건</h2>
+ * <p>{@code scheduler.rsiconsumer.enabled=true} 설정 시 활성화됩니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Service
 @Slf4j
 @ConditionalOnProperty(name = "scheduler.rsiconsumer.enabled", havingValue = "true", matchIfMissing = false)
@@ -35,6 +60,9 @@ public class RSICalCulationConsumer {
         initializeConsumerGroups();
     }
 
+    /**
+     * KOSPI, KOSDAQ 스트림에 대한 Consumer Group을 초기화합니다.
+     */
     private void initializeConsumerGroups() {
         try {
             redisTemplate.opsForStream().createGroup(KOSPI_STREAM, CONSUMER_GROUP);
@@ -51,6 +79,9 @@ public class RSICalCulationConsumer {
         }
     }
 
+    /**
+     * KOSPI 스트림에서 RSI 계산 메시지를 소비합니다.
+     */
 //    @Scheduled(fixedDelay = 1000)
     public void consumeKospi() {
         log.info("Kospi컨슈머 실행");
@@ -105,6 +136,9 @@ public class RSICalCulationConsumer {
         }
     }
 
+    /**
+     * KOSDAQ 스트림에서 RSI 계산 메시지를 소비합니다.
+     */
 //    @Scheduled(fixedDelay = 1000)
     public void consumeKosdaq() {
         log.info("Kosdaq컨슈머 실행");
@@ -158,6 +192,13 @@ public class RSICalCulationConsumer {
         }
     }
 
+    /**
+     * RSI 계산 서비스를 호출합니다.
+     *
+     * @param isuCD      종목 코드
+     * @param targetDate 대상 날짜
+     * @param marketDate 과거 14일 장 날짜 (쉼표 구분)
+     */
     private void callRSICalculationService(String isuCD, String targetDate, String marketDate){
         rsiCalculationService.rsiCalculation(isuCD, targetDate, marketDate);
     }

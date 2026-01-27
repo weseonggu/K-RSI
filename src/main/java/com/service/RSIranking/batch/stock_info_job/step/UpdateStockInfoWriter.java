@@ -11,6 +11,22 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 종목 정보 업데이트 Writer.
+ *
+ * <p>Processor에서 변경이 감지된 종목 정보를 데이터베이스에 업데이트합니다.
+ * KOSPI/KOSDAQ 시장 구분에 따라 각각의 리포지토리를 사용합니다.</p>
+ *
+ * <h2>업데이트 항목</h2>
+ * <ul>
+ *   <li>종목명 (isuNm)</li>
+ *   <li>시장 구분 (mktNm)</li>
+ *   <li>상장 여부 (isPublicStock)</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -19,6 +35,12 @@ public class UpdateStockInfoWriter implements ItemWriter<StockInfoEntity> {
     private final KospiStockRepository kospiStockRepository;
     private final KosdaqStockRepository kosdaqStockRepository;
 
+    /**
+     * 변경된 종목 정보를 데이터베이스에 업데이트합니다.
+     *
+     * @param chunk 업데이트할 종목 정보 청크
+     * @throws Exception 업데이트 중 예외 발생 시
+     */
     @Override
     @Transactional("dataTransactionManager")// 트랜잭션 매니저 빈 직접 지정해줘야함
     public void write(Chunk<? extends StockInfoEntity> chunk) throws Exception {

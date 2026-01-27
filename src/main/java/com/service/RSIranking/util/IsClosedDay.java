@@ -15,6 +15,22 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 주식 시장 휴장일 확인 서비스.
+ *
+ * <p>KRX API를 호출하여 특정 날짜가 주식 시장 휴장일인지 확인합니다.
+ * API 호출 실패 시 최대 3회까지 재시도합니다.</p>
+ *
+ * <p>휴장일 판단 기준:</p>
+ * <ul>
+ *   <li>KRX API 응답에 종목 데이터가 없으면 휴장일로 판단</li>
+ *   <li>API 호출 실패 시 복구 메서드를 통해 false 반환</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ * @see com.service.RSIranking.service.KrxRequestService
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -25,9 +41,17 @@ public class IsClosedDay {
 
 
     /**
-     * 배치를 수행하는 날짜에 주식 시장이 휴장인지 확인하는 메서드
-     * @param date 휴장일인지 알고자하는 날짜
-     * @return T/F
+     * 주어진 날짜가 주식 시장 휴장일인지 확인합니다.
+     *
+     * <p>KRX API를 호출하여 해당 날짜의 종목 정보를 조회합니다.
+     * 응답에 종목 데이터가 없으면 휴장일로 판단합니다.</p>
+     *
+     * <p>API 호출 실패 시 최대 3회까지 2초 간격으로 재시도하며,
+     * 모든 재시도 실패 시 {@link #failToGetAPI} 메서드가 호출됩니다.</p>
+     *
+     * @param date 확인할 날짜 (yyyyMMdd 형식)
+     * @return 휴장일이면 true, 영업일이면 false
+     * @throws RuntimeException KRX API 호출 실패 시 (재시도 대상)
      */
     @Retryable(recover = "failToGetAPI",
             retryFor = {
@@ -53,6 +77,16 @@ public class IsClosedDay {
         }
     }
 
+    /**
+     * KRX API 호출 실패 시 복구 메서드.
+     *
+     * <p>최대 재시도 횟수 초과 시 호출되며, 오류를 로깅하고
+     * 휴장일이 아닌 것으로 간주하여 false를 반환합니다.</p>
+     *
+     * @param e 발생한 예외
+     * @param date 조회 대상 날짜
+     * @return 항상 false (휴장일이 아닌 것으로 처리)
+     */
     @Recover
     public boolean failToGetAPI(RuntimeException e, String date){
         // todo KRX API에 문제가 생김 알림 생성 필요

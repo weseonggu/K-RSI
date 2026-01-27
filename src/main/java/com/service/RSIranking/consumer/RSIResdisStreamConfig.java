@@ -10,6 +10,20 @@ import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 
 import java.time.Duration;
 
+/**
+ * RSI Redis Stream 설정 클래스.
+ *
+ * <p>Redis Stream에서 메시지를 수신하기 위한 StreamMessageListenerContainer를 구성합니다.</p>
+ *
+ * <h2>컨테이너 설정</h2>
+ * <ul>
+ *   <li>Poll Timeout: 1초</li>
+ *   <li>메시지 타입: MapRecord (String-String-String)</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Configuration
 public class RSIResdisStreamConfig {
 

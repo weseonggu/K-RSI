@@ -15,6 +15,33 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
+/**
+ * 일별 매매 정보 업데이트 배치 Job 설정 클래스.
+ *
+ * <p>KRX API를 통해 일별 매매 정보(종가, 거래량 등)를 수집하고
+ * 데이터베이스에 저장하는 배치 작업을 구성합니다.</p>
+ *
+ * <h2>Job 구성</h2>
+ * <pre>
+ * DailyTradingInformationUpdateJob
+ *   ├── Step 1: requestDailyTradingInfoStep (KRX API 요청)
+ *   │     └── Tasklet: RequestDailyTradingInfoTasklet
+ *   └── Step 2: updateDailyTradingInfoStep (DB 저장)
+ *         └── Tasklet: UpdateDailyTradingInfoTasklet
+ * </pre>
+ *
+ * <h2>수집 데이터</h2>
+ * <ul>
+ *   <li>종가 (tddClsprc)</li>
+ *   <li>대비 (cmpprevddPrc)</li>
+ *   <li>등락률 (flucRt)</li>
+ *   <li>시가/고가/저가</li>
+ *   <li>거래량/거래대금</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Configuration
 public class DailyTradingInformationUpdateBatch {
 
@@ -44,7 +71,11 @@ public class DailyTradingInformationUpdateBatch {
 
     }
 
-    // todo 일별 매매 정도 업데이트 job
+    /**
+     * 일별 매매 정보 업데이트 Job을 정의합니다.
+     *
+     * @return 일별 매매 정보 업데이트 Job
+     */
     @Bean
     public Job DailyTradingInformationUpdateJob() {
         return new JobBuilder("dailyTradingInformationUpdateJob", jobRepository)
@@ -60,7 +91,11 @@ public class DailyTradingInformationUpdateBatch {
 
     //=============================STEP1================================================
 
-    // 일별 매매 정보 가져오는 step
+    /**
+     * KRX API에서 일별 매매 정보를 가져오는 Step을 정의합니다.
+     *
+     * @return 일별 매매 정보 요청 Step
+     */
     @Bean
     public Step requestDailyTradingInfoStep() {
         return new StepBuilder("requestKRXAPITradingStep", jobRepository)
@@ -83,7 +118,11 @@ public class DailyTradingInformationUpdateBatch {
 
     //=============================STEP2================================================
 
-    // 일별 매맴 정보 DB에 저장 step
+    /**
+     * 일별 매매 정보를 데이터베이스에 저장하는 Step을 정의합니다.
+     *
+     * @return 일별 매매 정보 저장 Step
+     */
     @Bean
     public Step updateDailyTradingInfoStep() {
         return new StepBuilder("updateKRXAPITradingStep", jobRepository)

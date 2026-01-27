@@ -15,6 +15,29 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.sql.DataSource;
 import java.util.HashMap;
 
+/**
+ * JPA 데이터 DB 설정 클래스.
+ *
+ * <p>종목 정보, 매매 정보 등 비즈니스 데이터를 저장하는
+ * 데이터베이스의 JPA 연결을 설정합니다.</p>
+ *
+ * <h2>설정 항목</h2>
+ * <ul>
+ *   <li>DataSource: spring.datasource-data 프로퍼티 사용</li>
+ *   <li>EntityManager: dataEntityManager</li>
+ *   <li>TransactionManager: dataTransactionManager</li>
+ *   <li>대상 Repository: com.service.RSIranking.repository.jpa</li>
+ * </ul>
+ *
+ * <h2>Hibernate 설정</h2>
+ * <ul>
+ *   <li>DDL 자동 생성: update</li>
+ *   <li>SQL 로깅: 활성화</li>
+ * </ul>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Configuration
 @Profile({"dev", "prod", "test"})
 @EnableJpaRepositories(
@@ -22,16 +45,26 @@ import java.util.HashMap;
         entityManagerFactoryRef = "dataEntityManager",
         transactionManagerRef = "dataTransactionManager"
 )
-// basePackages에 있는 리포지터리는 현재 설정 빈을 사용하겠다는 의미 임
-// Spring은 해당 JpaRepository 구현체를 만들 때, dataEntityManager를 자동으로 주입하고 연결해 줍다.
 public class JPADataDBConfig {
 
+    /**
+     * 비즈니스 데이터 DB용 DataSource를 생성합니다.
+     *
+     * @return 데이터 DataSource
+     */
     @Bean(name = "dataDBSource")
     @ConfigurationProperties(prefix = "spring.datasource-data")
     public DataSource dataDBSource() {
         return DataSourceBuilder.create().build();
     }
-    // 영속성에 사용할 EntityManagerFactory 설정 들어가면 EntityManagerFactory가 있음
+    /**
+     * JPA EntityManagerFactory를 생성합니다.
+     *
+     * <p>Hibernate를 JPA 구현체로 사용하며, 엔티티 패키지를 스캔합니다.</p>
+     *
+     * @param dataSource 데이터 DataSource
+     * @return EntityManagerFactory 빈
+     */
     @Bean(name = "dataEntityManager")
     public LocalContainerEntityManagerFactoryBean dataEntityManager(
             @Qualifier("dataDBSource") DataSource dataSource) {
@@ -50,7 +83,14 @@ public class JPADataDBConfig {
 
         return em;
     }
-    // Transactional 어노테이션을 사용할 때 어떤 트랜잭션 매니저를 사용할지 지정하는 역할
+    /**
+     * JPA 트랜잭션 매니저를 생성합니다.
+     *
+     * <p>{@code @Transactional("dataTransactionManager")} 어노테이션으로 사용합니다.</p>
+     *
+     * @param entityManagerFactory EntityManagerFactory 빈
+     * @return JPA 트랜잭션 매니저
+     */
     @Bean(name = "dataTransactionManager")
     public PlatformTransactionManager dataTransactionManager(
             @Qualifier("dataEntityManager") LocalContainerEntityManagerFactoryBean entityManagerFactory) {

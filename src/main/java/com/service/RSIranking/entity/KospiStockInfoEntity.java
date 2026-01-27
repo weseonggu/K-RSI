@@ -9,6 +9,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+
+/**
+ * KOSPI 종목 정보 엔티티.
+ *
+ * <p>KOSPI 시장 종목의 기본 정보를 저장하는 JPA 엔티티입니다.
+ * 일별 매매 정보와 OneToMany 관계를 가집니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor

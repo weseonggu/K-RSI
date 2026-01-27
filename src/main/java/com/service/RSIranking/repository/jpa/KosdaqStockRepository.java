@@ -12,6 +12,14 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.Optional;
 
+/**
+ * KOSDAQ 종목 정보 JPA 리포지토리.
+ *
+ * <p>KOSDAQ 종목 정보에 대한 CRUD 및 커스텀 쿼리를 제공합니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 public interface KosdaqStockRepository extends JpaRepository<KosdaqStockInfoEntity, String> {
     Page<KosdaqStockInfoEntity> findAll(Pageable pageable);
     Page<StockInfoEntity> findByMktNmAndIsPublicStockTrue(String mktNm, Pageable pageable);

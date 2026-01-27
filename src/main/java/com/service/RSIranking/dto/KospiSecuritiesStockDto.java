@@ -10,6 +10,14 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.util.Map;
 
+/**
+ * KOSPI 종목 정보 DTO.
+ *
+ * <p>KRX API 응답을 파싱하여 KOSPI 종목 정보를 담는 DTO입니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor

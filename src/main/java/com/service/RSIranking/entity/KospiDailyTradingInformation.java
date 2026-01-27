@@ -12,6 +12,15 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * KOSPI 일별 매매 정보 엔티티.
+ *
+ * <p>KOSPI 종목의 일별 매매 정보를 저장하는 JPA 엔티티입니다.
+ * KospiStockInfoEntity와 ManyToOne 관계를 가집니다.</p>
+ *
+ * @author RSIranking Team
+ * @version 1.0
+ */
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor

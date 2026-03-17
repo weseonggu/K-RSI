@@ -33,14 +33,14 @@ import java.util.stream.Collectors;
  * </ul>
  *
  * @author RSIranking Team
- * @version 1.0
+ * @version 1.1
  * @see RSIMessageDTO
  */
 @StepScope
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class RSIMessageMakeProccess implements ItemProcessor<StockInfoEntity, RSIMessageDTO> {
+public class RSIMessageMakeProcess implements ItemProcessor<StockInfoEntity, RSIMessageDTO> {
 
     private String targetDate;
     private String mkt_nm;
@@ -53,14 +53,13 @@ public class RSIMessageMakeProccess implements ItemProcessor<StockInfoEntity, RS
      * @param stepExecution Step 실행 정보
      */
     @BeforeStep
-    public void retrieveMarketDate(StepExecution stepExecution){
+    public void retrieveMarketDate(StepExecution stepExecution) {
         this.stepExecution = stepExecution;
         JobParameters jobParameters = stepExecution.getJobParameters();
         this.targetDate = jobParameters.getString("targetDate");
         this.mkt_nm = jobParameters.getString("mktNm");
-        this.marketDate =reverseSerialization(jobParameters.getString("marketDayList"));
+        this.marketDate = reverseSerialization(jobParameters.getString("marketDayList"));
     }
-
 
     /**
      * 종목 정보를 RSI 계산 메시지 DTO로 변환합니다.
@@ -71,14 +70,14 @@ public class RSIMessageMakeProccess implements ItemProcessor<StockInfoEntity, RS
      */
     @Override
     public RSIMessageDTO process(StockInfoEntity item) throws Exception {
-        RSIMessageDTO messageDTO = new RSIMessageDTO(item.getId(), this.targetDate, this.mkt_nm, this.marketDate);
-        return messageDTO;
+        return new RSIMessageDTO(item.getId(), this.targetDate, this.mkt_nm, this.marketDate);
     }
 
     /**
-     * 잡 파라미터 장날 문자열 역직렬화
-     * @param marketDate
-     * @return
+     * Job 파라미터의 장 날짜 문자열을 LocalDate 리스트로 역직렬화합니다.
+     *
+     * @param marketDate 쉼표로 구분된 날짜 문자열 (yyyyMMdd)
+     * @return LocalDate 리스트
      */
     private List<LocalDate> reverseSerialization(String marketDate) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");

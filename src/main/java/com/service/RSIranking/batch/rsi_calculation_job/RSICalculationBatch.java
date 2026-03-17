@@ -4,7 +4,7 @@ package com.service.RSIranking.batch.rsi_calculation_job;
 import com.service.RSIranking.batch.measurement.JobExecutionTimeListener;
 import com.service.RSIranking.batch.measurement.StepExecutionTimeListener;
 import com.service.RSIranking.batch.rsi_calculation_job.step.MessageProduceWriter;
-import com.service.RSIranking.batch.rsi_calculation_job.step.RSIMessageMakeProccess;
+import com.service.RSIranking.batch.rsi_calculation_job.step.RSIMessageMakeProcess;
 import com.service.RSIranking.batch.stock_info_job.step.GetStockInfoToDBReader;
 import com.service.RSIranking.dto.RSIMessageDTO;
 
@@ -30,7 +30,7 @@ import org.springframework.transaction.PlatformTransactionManager;
  * RSICalculationJob
  *   └── produceRSIMessageStep
  *         ├── Reader: GetStockInfoToDBReader (DB에서 종목 정보 읽기)
- *         ├── Processor: RSIMessageMakeProccess (RSI 메시지 DTO 생성)
+ *         ├── Processor: RSIMessageMakeProcess (RSI 메시지 DTO 생성)
  *         └── Writer: MessageProduceWriter (Redis Stream에 메시지 발행)
  * </pre>
  *
@@ -39,7 +39,7 @@ import org.springframework.transaction.PlatformTransactionManager;
  *
  * @author RSIranking Team
  * @version 1.0
- * @see RSIMessageMakeProccess
+ * @see RSIMessageMakeProcess
  * @see MessageProduceWriter
  */
 @Configuration
@@ -51,14 +51,14 @@ public class RSICalculationBatch {
 
     //----------------------------Step들--------------------------------------------
     private final GetStockInfoToDBReader getStockInfoToDBReader;
-    private final RSIMessageMakeProccess rsiMessageMakeProccess;
+    private final RSIMessageMakeProcess rsiMessageMakeProcess;
     private final MessageProduceWriter messageProduceWriter;
     public RSICalculationBatch(JobRepository jobRepository,
                                  @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
                                  JobExecutionTimeListener jobExecutionTimeListener,
                                  StepExecutionTimeListener stepExecutionTimeListener,
                                GetStockInfoToDBReader getStockInfoToDBReader,
-                               RSIMessageMakeProccess rsiMessageMakeProccess,
+                               RSIMessageMakeProcess rsiMessageMakeProcess,
                                MessageProduceWriter messageProduceWriter)
     {
         this.jobRepository =  jobRepository;
@@ -67,7 +67,7 @@ public class RSICalculationBatch {
         this.stepExecutionTimeListener = stepExecutionTimeListener;
         this.getStockInfoToDBReader = getStockInfoToDBReader;
 
-        this.rsiMessageMakeProccess = rsiMessageMakeProccess;
+        this.rsiMessageMakeProcess = rsiMessageMakeProcess;
         this.messageProduceWriter = messageProduceWriter;
 
 
@@ -104,7 +104,7 @@ public class RSICalculationBatch {
         return new StepBuilder("produceRSIMessageStep", jobRepository)
                 .<StockInfoEntity, RSIMessageDTO>chunk(50, platformTransactionManager)
                 .reader(getStockInfoToDBReader)// DB에서 종목 데이터 읽어 오기
-                .processor(rsiMessageMakeProccess) // 메세지 생성
+                .processor(rsiMessageMakeProcess) // 메세지 생성
                 .writer(messageProduceWriter) // 메세지 큐에 전송
                 .listener(getStockInfoToDBReader)
                 .listener(stepExecutionTimeListener) // step 실행시간 측정 리스너

@@ -35,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @author RSIranking Team
  * @version 1.0
- * @see AsyncJobLanucher
+ * @see AsyncJobLauncher
  * @see com.service.RSIranking.batch.stock_info.SecuritiesStocksBatch
  */
 @Configuration
@@ -50,7 +50,7 @@ public class StockInfoLauncher {
     private final KrxApiProperties krxApiProperties;
     private final IsClosedDay isClosedDay;
     private final DateUtil dateUtil;
-    private final AsyncJobLanucher asyncJobLanucher;
+    private final AsyncJobLauncher asyncJobLauncher;
 
     /**
      * 종목 정보 업데이트 스케줄 실행 메서드.
@@ -109,8 +109,6 @@ public class StockInfoLauncher {
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 
-//        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), kospiJobParameters);
-
         JobParameters kosdaqJobParameters = new JobParametersBuilder()
                 .addString("date", date)
                 .addString("apiUrl", krxApiProperties.getKosdaqInfoUrl())
@@ -119,37 +117,19 @@ public class StockInfoLauncher {
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 
-//        jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), kosdaqJobParameters);
+        CompletableFuture<Void> kospiFuture = asyncJobLauncher.runKospiInfoJob(kospiJobParameters);
+        CompletableFuture<Void> kosdaqFuture = asyncJobLauncher.runKosdaqInfoJob(kosdaqJobParameters);
 
-        CompletableFuture<Void> kospiFuture = asyncJobLanucher.runKospiInfoJob(kospiJobParameters);
-        Thread.sleep(200);
-        CompletableFuture<Void> kosdaqFuture = asyncJobLanucher.runKosdaqInfoJob(kosdaqJobParameters);
-
-        // 모든 작업 완료를 기다림 (blocking)
-        CompletableFuture.allOf(kospiFuture, kosdaqFuture).get();
-
-
-        // 개별 완료 후 처리
-        kospiFuture.whenComplete((result, ex) -> {
-            if (ex != null) {
-                log.info("KOSPI Stock Job 실패: " + ex.getMessage());
-            } else {
-                log.info("KOSPI Stock Job 완료");
-            }
-        });
-
-        kosdaqFuture.whenComplete((result, ex) -> {
-            if (ex != null) {
-                log.info("KOSDAQ Stock Job 실패: " + ex.getMessage());
-            } else {
-                log.info("KOSDAQ Stock Job 완료");
-            }
-        });
-
-        // 또는 두 작업 모두 완료된 후 실행
         CompletableFuture.allOf(kospiFuture, kosdaqFuture)
-                .thenRun(() -> log.info("모든 Stock 배치 작업 완료!"));
+                .thenRun(() -> log.info("모든 Stock 배치 작업 완료!"))
+                .exceptionally(ex -> {
+                    log.error("Stock 배치 작업 중 오류 발생: {}", ex.getMessage(), ex);
+                    return null;
+                })
+                .get();
 
+        log.info("KOSPI Stock Job 완료: {}", kospiFuture.isCompletedExceptionally() ? "실패" : "성공");
+        log.info("KOSDAQ Stock Job 완료: {}", kosdaqFuture.isCompletedExceptionally() ? "실패" : "성공");
     }
 
 }

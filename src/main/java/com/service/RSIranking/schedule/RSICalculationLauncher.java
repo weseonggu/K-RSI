@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
  *
  * @author RSIranking Team
  * @version 1.0
- * @see AsyncJobLanucher
+ * @see AsyncJobLauncher
  * @see MarketDayForTheLast14Days
  * @see com.service.RSIranking.batch.rsi_calculation.RSICalculationBatch
  */
@@ -55,7 +55,7 @@ public class RSICalculationLauncher {
     private final DateUtil dateUtil;
     private final IsClosedDay isClosedDay;
     private final MarketDayForTheLast14Days marketDayForTheLast14Days;
-    private final AsyncJobLanucher asyncJobLanucher;
+    private final AsyncJobLauncher asyncJobLauncher;
 
     /**
      * RSI 지표 계산 스케줄 실행 메서드.
@@ -137,8 +137,6 @@ public class RSICalculationLauncher {
                 .addString("marketDayList", marketDayListString)
                 .toJobParameters();
 
-//        jobLauncher.run(jobRegistry.getJob(rsiJobName), kospiJobParameters);
-
         // KOSDAQ Job 런처
         JobParameters kosdaqJobParameters = new JobParametersBuilder()
                 .addString("date", jobExecutionTimestamp)
@@ -149,33 +147,18 @@ public class RSICalculationLauncher {
                 .addString("marketDayList", marketDayListString)
                 .toJobParameters();
 
-//        jobLauncher.run(jobRegistry.getJob(rsiJobName), kosdaqJobParameters);
-        CompletableFuture<Void> kospiFuture = asyncJobLanucher.runKospiRSICalculationJob(kospiJobParameters);
-        Thread.sleep(200);
-        CompletableFuture<Void> kosdaqFuture = asyncJobLanucher.runKosdaqRSICalculationJob(kosdaqJobParameters);
+        CompletableFuture<Void> kospiFuture = asyncJobLauncher.runKospiRSICalculationJob(kospiJobParameters);
+        CompletableFuture<Void> kosdaqFuture = asyncJobLauncher.runKosdaqRSICalculationJob(kosdaqJobParameters);
 
-        // 모든 작업 완료를 기다림 (blocking)
-        CompletableFuture.allOf(kospiFuture, kosdaqFuture).get();
-
-        // 개별 완료 후 처리
-        kospiFuture.whenComplete((result, ex) -> {
-            if (ex != null) {
-                log.info("KOSPI RSICalculation Job 실패: " + ex.getMessage());
-            } else {
-                log.info("KOSPI RSICalculation Job 완료");
-            }
-        });
-
-        kosdaqFuture.whenComplete((result, ex) -> {
-            if (ex != null) {
-                log.info("KOSDAQ RSICalculation Job 실패: " + ex.getMessage());
-            } else {
-                log.info("KOSDAQ RSICalculation Job 완료");
-            }
-        });
-
-        // 또는 두 작업 모두 완료된 후 실행
         CompletableFuture.allOf(kospiFuture, kosdaqFuture)
-                .thenRun(() -> log.info("모든 RSICalculation 배치 작업 완료!"));
+                .thenRun(() -> log.info("모든 RSICalculation 배치 작업 완료!"))
+                .exceptionally(ex -> {
+                    log.error("RSICalculation 배치 작업 중 오류 발생: {}", ex.getMessage(), ex);
+                    return null;
+                })
+                .get();
+
+        log.info("KOSPI RSICalculation Job 완료: {}", kospiFuture.isCompletedExceptionally() ? "실패" : "성공");
+        log.info("KOSDAQ RSICalculation Job 완료: {}", kosdaqFuture.isCompletedExceptionally() ? "실패" : "성공");
     }
 }

@@ -82,7 +82,7 @@ public class RSICalCulationConsumer {
     /**
      * KOSPI 스트림에서 RSI 계산 메시지를 소비합니다.
      */
-//    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 1000)
     public void consumeKospi() {
         log.info("Kospi컨슈머 실행");
         try {
@@ -139,7 +139,7 @@ public class RSICalCulationConsumer {
     /**
      * KOSDAQ 스트림에서 RSI 계산 메시지를 소비합니다.
      */
-//    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 1000)
     public void consumeKosdaq() {
         log.info("Kosdaq컨슈머 실행");
         try {

@@ -33,6 +33,8 @@ scheduler:
     enabled: false
   rsiconsumer:
     enabled: true
+  rsistreamlistener:
+    enabled: false
 
 
 server:

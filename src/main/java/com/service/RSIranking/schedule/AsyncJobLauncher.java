@@ -26,13 +26,13 @@ import java.util.concurrent.CompletableFuture;
  * 비동기 실행되며, {@link CompletableFuture}를 반환합니다.</p>
  *
  * @author RSIranking Team
- * @version 1.0
+ * @version 1.1
  * @see org.springframework.batch.core.launch.JobLauncher
  * @see org.springframework.batch.core.configuration.JobRegistry
  */
 @Service
 @RequiredArgsConstructor
-public class AsyncJobLanucher {
+public class AsyncJobLauncher {
 
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
@@ -44,14 +44,13 @@ public class AsyncJobLanucher {
      * @return 작업 완료를 나타내는 CompletableFuture
      */
     @Async("asyncExecutor")
-    public CompletableFuture<Void> runKospiInfoJob(JobParameters parameters){
+    public CompletableFuture<Void> runKospiInfoJob(JobParameters parameters) {
         try {
             jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
             return CompletableFuture.completedFuture(null);
-        }catch (Exception e){
+        } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
-
     }
 
     /**
@@ -61,11 +60,11 @@ public class AsyncJobLanucher {
      * @return 작업 완료를 나타내는 CompletableFuture
      */
     @Async("asyncExecutor")
-    public CompletableFuture<Void> runKosdaqInfoJob(JobParameters parameters){
+    public CompletableFuture<Void> runKosdaqInfoJob(JobParameters parameters) {
         try {
             jobLauncher.run(jobRegistry.getJob("stockUpdateJob"), parameters);
             return CompletableFuture.completedFuture(null);
-        }catch (Exception e){
+        } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
     }
@@ -77,11 +76,11 @@ public class AsyncJobLanucher {
      * @return 작업 완료를 나타내는 CompletableFuture
      */
     @Async("asyncExecutor")
-    public CompletableFuture<Void> runKospiTradingJob(JobParameters parameters){
+    public CompletableFuture<Void> runKospiTradingJob(JobParameters parameters) {
         try {
-        jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
+            jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
             return CompletableFuture.completedFuture(null);
-        }catch (Exception e){
+        } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
     }
@@ -93,14 +92,15 @@ public class AsyncJobLanucher {
      * @return 작업 완료를 나타내는 CompletableFuture
      */
     @Async("asyncExecutor")
-    public CompletableFuture<Void> runKosdaqTradingJob(JobParameters parameters){
+    public CompletableFuture<Void> runKosdaqTradingJob(JobParameters parameters) {
         try {
             jobLauncher.run(jobRegistry.getJob("dailyTradingInformationUpdateJob"), parameters);
             return CompletableFuture.completedFuture(null);
-        }catch (Exception e){
+        } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
     }
+
     /**
      * KOSPI RSI 지표 계산 작업을 비동기로 실행합니다.
      *
@@ -108,14 +108,15 @@ public class AsyncJobLanucher {
      * @return 작업 완료를 나타내는 CompletableFuture
      */
     @Async("asyncExecutor")
-    public CompletableFuture<Void> runKospiRSICalculationJob(JobParameters parameters){
+    public CompletableFuture<Void> runKospiRSICalculationJob(JobParameters parameters) {
         try {
             jobLauncher.run(jobRegistry.getJob("RSICalculationJob"), parameters);
             return CompletableFuture.completedFuture(null);
-        }catch (Exception e){
+        } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
     }
+
     /**
      * KOSDAQ RSI 지표 계산 작업을 비동기로 실행합니다.
      *
@@ -123,11 +124,11 @@ public class AsyncJobLanucher {
      * @return 작업 완료를 나타내는 CompletableFuture
      */
     @Async("asyncExecutor")
-    public CompletableFuture<Void> runKosdaqRSICalculationJob(JobParameters parameters){
+    public CompletableFuture<Void> runKosdaqRSICalculationJob(JobParameters parameters) {
         try {
             jobLauncher.run(jobRegistry.getJob("RSICalculationJob"), parameters);
             return CompletableFuture.completedFuture(null);
-        }catch (Exception e){
+        } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
     }

@@ -2,7 +2,6 @@ package com.service.RSIranking.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.service.RSIranking.dto.StockDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,7 +12,6 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -33,102 +31,77 @@ import java.util.Optional;
  * <p>Jackson ObjectMapper를 사용하여 JSON 형태로 직렬화/역직렬화합니다.</p>
  *
  * @author RSIranking Team
- * @version 1.0
+ * @version 1.1
  */
 @Service
 @Slf4j
 public class InterStepDataSharingWithRedisService {
-    private final RedisTemplate<String, String > stockRedisTemplate;
+    private final RedisTemplate<String, String> stockRedisTemplate;
     private final ObjectMapper objectMapper;
 
-    public InterStepDataSharingWithRedisService (
-            @Qualifier("stockRedisTemplate")RedisTemplate<String, String> stockRedisTemplate,
+    public InterStepDataSharingWithRedisService(
+            @Qualifier("stockRedisTemplate") RedisTemplate<String, String> stockRedisTemplate,
             ObjectMapper objectMapper
-    ){
+    ) {
         this.stockRedisTemplate = stockRedisTemplate;
         this.objectMapper = objectMapper;
     }
 
     /**
-     * 스탭간 데이터 공유를 위한 레디스 저장
-     * @param key 키
+     * Step 간 데이터 공유를 위한 Redis 저장
+     *
+     * @param key   키
      * @param value 데이터
-     * @return 성공 여부 0 1
+     * @return 성공 여부
      */
     @Retryable(recover = "failToPutData",
-            retryFor = {
-            RuntimeException.class
-    }
-    , maxAttempts = 3, backoff = @Backoff(delay = 2000))
-    public <T> boolean putStockToRedis(String key, T value){
+            retryFor = RuntimeException.class,
+            maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    public <T> boolean putStockToRedis(String key, T value) {
         try {
             String jsonData = objectMapper.writeValueAsString(value);
-
             ValueOperations<String, String> ops = stockRedisTemplate.opsForValue();
             ops.set(key, jsonData, Duration.ofHours(3));
             return true;
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("Redis 저장 중 예외 발생: ", e);
             throw new RuntimeException("레디스 저장 실패");
         }
-
     }
-//    public boolean putStockToRedis(String key, List<StockDto> value){
-//        try {
-//            ValueOperations<String, List<StockDto>> ops = stockRedisTemplate.opsForValue();
-//            ops.set(key, value, Duration.ofHours(3));
-//            return true;
-//        }catch (Exception e){
-//            log.error("Redis 저장 중 예외 발생: ", e);
-//            throw new RuntimeException("레디스 저장 실패");
-//        }
-//
-//    }
 
     @Recover
-    public boolean failToPutData(RuntimeException e, String key, List<StockDto> value){
-        log.info("Redis에 데이터 저장 실패: "+e);
+    public <T> boolean failToPutData(RuntimeException e, String key, T value) {
+        log.error("Redis에 데이터 저장 최종 실패: {}", e.getMessage());
         return false;
     }
 
-//=============================================================================================================
-
     /**
-     * 스탭간 데이터 고유시 데이터 조회 
-     * @param key 키
-     * @return 데이터
+     * Step 간 데이터 공유 시 데이터 조회
+     *
+     * @param key           키
+     * @param typeReference 역직렬화 타입 참조
+     * @return 데이터 Optional
      */
     @Retryable(recover = "failToGetData",
-            retryFor = {
-                    RuntimeException.class
-            }
-            , maxAttempts = 3, backoff = @Backoff(delay = 2000))
-    public <T> Optional<T> getStockToRedis(String key, TypeReference<T> typeReference){
-        try{
+            retryFor = RuntimeException.class,
+            maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    public <T> Optional<T> getStockToRedis(String key, TypeReference<T> typeReference) {
+        try {
             String jsonData = stockRedisTemplate.opsForValue().get(key);
             if (jsonData != null) {
-                T data  = objectMapper.readValue(jsonData, typeReference);
+                T data = objectMapper.readValue(jsonData, typeReference);
                 return Optional.ofNullable(data);
             }
-            return null;
-        }catch (Exception e){
+            return Optional.empty();
+        } catch (Exception e) {
             log.error("Redis에서 조회 중 예외 발생: ", e);
             throw new RuntimeException("레디스 조회 실패");
         }
     }
-//    public List<StockDto> getStockToRedis(String key){
-//        try{
-//            ValueOperations<String, List<StockDto>> ops = stockRedisTemplate.opsForValue();
-//            return ops.get(key);
-//        }catch (Exception e){
-//            log.error("Redis에서 조회 중 예외 발생: ", e);
-//            throw new RuntimeException("레디스 조회 실패");
-//        }
-//    }
-    @Recover
-    public boolean failToGetData(RuntimeException e, String key){
-        log.info("Redis에 데이터 조회 실패: "+e);
-        return false;
-    }
 
+    @Recover
+    public <T> Optional<T> failToGetData(RuntimeException e, String key, TypeReference<T> typeReference) {
+        log.error("Redis에 데이터 조회 최종 실패: {}", e.getMessage());
+        return Optional.empty();
+    }
 }

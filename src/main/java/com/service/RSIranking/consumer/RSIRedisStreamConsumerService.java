@@ -1,11 +1,11 @@
 package com.service.RSIranking.consumer;
 
-import com.service.RSIranking.dto.RSIMessageDTO;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.stream.Consumer;
-import org.springframework.data.redis.connection.stream.ObjectRecord;
+import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,7 +13,7 @@ import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.stereotype.Service;
 
 /**
- * Redis Stream Consumer 서비스.
+ * Redis Stream Consumer 서비스 (리스너 기반).
  *
  * <p>StreamMessageListenerContainer를 사용하여 Redis Stream의 메시지를
  * 비동기적으로 수신하고 처리합니다.</p>
@@ -24,39 +24,51 @@ import org.springframework.stereotype.Service;
  *   <li>KOSDAQ: RSI-Kosdaq-Group / RSI-Kosdaq-consumer-01</li>
  * </ul>
  *
+ * <h2>활성화 조건</h2>
+ * <p>{@code scheduler.rsistreamlistener.enabled=true} 설정 시 활성화됩니다.
+ * 기본값은 비활성화이며, RSICalCulationConsumer와 동시에 활성화하지 마십시오.</p>
+ *
  * @author RSIranking Team
- * @version 1.0
+ * @version 1.1
  */
 @Service
 @Slf4j
+@ConditionalOnProperty(name = "scheduler.rsistreamlistener.enabled", havingValue = "true", matchIfMissing = false)
 public class RSIRedisStreamConsumerService {
-
 
     private static final String STREAM_KEY_PREFIX = "rsi:calculation:stream:";
     private static final String KOSPI_STREAM = STREAM_KEY_PREFIX + "KOSPI";
     private static final String KOSDAQ_STREAM = STREAM_KEY_PREFIX + "KOSDAQ";
     private static final String KOSPI_CONSUMER_GROUP = "RSI-Kospi-Group";
     private static final String KOSDAQ_CONSUMER_GROUP = "RSI-Kosdaq-Group";
-    private static final String KOSPI_CONSUMER_NAME = "RSI-Kospi-consumer-";
-    private static final String KOSDAQ_CONSUMER_NAME = "RSI-Kosdaq-consumer-";
-    private final StreamMessageListenerContainer<String, ObjectRecord<String, RSIMessageDTO>> listenerContainer;
-    private final RSIStreanListener rsiStreanListener;
-    private final RedisTemplate<String, RSIMessageDTO> redisTemplate;
+    private static final String KOSPI_CONSUMER_NAME = "RSI-Kospi-consumer-01";
+    private static final String KOSDAQ_CONSUMER_NAME = "RSI-Kosdaq-consumer-01";
 
-    public RSIRedisStreamConsumerService (
-            @Qualifier("RSIStreamMessageListenerContainer")StreamMessageListenerContainer streamMessageListenerContainer,
-            RSIStreanListener rsiStreanListener,
-            @Qualifier("rsiMessageRedisTemplate") RedisTemplate redisTemplate){
+    private final StreamMessageListenerContainer<String, MapRecord<String, String, String>> listenerContainer;
+    private final RSIStreamListener rsiStreamListener;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    public RSIRedisStreamConsumerService(
+            @Qualifier("RSIStreamMessageListenerContainer") StreamMessageListenerContainer<String, MapRecord<String, String, String>> streamMessageListenerContainer,
+            RSIStreamListener rsiStreamListener,
+            @Qualifier("rsiMessageRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
 
         this.listenerContainer = streamMessageListenerContainer;
-        this.rsiStreanListener = rsiStreanListener;
+        this.rsiStreamListener = rsiStreamListener;
         this.redisTemplate = redisTemplate;
-        initializeConsumerGroups();
     }
 
     /**
-     * Consumer Group을 초기화합니다.
+     * Consumer Group을 초기화하고 리스너를 등록한 뒤 컨테이너를 시작합니다.
      */
+    @PostConstruct
+    public void initialize() {
+        initializeConsumerGroups();
+        registerListeners();
+        listenerContainer.start();
+        log.info("Redis Stream Listener Container 시작 완료");
+    }
+
     private void initializeConsumerGroups() {
         try {
             redisTemplate.opsForStream().createGroup(KOSPI_STREAM, KOSPI_CONSUMER_GROUP);
@@ -73,42 +85,27 @@ public class RSIRedisStreamConsumerService {
         }
     }
 
-    /**
-     * KOSPI 스트림 Consumer를 시작합니다.
-     */
-    @PostConstruct
-    public void startKospi() {
-        try{
-            log.info("코스피 메세지 가져오기");
+    private void registerListeners() {
+        try {
+            log.info("코스피 스트림 리스너 등록");
             listenerContainer.receive(
-                    Consumer.from(KOSPI_CONSUMER_GROUP, KOSPI_CONSUMER_NAME+"01"),  // consumer group 설정
-                    StreamOffset.create(KOSPI_STREAM, ReadOffset.from("0")),  // 스트림과 오프셋 지정
-                    rsiStreanListener
+                    Consumer.from(KOSPI_CONSUMER_GROUP, KOSPI_CONSUMER_NAME),
+                    StreamOffset.create(KOSPI_STREAM, ReadOffset.lastConsumed()),
+                    rsiStreamListener
             );
-
-            listenerContainer.start();
-        }catch (Exception e){
-            log.info(e.getMessage());
+        } catch (Exception e) {
+            log.error("코스피 스트림 리스너 등록 실패: {}", e.getMessage(), e);
         }
 
-    }
-
-    /**
-     * KOSDAQ 스트림 Consumer를 시작합니다.
-     */
-    @PostConstruct
-    public void startKosdaq() {
-        try{
-            log.info("코스닥 메세지 가져오기");
+        try {
+            log.info("코스닥 스트림 리스너 등록");
             listenerContainer.receive(
-                    Consumer.from(KOSDAQ_CONSUMER_GROUP, KOSDAQ_CONSUMER_NAME+"01"),  // consumer group 설정
-                    StreamOffset.create(KOSDAQ_STREAM, ReadOffset.from("0")),  // 스트림과 오프셋 지정
-                    rsiStreanListener
+                    Consumer.from(KOSDAQ_CONSUMER_GROUP, KOSDAQ_CONSUMER_NAME),
+                    StreamOffset.create(KOSDAQ_STREAM, ReadOffset.lastConsumed()),
+                    rsiStreamListener
             );
-
-            listenerContainer.start();
-        }catch (Exception e){
-            log.info(e.getMessage());
+        } catch (Exception e) {
+            log.error("코스닥 스트림 리스너 등록 실패: {}", e.getMessage(), e);
         }
     }
 }

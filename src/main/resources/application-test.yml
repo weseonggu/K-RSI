@@ -26,13 +26,18 @@ spring:
       timeout: 3000
 scheduler:
   stockinfo:
-    enabled: true
+    enabled: false
   dailytranding:
-    enabled: true
+    enabled: false
   rsiproducer:
-    enabled: true
+    enabled: false
   rsiconsumer:
     enabled: false
+  rsistreamlistener:
+    enabled: false
+  master:
+    enabled: false
+    cron: "0 30 18 * * MON-FRI"
 
 
 server:
@@ -44,4 +49,4 @@ api:
     kosdaq-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/ksq_isu_base_info"
     kospi-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/stk_bydd_trd"
     kosdaq-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/ksq_bydd_trd"
-    key: "3DAF2BE024974AD1B472C1F214E2A63D376D41E0"
+    key: "B2C6C1D955D84DDB947EAD2914C0B3F9CD2AFB11"

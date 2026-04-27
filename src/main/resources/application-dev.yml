@@ -49,4 +49,4 @@ api:
     kosdaq-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/ksq_isu_base_info"
     kospi-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/stk_bydd_trd"
     kosdaq-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/ksq_bydd_trd"
-    key: "B2C6C1D955D84DDB947EAD2914C0B3F9CD2AFB11"
+    key: "4B9A9037147345DEAD48BACE5FF5899BA7A1635D"

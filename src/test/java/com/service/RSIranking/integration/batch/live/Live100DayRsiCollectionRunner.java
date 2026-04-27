@@ -81,8 +81,11 @@ import static org.assertj.core.api.Assertions.assertThat;
         "scheduler.stockinfo.enabled=false",
         "scheduler.dailytranding.enabled=false",
         "scheduler.rsiproducer.enabled=false",
+        // RSICalCulationConsumer (polling) 는 비활성화 - 아래 listener와 동시 활성화 금지
         "scheduler.rsiconsumer.enabled=false",
-        "scheduler.rsistreamlistener.enabled=false"
+        // RSI 계산 결과 메시지를 DB에 적재하는 listener consumer 는 활성화해야
+        // produce된 메시지가 실제로 소비되어 daily_trading_information.rsi 컬럼에 반영됨
+        "scheduler.rsistreamlistener.enabled=true"
 })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -239,6 +242,28 @@ class Live100DayRsiCollectionRunner {
             sleepThrottle();
         }
         summarize("RSI", rsiResults);
+
+        // RSI listener consumer (rsistreamlistener) 가 스트림 메시지를 비동기로 소비하므로,
+        // produce가 끝났다고 곧바로 DB rsi 컬럼이 채워졌다고 가정할 수 없다.
+        // verify_finalState가 정확한 결과를 보려면 consumer가 stream을 모두 소비할 시간을 준다.
+        waitForRsiStreamDrain();
+    }
+
+    /**
+     * KOSPI/KOSDAQ stream의 pending 메시지가 0이 되거나 timeout이 만료될 때까지 대기.
+     * 정확한 metric은 XPENDING이지만, 간단히 stream length 안정화 + 짧은 추가 대기로 처리한다.
+     * (consumer가 ack 후 XDEL을 호출하지 않으면 stream length는 줄지 않으므로, 여기서는
+     * fixed delay로 충분한 처리 시간을 보장하는 식으로 구현)
+     */
+    private void waitForRsiStreamDrain() {
+        long drainSecs = Long.parseLong(System.getProperty("rsi.live.drainSecs", "30"));
+        log.info("RSI stream drain 대기 시작 ({}초) - listener consumer가 메시지를 처리할 시간", drainSecs);
+        try {
+            Thread.sleep(drainSecs * 1000L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        log.info("RSI stream drain 대기 종료");
     }
 
     // ==================== Step 5: verify ====================

@@ -75,8 +75,12 @@ public class RequestDailyTradingInfoTasklet implements Tasklet {
 
         // 응답 데이터 확인
         // response이 null 이면 스탭 종료밑 배치 종료
-        if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null || response == null ||
+        // null 체크를 먼저 수행해야 NPE 발생 안 함
+        if (response == null || response.getStatusCode() != HttpStatus.OK || response.getBody() == null ||
                 !response.getBody().containsKey("OutBlock_1")) {
+            log.warn("{}: KRX 응답 비정상 (response={}, statusCode={}) - 스킵",
+                    mktNM, response,
+                    response == null ? "null" : response.getStatusCode());
             stepExecution.setExitStatus(new ExitStatus("NO_DATA"));
             return RepeatStatus.FINISHED; // 데이터가 없으면 배치를 종료
         }

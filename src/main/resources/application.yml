@@ -5,4 +5,10 @@ spring:
       prod: prod
       test: test
     active: dev
-
+  batch:
+    jdbc:
+      # JobRepository createJobExecution 격리수준을 SERIALIZABLE → READ_COMMITTED로 완화.
+      # KOSPI/KOSDAQ가 동일 job_name으로 동시 실행될 때 SERIALIZABLE이 BATCH_JOB_INSTANCE
+      # INSERT에서 갭락 경합을 일으켜 데드락이 발생하던 문제 해소.
+      # (mktNm JobParameter로 인스턴스 유니크는 보장됨)
+      isolation-level-for-create: READ_COMMITTED

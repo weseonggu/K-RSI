@@ -77,7 +77,8 @@ public class KrxRequestService {
      */
     @Recover
     public ResponseEntity<Map> recover(RestClientException e, ApiConfig apiConfig, String date) {
-        log.info("데이터 가져오기 실패");
+        log.error("KRX API 데이터 가져오기 실패 - url={}, date={}, cause={}: {}",
+                apiConfig.getUrl(), date, e.getClass().getSimpleName(), e.getMessage(), e);
         return null;
     }
 }

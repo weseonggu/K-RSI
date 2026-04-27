@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import javax.sql.DataSource;
 import java.time.DayOfWeek;
@@ -74,6 +75,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 @SpringBootTest
 @ActiveProfiles("dev")
+@TestPropertySource(properties = {
+        // 러너 실행 중 자동 스케줄러가 중복으로 마스터 잡을 트리거하지 않도록 강제 비활성화
+        "scheduler.master.enabled=false",
+        "scheduler.stockinfo.enabled=false",
+        "scheduler.dailytranding.enabled=false",
+        "scheduler.rsiproducer.enabled=false",
+        "scheduler.rsiconsumer.enabled=false",
+        "scheduler.rsistreamlistener.enabled=false"
+})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @EnabledIfSystemProperty(named = "rsi.live.run", matches = "true")

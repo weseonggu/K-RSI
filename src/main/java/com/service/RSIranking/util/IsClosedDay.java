@@ -63,7 +63,8 @@ public class IsClosedDay {
         ApiConfig apiConfig = new ApiConfig(krxApiProperties.getKey(), krxApiProperties.getKospiInfoUrl());
         ResponseEntity<Map> response = krxRequestService.krxRequest(apiConfig, date);
 
-        if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null || response == null ||
+        // null 체크를 먼저 수행해야 NPE 발생 안 함
+        if (response == null || response.getStatusCode() != HttpStatus.OK || response.getBody() == null ||
                 !response.getBody().containsKey("OutBlock_1")){
             throw new RuntimeException("KRX API에 문제가 생김 요청 실패");
         }

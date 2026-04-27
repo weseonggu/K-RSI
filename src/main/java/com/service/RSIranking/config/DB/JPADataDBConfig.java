@@ -1,5 +1,6 @@
 package com.service.RSIranking.config.DB;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -50,12 +51,22 @@ public class JPADataDBConfig {
     /**
      * 비즈니스 데이터 DB용 DataSource를 생성합니다.
      *
+     * <p>HikariCP 풀 사이즈를 명시적으로 설정합니다. KOSPI/KOSDAQ 자식 Job들이 동시에
+     * chunk(50) commit을 회전시키므로 풀이 좁으면 사실상 직렬화됩니다.
+     * 최소 8, 안전 20으로 설정합니다.</p>
+     *
      * @return 데이터 DataSource
      */
     @Bean(name = "dataDBSource")
     @ConfigurationProperties(prefix = "spring.datasource-data")
     public DataSource dataDBSource() {
-        return DataSourceBuilder.create().build();
+        HikariDataSource ds = DataSourceBuilder.create().type(HikariDataSource.class).build();
+        ds.setMaximumPoolSize(20);
+        ds.setMinimumIdle(5);
+        ds.setConnectionTimeout(30_000L);
+        ds.setLeakDetectionThreshold(60_000L);
+        ds.setPoolName("DataDBPool");
+        return ds;
     }
     /**
      * JPA EntityManagerFactory를 생성합니다.

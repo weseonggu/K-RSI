@@ -10,7 +10,7 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -44,6 +44,17 @@ import org.springframework.transaction.PlatformTransactionManager;
 public class MasterJobBatchConfig {
 
     private final JobRepository jobRepository;
+    /**
+     * 마스터 Step 전용 트랜잭션 매니저.
+     *
+     * <p>{@link ResourcelessTransactionManager}를 사용한다. 마스터 Step의 Tasklet은
+     * 자식 Job이 끝날 때까지(수십 초) 블록 대기하므로, 일반 DB Tx 매니저를 쓰면
+     * 그 시간 동안 meta DB 커넥션 한 자리를 점유하여 자식 Job들의 풀 경쟁을 유발한다.
+     * 마스터 Tasklet은 DB I/O를 직접 하지 않는 dispatcher이므로 Tx가 불필요하다.</p>
+     *
+     * <p>Spring Batch의 step_execution 갱신은 JobRepository가 별도 Tx로 처리하므로
+     * 본 매니저 변경의 영향을 받지 않는다.</p>
+     */
     private final PlatformTransactionManager platformTransactionManager;
     private final MasterJobExecutionListener masterJobExecutionListener;
     private final StepExecutionTimeListener stepExecutionTimeListener;
@@ -54,14 +65,13 @@ public class MasterJobBatchConfig {
 
     public MasterJobBatchConfig(
             JobRepository jobRepository,
-            @Qualifier("metaTransactionManager") PlatformTransactionManager platformTransactionManager,
             MasterJobExecutionListener masterJobExecutionListener,
             StepExecutionTimeListener stepExecutionTimeListener,
             StockUpdateJobStepTasklet stockUpdateJobStepTasklet,
             TradingInfoJobStepTasklet tradingInfoJobStepTasklet,
             RSICalculationJobStepTasklet rsiCalculationJobStepTasklet) {
         this.jobRepository = jobRepository;
-        this.platformTransactionManager = platformTransactionManager;
+        this.platformTransactionManager = new ResourcelessTransactionManager();
         this.masterJobExecutionListener = masterJobExecutionListener;
         this.stepExecutionTimeListener = stepExecutionTimeListener;
         this.stockUpdateJobStepTasklet = stockUpdateJobStepTasklet;

@@ -50,6 +50,14 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Live runner용 시스템 프로퍼티를 test JVM으로 forward
+	// (Gradle은 기본적으로 -D 프로퍼티를 fork된 test JVM에 전달하지 않음)
+	['rsi.live.run', 'rsi.live.intervalMs'].each { key ->
+		def value = System.getProperty(key)
+		if (value != null) {
+			systemProperty key, value
+		}
+	}
 }
 bootJar {
 	enabled = true

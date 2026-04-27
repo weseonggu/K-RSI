@@ -13,6 +13,8 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 import javax.sql.DataSource;
 import java.text.SimpleDateFormat;
@@ -58,6 +60,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class RealDataCollectionTest extends AbstractIntegrationTest {
 
+    /**
+     * 부모 {@link AbstractIntegrationTest}에서 모든 스케줄러를 false로 설정하지만,
+     * 이 테스트는 RSI 메시지 produce 후 실제로 소비되어 DB에 반영되는지까지 검증해야 하므로
+     * RSI listener consumer만 다시 활성화한다.
+     *
+     * <p>{@code @DynamicPropertySource}는 같은 키가 부모/자식에 둘 다 있으면 자식이 이긴다.</p>
+     */
+    @DynamicPropertySource
+    static void overrideForRsiConsumer(DynamicPropertyRegistry registry) {
+        registry.add("scheduler.rsistreamlistener.enabled", () -> "true");
+    }
+
     @Autowired
     private AsyncJobLauncher asyncJobLauncher;
 
@@ -83,12 +97,12 @@ class RealDataCollectionTest extends AbstractIntegrationTest {
 
     /**
      * 100일치 영업일(평일) 목록을 생성합니다.
-     * 기준일: 2025-03-14 (금요일)부터 과거로 100 영업일.
+     * 기준일: 어제 날짜부터 과거로 100 영업일.
      * 과거 날짜가 리스트 앞, 최신 날짜가 뒤 순서입니다. (과거 → 최신 순)
      */
     private static List<String> generate100MarketDays() {
         List<String> marketDays = new ArrayList<>();
-        LocalDate current = LocalDate.of(2025, 3, 14);
+        LocalDate current = LocalDate.now().minusDays(1);
 
         while (marketDays.size() < 100) {
             DayOfWeek dow = current.getDayOfWeek();
@@ -323,13 +337,25 @@ class RealDataCollectionTest extends AbstractIntegrationTest {
     @Order(4)
     @DisplayName("Step 3: RSI 계산 실행 (최신 날짜 기준)")
     void step3_calculateRSI() throws Exception {
-        String targetDate = "20250314";
+        // 수집한 데이터의 가장 최신 날짜(어제)로 RSI 계산
+        String targetDate = LocalDate.now().minusDays(1).format(DATE_FORMAT);
 
         log.info("=== RSI 계산 시작 - 대상일: {} ===", targetDate);
 
         launchRSICalculationJob(targetDate);
 
         log.info("=== RSI 계산 완료 ===");
+
+        // RSI listener consumer는 비동기로 stream을 소비하므로,
+        // produce 직후엔 DB rsi 컬럼이 아직 채워지지 않았을 수 있다.
+        // step4 검증 정확도를 위해 drain 대기.
+        long drainSecs = Long.parseLong(System.getProperty("rsi.test.drainSecs", "15"));
+        log.info("RSI stream drain 대기 ({}초)", drainSecs);
+        try {
+            Thread.sleep(drainSecs * 1000L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     // ==================== Step 4: 최종 데이터 검증 ====================

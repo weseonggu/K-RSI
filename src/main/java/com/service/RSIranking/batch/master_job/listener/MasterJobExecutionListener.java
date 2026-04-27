@@ -6,6 +6,9 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 /**
  * 마스터 Job 실행 리스너.
  *
@@ -17,14 +20,15 @@ import org.springframework.stereotype.Component;
  *   <li>Job 종료 시: 최종 상태, 총 실행 시간, 실패 원인 (있는 경우)</li>
  * </ul>
  *
+ * <p>실행 시간은 Spring Batch가 자동 기록하는 {@link JobExecution#getStartTime()}/
+ * {@link JobExecution#getEndTime()}으로 계산합니다 (인스턴스 필드 race 제거).</p>
+ *
  * @author RSIranking Team
- * @version 1.0
+ * @version 1.1
  */
 @Component
 @Slf4j
 public class MasterJobExecutionListener implements JobExecutionListener {
-
-    private long startTime;
 
     /**
      * 마스터 Job 시작 전 호출됩니다.
@@ -33,7 +37,6 @@ public class MasterJobExecutionListener implements JobExecutionListener {
      */
     @Override
     public void beforeJob(JobExecution jobExecution) {
-        startTime = System.currentTimeMillis();
         log.info("========================================");
         log.info("마스터 파이프라인 Job 시작: {}", jobExecution.getJobInstance().getJobName());
         log.info("대상 날짜: {}", jobExecution.getJobParameters().getString("yesterday"));
@@ -48,16 +51,21 @@ public class MasterJobExecutionListener implements JobExecutionListener {
      */
     @Override
     public void afterJob(JobExecution jobExecution) {
-        long duration = System.currentTimeMillis() - startTime;
+        LocalDateTime start = jobExecution.getStartTime();
+        LocalDateTime end = jobExecution.getEndTime();
+        long durationMs = (start != null && end != null)
+                ? Duration.between(start, end).toMillis()
+                : -1L;
+
         BatchStatus status = jobExecution.getStatus();
 
         log.info("========================================");
         log.info("마스터 파이프라인 Job 종료");
         log.info("최종 상태: {}", status);
         log.info("총 실행 시간: {} ms ({} 분 {} 초)",
-                duration,
-                duration / 60000,
-                (duration % 60000) / 1000);
+                durationMs,
+                durationMs / 60000,
+                (durationMs % 60000) / 1000);
 
         if (status == BatchStatus.FAILED) {
             log.error("실패 원인:");

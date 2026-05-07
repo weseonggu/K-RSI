@@ -118,7 +118,8 @@ public class RSICalCulationConsumer {
                     // 여기에 KOSPI RSI 계산 로직 추가
                     callRSICalculationService(value.get("isu_cd").toString(),
                             value.get("targetDate").toString(),
-                            value.get("marketDate").toString());
+                            value.get("marketDate").toString(),
+                            "KOSPI");
                     // processKospiRSIMessage(value);
 
                     // 처리 성공 시 ACK + 삭제
@@ -175,7 +176,8 @@ public class RSICalCulationConsumer {
                     // 여기에 KOSDAQ RSI 계산 로직 추가
                     callRSICalculationService(value.get("isu_cd").toString(),
                             value.get("targetDate").toString(),
-                            value.get("marketDate").toString());
+                            value.get("marketDate").toString(),
+                            "KOSDAQ");
 
                     // 처리 성공 시 ACK + 삭제
                     redisTemplate.opsForStream().acknowledge(KOSDAQ_STREAM, CONSUMER_GROUP, message.getId());
@@ -198,8 +200,9 @@ public class RSICalCulationConsumer {
      * @param isuCD      종목 코드
      * @param targetDate 대상 날짜
      * @param marketDate 과거 14일 장 날짜 (쉼표 구분)
+     * @param mktNm      시장 구분 ("KOSPI" / "KOSDAQ")
      */
-    private void callRSICalculationService(String isuCD, String targetDate, String marketDate){
-        rsiCalculationService.rsiCalculation(isuCD, targetDate, marketDate);
+    private void callRSICalculationService(String isuCD, String targetDate, String marketDate, String mktNm){
+        rsiCalculationService.rsiCalculation(isuCD, targetDate, marketDate, mktNm);
     }
 }

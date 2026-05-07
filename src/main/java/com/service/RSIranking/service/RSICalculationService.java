@@ -53,8 +53,9 @@ public class RSICalculationService {
      * @param isuCd 종목 코드
      * @param targetDate 업데이트 날짜
      * @param marketDate 과거 14일 장날 문자열
+     * @param mktNm 시장 구분 ("KOSPI" / "KOSDAQ") - 분리된 테이블 라우팅에 사용
      */
-    public void rsiCalculation(String isuCd, String targetDate, String marketDate){
+    public void rsiCalculation(String isuCd, String targetDate, String marketDate, String mktNm){
 
         List<LocalDate> dates = new ArrayList<>();
         // 업데이트할 장 날짜 문자열 타입 변환
@@ -68,8 +69,8 @@ public class RSICalculationService {
         // 14일 날짜 합치기
         dates.addAll(marketDates);
 
-        // 종목 코드와 14일 날짜를 사용해서 매매 정보 조회 JDBC사용
-        List<KospiDailyTradingInformation> tradingInfo = dailyTradingJDBCRepository.findByIsuCdAndDateIn(isuCd, dates);
+        // 종목 코드와 14일 날짜를 사용해서 매매 정보 조회 JDBC사용 (시장별 분리 테이블)
+        List<KospiDailyTradingInformation> tradingInfo = dailyTradingJDBCRepository.findByIsuCdAndDateIn(isuCd, dates, mktNm);
 
         // tradingInfo의 사이즈가 14이면 메세지 처리 안함 신규 종목이여서
         if(tradingInfo.size() != 14){
@@ -115,7 +116,7 @@ public class RSICalculationService {
 
         log.info("Ag: "+Ag + " Al: "+ Al + " RSI: " + RSI);
         try {
-            updateTradingInfo(isuCd, targetDate, Ag, Al,RSI);
+            updateTradingInfo(isuCd, targetDate, Ag, Al, RSI, mktNm);
 
         }catch (RuntimeException e){
             throw e;
@@ -127,22 +128,28 @@ public class RSICalculationService {
     /**
      * 계산된 RSI 정보를 데이터베이스에 업데이트합니다.
      *
+     * <p>{@code mktNm}에 따라 {@code kospi_daily_trading_information} 또는
+     * {@code kosdaq_daily_trading_information} 테이블에 직접 UPDATE를 수행합니다.
+     * 분리 전 단일 {@code daily_trading_information} 테이블을 사용하던 JPA 경로는
+     * 분리 이후 데이터를 찾지 못하므로 JDBC update로 대체했습니다.</p>
+     *
      * @param isuCD      종목 코드
      * @param targetDate 업데이트 대상 날짜 (yyyyMMdd 형식)
      * @param Ag         평균 상승폭 (Average Gain)
      * @param Al         평균 하락폭 (Average Loss)
      * @param RSI        계산된 RSI 값
+     * @param mktNm      시장 구분 ("KOSPI" / "KOSDAQ")
      * @throws RuntimeException 업데이트 실패 시 발생
      * @throws NoSuchElementException 해당 종목/날짜의 거래 정보가 없을 경우 발생
      */
     @Transactional
-    public void updateTradingInfo(String isuCD, String targetDate, Double Ag, Double Al, Double RSI) throws  RuntimeException{
+    public void updateTradingInfo(String isuCD, String targetDate, Double Ag, Double Al, Double RSI, String mktNm) throws  RuntimeException{
         LocalDate date = LocalDate.parse(targetDate, formatter);
-        KospiDailyTradingInformation dailyInfo = kospiStockRepository.findTradingInfoWithStock(isuCD, date)
-                .orElseThrow(()-> new NoSuchElementException());
-//        log.info("종목: "+dailyInfo.getStock().getId());
-        dailyInfo.updateRSIInfo(Ag,Al,RSI);
-        dailyTradingInformationRepository.save(dailyInfo);
+        int updated = dailyTradingJDBCRepository.updateRsi(isuCD, date, Ag, Al, RSI, mktNm);
+        if (updated == 0) {
+            throw new NoSuchElementException(
+                    "RSI 업데이트 대상 행이 없습니다. mktNm=" + mktNm + ", isuCd=" + isuCD + ", date=" + date);
+        }
     }
 
 // ===============================================신규 종목인지 아닌지 파악하는 메소드===============================================

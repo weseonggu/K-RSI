@@ -35,7 +35,7 @@ public class TradingDataSelect {
                 LocalDate.of(2025, 4, 22)
         );
         ObjectMapper mapper = new ObjectMapper();
-        List<KospiDailyTradingInformation> infoList = dailyTradingInformationJDBCRepository.findByIsuCdAndDateIn("000020", dates);
+        List<KospiDailyTradingInformation> infoList = dailyTradingInformationJDBCRepository.findByIsuCdAndDateIn("000020", dates, "KOSPI");
         for (KospiDailyTradingInformation data : infoList){
             System.out.println(data.getId()+" "+data.getCmpprevddPrc()+" "+data.getFlucRt());
         }

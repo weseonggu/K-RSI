@@ -139,29 +139,33 @@ public class DailyTradingInformationJDBCRepository {
      * <p>RSI 계산을 위해 최근 14일간의 매매 정보를 조회하는 데 사용됩니다.
      * 결과는 날짜 기준 내림차순으로 정렬됩니다.</p>
      *
-     * <p><b>TODO:</b> 테이블 분리로 인한 수정 필요 - 현재 daily_trading_information 테이블 참조</p>
+     * <p>{@code mktNm}에 따라 {@code kospi_daily_trading_information} 또는
+     * {@code kosdaq_daily_trading_information} 테이블을 조회합니다.</p>
      *
      * @param isuCd 종목 코드
      * @param dates 조회할 날짜 목록
+     * @param mktNm 시장 구분 ("KOSPI" / "KOSDAQ")
      * @return 해당 종목의 매매 정보 목록 (날짜 내림차순)
      */
-    public List<KospiDailyTradingInformation> findByIsuCdAndDateIn(String isuCd, List<LocalDate> dates) {
+    public List<KospiDailyTradingInformation> findByIsuCdAndDateIn(String isuCd, List<LocalDate> dates, String mktNm) {
         if (dates == null || dates.isEmpty()) {
             return Collections.emptyList();
         }
+
+        String tableName = resolveTableName(mktNm);
 
         String inSql = dates.stream()
                 .map(d -> "?")
                 .collect(Collectors.joining(", "));
 
         String sql = String.format("""
-        SELECT 
-            id, date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc, 
+        SELECT
+            id, date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc,
             rsi, acc_trdvol, acc_trdval, avg_closing_gain, avg_closing_loss
-        FROM daily_trading_information
+        FROM %s
         WHERE isu_cd = ? AND date IN (%s)
         ORDER BY date DESC
-        """, inSql);
+        """, tableName, inSql);
 
         List<Object> params = new ArrayList<>();
         params.add(isuCd);
@@ -184,6 +188,45 @@ public class DailyTradingInformationJDBCRepository {
                     .avgClosingLoss(rs.getObject("avg_closing_loss", Double.class))
                     .build();
         });
+    }
+
+    /**
+     * RSI 계산 결과를 시장에 맞는 테이블에 직접 UPDATE합니다.
+     *
+     * <p>JPA 경로(legacy {@code daily_trading_information} 단일 테이블 의존)를 우회하기 위한
+     * 분리 테이블 직접 업데이트 메서드입니다.</p>
+     *
+     * @param isuCd 종목 코드
+     * @param date  대상 날짜
+     * @param ag    평균 상승폭
+     * @param al    평균 하락폭
+     * @param rsi   RSI 지표
+     * @param mktNm 시장 구분 ("KOSPI" / "KOSDAQ")
+     * @return 업데이트된 행 수 (정상이면 1)
+     */
+    public int updateRsi(String isuCd, LocalDate date, Double ag, Double al, Double rsi, String mktNm) {
+        String tableName = resolveTableName(mktNm);
+        String sql = String.format("""
+        UPDATE %s
+        SET avg_closing_gain = ?, avg_closing_loss = ?, rsi = ?
+        WHERE isu_cd = ? AND date = ?
+        """, tableName);
+        return jdbcTemplate.update(sql, ag, al, rsi, isuCd, date);
+    }
+
+    /**
+     * 시장 구분 문자열을 검증된 테이블 이름으로 변환합니다.
+     * SQL 인젝션 방지를 위해 화이트리스트만 허용합니다.
+     */
+    private static String resolveTableName(String mktNm) {
+        if (mktNm == null) {
+            throw new IllegalArgumentException("mktNm must not be null");
+        }
+        return switch (mktNm.trim().toUpperCase()) {
+            case "KOSPI" -> "kospi_daily_trading_information";
+            case "KOSDAQ" -> "kosdaq_daily_trading_information";
+            default -> throw new IllegalArgumentException("Unsupported mktNm: " + mktNm);
+        };
     }
 
     /**

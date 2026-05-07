@@ -4,7 +4,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
@@ -46,8 +45,10 @@ public class BatchRedisConfig {
     /**
      * RSI 메시지 발행용 Redis Template을 생성합니다.
      *
-     * <p>Key는 String, Value는 JSON으로 직렬화합니다.
-     * Redis Stream에 메시지를 발행할 때 사용됩니다.</p>
+     * <p>Key/HashKey/HashValue 모두 String으로 직렬화합니다.
+     * Redis Stream의 MapRecord&lt;String, String, String&gt; 페이로드와 정렬되어,
+     * StreamMessageListenerContainer(기본 StringRedisSerializer 사용) 측에서도
+     * 값이 JSON 따옴표로 감싸지지 않은 원시 문자열로 일관되게 읽힙니다.</p>
      *
      * @param connectionFactory Redis 연결 팩토리
      * @return String-Object RedisTemplate
@@ -57,9 +58,9 @@ public class BatchRedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setValueSerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashValueSerializer(new StringRedisSerializer());
         template.afterPropertiesSet();
         return template;
     }

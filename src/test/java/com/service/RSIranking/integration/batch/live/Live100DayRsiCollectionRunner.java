@@ -20,6 +20,7 @@ import org.springframework.test.context.TestPropertySource;
 import javax.sql.DataSource;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -94,6 +95,7 @@ class Live100DayRsiCollectionRunner {
 
     private static final DateTimeFormatter YYYYMMDD = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final String STREAM_KEY_PREFIX = "rsi:calculation:stream:";
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /** lookback 14일 + 최근 100일 = 114 영업일. */
     private static final int TOTAL_MARKET_DAYS = 114;
@@ -130,7 +132,32 @@ class Live100DayRsiCollectionRunner {
         this.invoker = new LiveJobInvoker(asyncJobLauncher, krxApiProperties, marketDayForTheLast14Days);
         this.jdbcTemplate = new JdbcTemplate(dataDataSource);
         this.throttleMs = Long.parseLong(System.getProperty("rsi.live.intervalMs", "200"));
-        this.marketDays = generateMarketDays(TOTAL_MARKET_DAYS, LocalDate.now().minusDays(1));
+        this.marketDays = generateMarketDays(TOTAL_MARKET_DAYS, resolveBaseDate());
+        log.info("baseDate(end-of-range) = {}, marketDays[{}..{}] = {} ~ {}",
+                marketDays.get(marketDays.size() - 1),
+                0, marketDays.size() - 1,
+                marketDays.get(0), marketDays.get(marketDays.size() - 1));
+    }
+
+    /**
+     * RSI 수집 범위의 가장 최근 일자(base)를 결정한다.
+     *
+     * <p>우선순위:
+     * <ol>
+     *   <li>{@code -Drsi.live.endDate=yyyyMMdd} 명시 시 그 일자 (휴일/미응답 회피용)</li>
+     *   <li>{@code -Drsi.live.lagDays=N} 만큼 어제로부터 더 과거 (KRX 데이터 lag 대응)</li>
+     *   <li>기본값: KST 기준 어제(LocalDate.now(KST).minusDays(1))</li>
+     * </ol>
+     *
+     * <p>KST 명시로 JVM default time zone 의존성을 제거한다.</p>
+     */
+    private static LocalDate resolveBaseDate() {
+        String endDateProp = System.getProperty("rsi.live.endDate");
+        if (endDateProp != null && !endDateProp.isBlank()) {
+            return LocalDate.parse(endDateProp.trim(), YYYYMMDD);
+        }
+        long lagDays = Long.parseLong(System.getProperty("rsi.live.lagDays", "1"));
+        return LocalDate.now(KST).minusDays(lagDays);
     }
 
     // ==================== Step 1: preflight ====================
@@ -228,18 +255,28 @@ class Live100DayRsiCollectionRunner {
 
     @Test
     @Order(4)
-    @DisplayName("calculate: RSI (영업일 인덱스 14 ~ 113, 총 100개)")
+    @DisplayName("calculate: RSI (영업일 인덱스 14 ~ 113, 총 100개. trading 없는 일자는 SKIP)")
     void calculate_rsi_pastToRecent() {
         log.info("=== RSI 계산 시작 (target days: index {} ~ {}) ===",
                 RSI_START_INDEX, marketDays.size() - 1);
 
+        // 휴일/미수집으로 trading row가 없는 일자에 RSI를 produce해도 listener 에서
+        // "신규 종목 이므로 데이터가 더 필요합니다." 로그만 양산되어 의미 없음.
+        // 실제 trading 행이 존재하는 일자 집합에 한해 produce 한다.
+        Set<String> collected = collectedTradingDates();
+
         for (int i = RSI_START_INDEX; i < marketDays.size(); i++) {
             String date = marketDays.get(i);
-            DayResult result = invokeWithMetrics(date, () -> invoker.launchRsiCalculationJob(date), "RSI");
+            DayResult result;
+            if (!collected.contains(date)) {
+                result = new DayResult(date, Status.SKIPPED_ALREADY_DONE, 0L, "no trading row (holiday/uncollected)");
+            } else {
+                result = invokeWithMetrics(date, () -> invoker.launchRsiCalculationJob(date), "RSI");
+            }
             rsiResults.add(result);
             int progressIdx = i - RSI_START_INDEX;
             logProgress("RSI", progressIdx, RSI_COUNT, date, result, rsiResults);
-            sleepThrottle();
+            if (result.status == Status.SUCCESS) sleepThrottle();
         }
         summarize("RSI", rsiResults);
 
@@ -348,12 +385,20 @@ class Live100DayRsiCollectionRunner {
         return result;
     }
 
-    /** 이미 수집된 trading 일자 집합 (resume 기준). */
+    /**
+     * 이미 수집된 trading 일자 집합 (resume / RSI SKIP 판정 기준).
+     *
+     * <p>{@code marketDays} 와 동일하게 {@code yyyyMMdd} 포맷으로 반환한다.
+     * MySQL DATE 컬럼은 기본 변환 시 {@code yyyy-MM-dd} 로 나오므로
+     * {@code DATE_FORMAT(...,'%Y%m%d')} 로 명시적으로 정렬한다.</p>
+     */
     private Set<String> collectedTradingDates() {
         List<String> kospi = jdbcTemplate.queryForList(
-                "SELECT DISTINCT date FROM kospi_daily_trading_information", String.class);
+                "SELECT DISTINCT DATE_FORMAT(date, '%Y%m%d') FROM kospi_daily_trading_information",
+                String.class);
         List<String> kosdaq = jdbcTemplate.queryForList(
-                "SELECT DISTINCT date FROM kosdaq_daily_trading_information", String.class);
+                "SELECT DISTINCT DATE_FORMAT(date, '%Y%m%d') FROM kosdaq_daily_trading_information",
+                String.class);
         Set<String> set = new HashSet<>(kospi);
         set.addAll(kosdaq);
         return set;

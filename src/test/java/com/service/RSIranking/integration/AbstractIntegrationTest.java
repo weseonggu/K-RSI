@@ -111,7 +111,6 @@ public abstract class AbstractIntegrationTest {
         registry.add("scheduler.stockinfo.enabled", () -> "false");
         registry.add("scheduler.dailytranding.enabled", () -> "false");
         registry.add("scheduler.rsiproducer.enabled", () -> "false");
-        registry.add("scheduler.rsiconsumer.enabled", () -> "false");
         registry.add("scheduler.rsistreamlistener.enabled", () -> "false");
         registry.add("scheduler.master.enabled", () -> "false");
     }

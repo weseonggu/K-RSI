@@ -15,6 +15,30 @@ public interface DailyTradingInformation {
     /** @return 거래일자 */
     LocalDate getDate();
 
+    /** @return 종가 */
+    Integer getTddClsprc();
+
+    /** @return 대비 (전일 대비 가격 변동) */
+    Integer getCmpprevddPrc();
+
+    /** @return 등락률 */
+    Double getFlucRt();
+
+    /** @return 시가 */
+    Integer getTddOpnprc();
+
+    /** @return 고가 */
+    Integer getTddHgprc();
+
+    /** @return 저가 */
+    Integer getTddLwprc();
+
+    /** @return 거래량 */
+    Long getAccTrdvol();
+
+    /** @return 거래대금 */
+    Long getAccTrdval();
+
     /** @return RSI 지표 값 */
     Double getRsi();
 

@@ -80,7 +80,7 @@ public class MasterJobLauncher {
                 return;
             }
         } catch (Exception e) {
-            log.error("휴장일 체크 실패: {}", e.getMessage());
+            log.error("휴장일 확인 실패로 오늘의 마스터 파이프라인 실행을 중단합니다. 수동 재실행이 필요합니다. 대상일: {}", yesterday, e);
             return;
         }
 

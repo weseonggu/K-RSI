@@ -1,6 +1,10 @@
 HELP.md
 .gradle
 build/
+
+### 시크릿 (환경변수 파일) ###
+.env
+docker/.env
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/

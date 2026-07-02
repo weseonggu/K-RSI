@@ -4,10 +4,11 @@ services:
     container_name: RSI-meta  # 컨테이너 이름 설정
     restart: always  # 컨테이너가 중지되면 자동 재시작
     environment:
-      MYSQL_ROOT_PASSWORD: RSI-meta # 루트 계정 비밀번호 설정
+      # 비밀번호는 같은 디렉터리의 .env 파일에서 주입 (.env.example 참고)
+      MYSQL_ROOT_PASSWORD: ${MYSQL_META_ROOT_PASSWORD:?docker/.env 에 MYSQL_META_ROOT_PASSWORD 를 설정하세요}
       MYSQL_DATABASE: RSIMeta  # 생성할 기본 데이터베이스
-      MYSQL_USER: dnltjdrn  # 사용자 계정 생성
-      MYSQL_PASSWORD: qwer3750  # 사용자 계정 비밀번호
+      MYSQL_USER: ${RSI_DB_USERNAME:-dnltjdrn}  # 사용자 계정 생성
+      MYSQL_PASSWORD: ${RSI_DB_PASSWORD:?docker/.env 에 RSI_DB_PASSWORD 를 설정하세요}
     ports:
       - "3307:3306"  # 호스트와 컨테이너 간 포트 매핑
     volumes:
@@ -18,10 +19,10 @@ services:
     container_name: RSI-data  # 컨테이너 이름 설정
     restart: always  # 컨테이너가 중지되면 자동 재시작
     environment:
-      MYSQL_ROOT_PASSWORD: RSI-data # 루트 계정 비밀번호 설정
+      MYSQL_ROOT_PASSWORD: ${MYSQL_DATA_ROOT_PASSWORD:?docker/.env 에 MYSQL_DATA_ROOT_PASSWORD 를 설정하세요}
       MYSQL_DATABASE: RSIData  # 생성할 기본 데이터베이스
-      MYSQL_USER: dnltjdrn  # 사용자 계정 생성
-      MYSQL_PASSWORD: qwer3750  # 사용자 계정 비밀번호
+      MYSQL_USER: ${RSI_DB_USERNAME:-dnltjdrn}  # 사용자 계정 생성
+      MYSQL_PASSWORD: ${RSI_DB_PASSWORD:?docker/.env 에 RSI_DB_PASSWORD 를 설정하세요}
     ports:
       - "3308:3306"  # 호스트와 컨테이너 간 포트 매핑
     volumes:
@@ -32,7 +33,7 @@ services:
     image: redis/redis-stack
     container_name: RSI-Redis
     restart: always
-    command: [ "redis-server", "--requirepass", "systempass" ]
+    command: [ "redis-server", "--requirepass", "${RSI_REDIS_PASSWORD:?docker/.env 에 RSI_REDIS_PASSWORD 를 설정하세요}" ]
     ports:
       - 6380:6379
 volumes:

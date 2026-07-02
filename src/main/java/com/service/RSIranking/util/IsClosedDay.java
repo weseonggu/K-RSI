@@ -81,18 +81,19 @@ public class IsClosedDay {
     /**
      * KRX API 호출 실패 시 복구 메서드.
      *
-     * <p>최대 재시도 횟수 초과 시 호출되며, 오류를 로깅하고
-     * 휴장일이 아닌 것으로 간주하여 false를 반환합니다.</p>
+     * <p>최대 재시도 횟수 초과 시 호출됩니다. 과거에는 false(영업일)를 반환했으나,
+     * 그 경우 KRX 장애일에 배치가 강행되어 잘못된 날짜 기준으로 RSI가 계산되므로
+     * 예외를 던져 호출자가 배치를 중단하도록 합니다.</p>
      *
      * @param e 발생한 예외
      * @param date 조회 대상 날짜
-     * @return 항상 false (휴장일이 아닌 것으로 처리)
+     * @throws IllegalStateException 항상 발생 (휴장일 판단 불가)
      */
     @Recover
     public boolean failToGetAPI(RuntimeException e, String date){
         // todo KRX API에 문제가 생김 알림 생성 필요
-        log.info(e.getMessage() + "-> 날짜: " + date);
-        return false;
+        log.error("휴장일 확인용 KRX API 호출이 재시도 후에도 실패 - 날짜: {}, 원인: {}", date, e.getMessage(), e);
+        throw new IllegalStateException("KRX API로 휴장일 여부를 확인할 수 없어 배치를 진행할 수 없습니다. 날짜: " + date, e);
     }
 
 }

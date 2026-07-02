@@ -1,13 +1,15 @@
 spring:
   datasource-data:
-    password: qwer3750
+    # 통합 테스트는 Testcontainers(AbstractIntegrationTest)가 접속 정보를 덮어쓴다.
+    # 실 인프라 대상 테스트(Live runner 등)는 환경변수로 주입한다.
+    password: ${RSI_DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
     jdbc-url: jdbc:mysql://localhost:3308/RSIData?rewriteBatchedStatements=true
-    username: dnltjdrn
+    username: ${RSI_DB_USERNAME:dnltjdrn}
   datasource-meta:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: dnltjdrn
-    password: qwer3750
+    username: ${RSI_DB_USERNAME:dnltjdrn}
+    password: ${RSI_DB_PASSWORD:}
     jdbc-url: jdbc:mysql://localhost:3307/RSIMeta
   batch:
     jdbc:
@@ -22,7 +24,7 @@ spring:
       host: localhost
       port: 6380
       username: default
-      password: systempass
+      password: ${RSI_REDIS_PASSWORD:}
       timeout: 3000
 scheduler:
   stockinfo:
@@ -30,8 +32,6 @@ scheduler:
   dailytranding:
     enabled: false
   rsiproducer:
-    enabled: false
-  rsiconsumer:
     enabled: false
   rsistreamlistener:
     enabled: false
@@ -49,4 +49,4 @@ api:
     kosdaq-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/ksq_isu_base_info"
     kospi-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/stk_bydd_trd"
     kosdaq-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/ksq_bydd_trd"
-    key: "4B9A9037147345DEAD48BACE5FF5899BA7A1635D"
+    key: ${KRX_API_KEY:}

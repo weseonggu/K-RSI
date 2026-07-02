@@ -72,8 +72,6 @@ import static org.assertj.core.api.Assertions.assertThat;
         "scheduler.stockinfo.enabled=false",
         "scheduler.dailytranding.enabled=false",
         "scheduler.rsiproducer.enabled=false",
-        // RSICalCulationConsumer (polling) 는 비활성화 - listener와 동시 활성화 금지
-        "scheduler.rsiconsumer.enabled=false",
         // RSI 결과를 DB에 적재하는 listener consumer 활성화
         "scheduler.rsistreamlistener.enabled=true"
 })

@@ -2,12 +2,9 @@ package com.service.RSIranking.service;
 
 import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import com.service.RSIranking.repository.jdbc.DailyTradingInformationJDBCRepository;
-import com.service.RSIranking.repository.jpa.DailyTradingInformationRepository;
-import com.service.RSIranking.repository.jpa.KospiStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -45,8 +42,6 @@ public class RSICalculationService {
 
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
     private final DailyTradingInformationJDBCRepository dailyTradingJDBCRepository;
-    private final KospiStockRepository kospiStockRepository;
-    private final DailyTradingInformationRepository dailyTradingInformationRepository;
 
     /**
      * RSI 계산 도메인 로직
@@ -72,13 +67,20 @@ public class RSICalculationService {
         // 종목 코드와 14일 날짜를 사용해서 매매 정보 조회 JDBC사용 (시장별 분리 테이블)
         List<KospiDailyTradingInformation> tradingInfo = dailyTradingJDBCRepository.findByIsuCdAndDateIn(isuCd, dates, mktNm);
 
-        // tradingInfo의 사이즈가 14이면 메세지 처리 안함 신규 종목이여서
-        if(tradingInfo.size() != 14){
-            log.info("신규 종목 이므로 데이터가 더 필요합니다.");
+        // 조회 결과가 14건이 아니면 계산 불가 - 원인별로 구분해서 남긴다
+        if(tradingInfo.size() < 14){
+            log.info("RSI 계산 스킵(데이터 부족 - 신규 상장 또는 수집 누락) - 시장: {}, 종목: {}, 대상일: {}, 조회 건수: {}/14",
+                    mktNm, isuCd, targetDate, tradingInfo.size());
+            return;
+        }
+        if(tradingInfo.size() > 14){
+            // 유니크 제약(isu_cd, date)이 없거나 깨진 상태에서 배치가 재실행되면 발생한다
+            log.warn("RSI 계산 스킵(중복 데이터 감지) - 시장: {}, 종목: {}, 대상일: {}, 조회 건수: {}/14 - DB 중복 정리가 필요합니다",
+                    mktNm, isuCd, targetDate, tradingInfo.size());
             return;
         }
         if(areAllFieldsZero(tradingInfo)){
-            log.info("거래 정지 종목 입니다.");
+            log.info("RSI 계산 스킵(거래 정지 종목) - 시장: {}, 종목: {}, 대상일: {}", mktNm, isuCd, targetDate);
             return;
         }
 
@@ -88,6 +90,8 @@ public class RSICalculationService {
             // 전날 평균 종가 상승/하락이 비어 있는지 확인 비어 있으면 신규 종목임
             isNew = findYesterdayAvgClosedInfo(marketDates.get(0), tradingInfo);
         }catch (NoSuchElementException e){
+            log.warn("RSI 계산 스킵(전일 데이터 없음) - 시장: {}, 종목: {}, 대상일: {}, 전일: {}",
+                    mktNm, isuCd, targetDate, marketDates.get(0));
             return;
         }
 
@@ -114,14 +118,8 @@ public class RSICalculationService {
             return;
         }
 
-        log.info("Ag: "+Ag + " Al: "+ Al + " RSI: " + RSI);
-        try {
-            updateTradingInfo(isuCd, targetDate, Ag, Al, RSI, mktNm);
-
-        }catch (RuntimeException e){
-            throw e;
-        }
-
+        log.info("RSI 계산 완료 - 시장: {}, 종목: {}, 대상일: {}, Ag: {}, Al: {}, RSI: {}", mktNm, isuCd, targetDate, Ag, Al, RSI);
+        updateTradingInfo(isuCd, targetDate, Ag, Al, RSI, mktNm);
     }
 
 //=========================================== RSI 업데이트 =========================================================
@@ -133,6 +131,9 @@ public class RSICalculationService {
      * 분리 전 단일 {@code daily_trading_information} 테이블을 사용하던 JPA 경로는
      * 분리 이후 데이터를 찾지 못하므로 JDBC update로 대체했습니다.</p>
      *
+     * <p>단일 UPDATE 문이므로 별도 트랜잭션 경계가 필요 없다.
+     * (기존의 @Transactional은 자기 호출이라 프록시를 타지 않아 적용되지 않았음)</p>
+     *
      * @param isuCD      종목 코드
      * @param targetDate 업데이트 대상 날짜 (yyyyMMdd 형식)
      * @param Ag         평균 상승폭 (Average Gain)
@@ -142,7 +143,6 @@ public class RSICalculationService {
      * @throws RuntimeException 업데이트 실패 시 발생
      * @throws NoSuchElementException 해당 종목/날짜의 거래 정보가 없을 경우 발생
      */
-    @Transactional
     public void updateTradingInfo(String isuCD, String targetDate, Double Ag, Double Al, Double RSI, String mktNm) throws  RuntimeException{
         LocalDate date = LocalDate.parse(targetDate, formatter);
         int updated = dailyTradingJDBCRepository.updateRsi(isuCD, date, Ag, Al, RSI, mktNm);

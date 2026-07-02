@@ -6,6 +6,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -36,6 +37,19 @@ import java.util.Map;
 @Slf4j
 public class KrxRequestService {
 
+    private static final int CONNECT_TIMEOUT_MS = 5_000;
+    private static final int READ_TIMEOUT_MS = 30_000;
+
+    private final RestTemplate restTemplate;
+
+    public KrxRequestService() {
+        // 타임아웃 미설정 시 기본값이 무한 대기라 KRX 응답 지연이 배치 전체를 멈춘다.
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        factory.setReadTimeout(READ_TIMEOUT_MS);
+        this.restTemplate = new RestTemplate(factory);
+    }
+
     /**
      * KRX API 요청
      * @param apiConfig 요청 api, key 객체
@@ -44,8 +58,6 @@ public class KrxRequestService {
      */
     @Retryable(retryFor = RestClientException.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public ResponseEntity<Map>  krxRequest(ApiConfig apiConfig, String date){
-
-        RestTemplate restTemplate = new RestTemplate();
 
         // API URL 조립
         String url = UriComponentsBuilder.fromHttpUrl(apiConfig.getUrl())

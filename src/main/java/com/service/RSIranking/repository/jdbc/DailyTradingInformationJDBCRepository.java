@@ -1,8 +1,9 @@
 package com.service.RSIranking.repository.jdbc;
 
+import com.service.RSIranking.dto.RSIRankingDto;
 import com.service.RSIranking.dto.TradingInfoDto;
-import com.service.RSIranking.entity.KosdaqDailyTradingInformation;
 import com.service.RSIranking.entity.KospiDailyTradingInformation;
+import com.service.RSIranking.entity.inter.DailyTradingInformation;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -45,72 +46,34 @@ public class DailyTradingInformationJDBCRepository {
     }
 
     /**
-     * KOSPI 일별 매매 정보를 대량 삽입합니다.
+     * 일별 매매 정보를 대량 삽입합니다. (KOSPI/KOSDAQ 공용)
      *
-     * <p>종목 정보 테이블(kospi_stock_info)에 존재하는 종목에 대해서만 삽입을 수행합니다.
-     * EXISTS 서브쿼리를 사용하여 데이터 무결성을 보장합니다.</p>
+     * <p>종목 정보 테이블에 존재하는 종목에 대해서만 삽입을 수행하며,
+     * (isu_cd, date) 유니크 키에 걸리는 행은 {@code ON DUPLICATE KEY UPDATE id = id}
+     * no-op으로 건너뛰어 재실행에 대해 멱등합니다.
+     * (과거에는 중복 시 배치 전체가 예외로 실패하고 해당 날짜 전체를 DELETE하는
+     * 롤백이 돌아, 이미 적재된 날짜를 재실행하면 기존 데이터가 삭제되는 문제가 있었음)</p>
      *
      * @param newTradingInfo 삽입할 매매 정보 엔티티 목록
      * @param baseInfoDtos 원본 DTO 목록 (종목 코드 참조용)
+     * @param mktNm 시장 구분 ("KOSPI" / "KOSDAQ")
      * @throws Exception 데이터베이스 삽입 중 오류 발생 시
      */
-    public void kospiBulkInsert(List<KospiDailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
-        String sql =
+    public void bulkInsert(List<? extends DailyTradingInformation> newTradingInfo,
+                           List<TradingInfoDto> baseInfoDtos, String mktNm) throws Exception {
+        String sql = String.format(
                 """
-                INSERT INTO kospi_daily_trading_information
+                INSERT INTO %s
                 (date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc, acc_trdvol, acc_trdval, isu_cd)
                 SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS
-                ( SELECT isu_cd FROM kospi_stock_info s WHERE s.isu_cd = ?)
-                """;
+                ( SELECT isu_cd FROM %s s WHERE s.isu_cd = ?)
+                ON DUPLICATE KEY UPDATE id = id
+                """, resolveTableName(mktNm), resolveStockInfoTableName(mktNm));
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
-                KospiDailyTradingInformation stock = newTradingInfo.get(i);
-                TradingInfoDto dto = baseInfoDtos.get(i);
-
-                ps.setDate(1, Date.valueOf(stock.getDate()));
-                ps.setInt(2, stock.getTddClsprc());
-                ps.setInt(3, stock.getCmpprevddPrc());
-                ps.setDouble(4, stock.getFlucRt());
-                ps.setInt(5, stock.getTddOpnprc());
-                ps.setInt(6, stock.getTddHgprc());
-                ps.setInt(7, stock.getTddLwprc());
-                ps.setLong(8, stock.getAccTrdvol());
-                ps.setLong(9, stock.getAccTrdval());
-                ps.setString(10, dto.getIsuCd());
-                ps.setString(11, dto.getIsuCd());
-            }
-
-            @Override
-            public int getBatchSize() {
-                return newTradingInfo.size();
-            }
-        });
-    }
-    /**
-     * KOSDAQ 일별 매매 정보를 대량 삽입합니다.
-     *
-     * <p>종목 정보 테이블(kosdaq_stock_info)에 존재하는 종목에 대해서만 삽입을 수행합니다.
-     * EXISTS 서브쿼리를 사용하여 데이터 무결성을 보장합니다.</p>
-     *
-     * @param newTradingInfo 삽입할 매매 정보 엔티티 목록
-     * @param baseInfoDtos 원본 DTO 목록 (종목 코드 참조용)
-     * @throws Exception 데이터베이스 삽입 중 오류 발생 시
-     */
-    public void kosdaqBulkInsert(List<KosdaqDailyTradingInformation> newTradingInfo, List<TradingInfoDto> baseInfoDtos) throws Exception {
-        String sql =
-                """
-                INSERT INTO kosdaq_daily_trading_information
-                (date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc, acc_trdvol, acc_trdval, isu_cd)
-                SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS
-                ( SELECT isu_cd FROM kosdaq_stock_info s WHERE s.isu_cd = ?)
-                """;
-
-        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-            @Override
-            public void setValues(PreparedStatement ps, int i) throws SQLException {
-                KosdaqDailyTradingInformation stock = newTradingInfo.get(i);
+                DailyTradingInformation stock = newTradingInfo.get(i);
                 TradingInfoDto dto = baseInfoDtos.get(i);
 
                 ps.setDate(1, Date.valueOf(stock.getDate()));
@@ -215,6 +178,43 @@ public class DailyTradingInformationJDBCRepository {
     }
 
     /**
+     * 특정 날짜의 RSI 순위를 조회합니다. (RSI 계산 완료된 종목만)
+     *
+     * <p>종목 정보 테이블과 조인하여 종목명을 함께 반환하며,
+     * RSI 기준 오름/내림차순으로 정렬합니다.</p>
+     *
+     * @param date  조회 날짜
+     * @param mktNm 시장 구분 ("KOSPI" / "KOSDAQ")
+     * @param asc   true면 RSI 오름차순(과매도 순), false면 내림차순(과매수 순)
+     * @param limit 최대 조회 건수
+     * @return RSI 순위 목록
+     */
+    public List<RSIRankingDto> findRsiRanking(LocalDate date, String mktNm, boolean asc, int limit) {
+        String tableName = resolveTableName(mktNm);
+        String stockTableName = resolveStockInfoTableName(mktNm);
+        String direction = asc ? "ASC" : "DESC";
+
+        String sql = String.format("""
+        SELECT t.isu_cd, s.isu_nm, t.date, t.tdd_clsprc, t.fluc_rt, t.rsi
+        FROM %s t
+        JOIN %s s ON s.isu_cd = t.isu_cd
+        WHERE t.date = ? AND t.rsi IS NOT NULL
+        ORDER BY t.rsi %s, t.isu_cd
+        LIMIT ?
+        """, tableName, stockTableName, direction);
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new RSIRankingDto(
+                rowNum + 1,
+                rs.getString("isu_cd"),
+                rs.getString("isu_nm"),
+                rs.getDate("date").toLocalDate(),
+                rs.getInt("tdd_clsprc"),
+                rs.getDouble("fluc_rt"),
+                rs.getObject("rsi", Double.class)
+        ), date, limit);
+    }
+
+    /**
      * 시장 구분 문자열을 검증된 테이블 이름으로 변환합니다.
      * SQL 인젝션 방지를 위해 화이트리스트만 허용합니다.
      */
@@ -230,36 +230,33 @@ public class DailyTradingInformationJDBCRepository {
     }
 
     /**
-     * KOSPI 일별 매매 정보 삽입을 롤백합니다.
-     *
-     * <p>특정 날짜에 삽입된 모든 KOSPI 매매 정보를 삭제합니다.
-     * 배치 처리 중 오류 발생 시 데이터 일관성을 유지하기 위해 사용됩니다.</p>
-     *
-     * @param date 롤백할 날짜
-     * @throws RuntimeException 롤백 실패 시
+     * 시장 구분 문자열을 검증된 종목 정보 테이블 이름으로 변환합니다.
      */
-    public void kospiInsertRollback(LocalDate date) {
-        String sql = "DELETE FROM kospi_daily_trading_information WHERE date = ?";
-        try {
-            int deletedCount = jdbcTemplate.update(sql, date);
-        } catch (Exception e) {
-            throw new RuntimeException("롤백 실패", e);
+    private static String resolveStockInfoTableName(String mktNm) {
+        if (mktNm == null) {
+            throw new IllegalArgumentException("mktNm must not be null");
         }
+        return switch (mktNm.trim().toUpperCase()) {
+            case "KOSPI" -> "kospi_stock_info";
+            case "KOSDAQ" -> "kosdaq_stock_info";
+            default -> throw new IllegalArgumentException("Unsupported mktNm: " + mktNm);
+        };
     }
 
     /**
-     * KOSDAQ 일별 매매 정보 삽입을 롤백합니다.
+     * 일별 매매 정보 삽입을 롤백합니다. (KOSPI/KOSDAQ 공용)
      *
-     * <p>특정 날짜에 삽입된 모든 KOSDAQ 매매 정보를 삭제합니다.
-     * 배치 처리 중 오류 발생 시 데이터 일관성을 유지하기 위해 사용됩니다.</p>
+     * <p>특정 날짜에 삽입된 모든 매매 정보를 삭제합니다.
+     * 삽입이 멱등(ON DUPLICATE KEY no-op)해진 이후에는 진짜 삽입 오류일 때만 호출되어야 합니다.</p>
      *
      * @param date 롤백할 날짜
+     * @param mktNm 시장 구분 ("KOSPI" / "KOSDAQ")
      * @throws RuntimeException 롤백 실패 시
      */
-    public void kosdaqInsertRollback(LocalDate date) {
-        String sql = "DELETE FROM kosdaq_daily_trading_information WHERE date = ?";
+    public void insertRollback(LocalDate date, String mktNm) {
+        String sql = String.format("DELETE FROM %s WHERE date = ?", resolveTableName(mktNm));
         try {
-            int deletedCount = jdbcTemplate.update(sql, date);
+            jdbcTemplate.update(sql, date);
         } catch (Exception e) {
             throw new RuntimeException("롤백 실패", e);
         }

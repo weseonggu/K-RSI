@@ -79,21 +79,42 @@ public class RSICalculationService {
                     mktNm, isuCd, targetDate, tradingInfo.size());
             return;
         }
-        if(areAllFieldsZero(tradingInfo)){
-            log.info("RSI 계산 스킵(거래 정지 종목) - 시장: {}, 종목: {}, 대상일: {}", mktNm, isuCd, targetDate);
+        // 14일 윈도우 전체가 거래량 0(장기 거래정지)이면 계산/복사 모두 중단하고 스킵한다.
+        if(isAllVolumeZero(tradingInfo)){
+            log.info("RSI 계산 스킵(장기 거래정지 - 14일 전체 거래량 0) - 시장: {}, 종목: {}, 대상일: {}", mktNm, isuCd, targetDate);
             return;
         }
 
-        boolean isNew = true;
+        // 대상일 행을 위치 인덱스가 아니라 날짜 매칭으로 조회한다 (ORDER BY date DESC 정렬에 우연히 의존하지 않도록).
+        LocalDate targetLocalDate = dates.get(0);
+        Optional<KospiDailyTradingInformation> targetInfoOpt = tradingInfo.stream()
+                .filter(info -> info.getDate().equals(targetLocalDate))
+                .findFirst();
+        if(targetInfoOpt.isEmpty()){
+            log.warn("RSI 계산 스킵(대상일 데이터 없음) - 시장: {}, 종목: {}, 대상일: {}", mktNm, isuCd, targetDate);
+            return;
+        }
 
+        // 대상일 거래량이 0(거래정지/미체결)이면 전일 Ag/Al/RSI 를 그대로 복사한다.
+        if(isVolumeZero(targetInfoOpt.get())){
+            handleSuspendedDay(isuCd, targetDate, marketDates.get(0), tradingInfo, mktNm);
+            return;
+        }
+
+        boolean isNew;
+
+        KospiDailyTradingInformation yesterdayInfo;
         try {
-            // 전날 평균 종가 상승/하락이 비어 있는지 확인 비어 있으면 신규 종목임
-            isNew = findYesterdayAvgClosedInfo(marketDates.get(0), tradingInfo);
+            // 전일 엔티티를 조회 (없으면 NoSuchElementException)
+            yesterdayInfo = findYesterdayTradingInfo(marketDates.get(0), tradingInfo);
         }catch (NoSuchElementException e){
             log.warn("RSI 계산 스킵(전일 데이터 없음) - 시장: {}, 종목: {}, 대상일: {}, 전일: {}",
                     mktNm, isuCd, targetDate, marketDates.get(0));
             return;
         }
+
+        // 전날 평균 종가 상승/하락이 비어 있으면 신규 종목으로 판단한다.
+        isNew = yesterdayInfo.getAvgClosingGain() == null || yesterdayInfo.getAvgClosingLoss() == null;
 
         // RSI를 계산하기 위해서 평균 종가 상승/하락폭 계산 후 RSI 계산
         // todo 고도화 필요 변수가 많음
@@ -155,45 +176,86 @@ public class RSICalculationService {
 // ===============================================신규 종목인지 아닌지 파악하는 메소드===============================================
 
     /**
-     * 신규 종목인지 아닌지 파악하는 메소드
+     * 전일 매매 정보 엔티티를 조회합니다.
+     *
+     * <p>전일 Ag/Al 이 둘 다 존재하면 기존 종목, 하나라도 null 이면 신규 종목으로 판단하는 데
+     * 사용됩니다. 정지일 처리 시에는 전일 Ag/Al/RSI 값을 그대로 복사하기 위해 엔티티 자체를 반환합니다.</p>
+     *
      * @param yesterday 업데이트 하고자하는 날짜의 전날짜
      * @param tradingInfo 데이터
-     * @return T/F
-     * @throws NoSuchElementException
+     * @return 전일 매매 정보 엔티티
+     * @throws NoSuchElementException 전일 날짜의 데이터가 없을 경우
      */
-    private boolean findYesterdayAvgClosedInfo(LocalDate yesterday, List<KospiDailyTradingInformation> tradingInfo) throws NoSuchElementException{
-        Optional<KospiDailyTradingInformation> targetData = tradingInfo.stream()
+    private KospiDailyTradingInformation findYesterdayTradingInfo(LocalDate yesterday, List<KospiDailyTradingInformation> tradingInfo) throws NoSuchElementException{
+        return tradingInfo.stream()
                 .filter(info -> info.getDate().equals(yesterday))
-                .findFirst();
-
-        if (targetData.isPresent()) {
-            KospiDailyTradingInformation data = targetData.get();
-            if(data.getAvgClosingGain() == null || data.getAvgClosingLoss() == null){
-                return true;
-            }else {
-                return false;
-            }
-        } else {
-            log.info("해당 날짜의 데이터가 없습니다.");
-            throw new NoSuchElementException("해당 날짜의 데이터가 없습니다.");
-        }
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("해당 날짜의 데이터가 없습니다."));
     }
+
     //=================================== 거래 정지 확인=============================================
     /**
-     * 거래 정지 종목 여부를 확인합니다.
+     * 단일 매매 정보의 거래량이 0인지(거래정지/미체결) 확인합니다.
      *
-     * <p>모든 거래 정보의 대비, 등락률, 고가, 저가가 0인 경우 거래 정지 종목으로 판단합니다.</p>
+     * <p>{@code accTrdvol == null} 도 거래량 0과 동일하게 정지로 간주합니다(방어적 처리).</p>
+     *
+     * @param info 거래 정보
+     * @return 거래량이 0이거나 null 이면 {@code true}
+     */
+    private boolean isVolumeZero(KospiDailyTradingInformation info) {
+        Long vol = info.getAccTrdvol();
+        return vol == null || vol == 0L;
+    }
+
+    /**
+     * 14일 윈도우 전체의 거래량이 0인지(장기 거래정지) 확인합니다.
      *
      * @param tradingInfoList 거래 정보 목록
-     * @return 거래 정지 종목이면 {@code true}, 아니면 {@code false}
+     * @return 전체가 거래량 0이면 {@code true}
      */
-    private boolean areAllFieldsZero(List<KospiDailyTradingInformation> tradingInfoList) {
-        return tradingInfoList.stream().allMatch(info ->
-                info.getCmpprevddPrc() == 0 &&
-                        info.getFlucRt() == 0 &&
-                        info.getTddHgprc() == 0 &&
-                        info.getTddLwprc() == 0
-        );
+    private boolean isAllVolumeZero(List<KospiDailyTradingInformation> tradingInfoList) {
+        return tradingInfoList.stream().allMatch(this::isVolumeZero);
+    }
+
+    /**
+     * 거래정지일 처리: 전일 Ag/Al/RSI 를 그대로 복사합니다.
+     *
+     * <p>정지일은 변동폭이 0이므로 Wilder 평균이 변하지 않아야 하며, 증권사/거래소 차트처럼
+     * 정지 기간 중 RSI 가 정지 진입 직전 값으로 평평하게 유지되도록 전일 값을 그대로 복사합니다.
+     * 전일 Ag/Al 이 하나라도 null 이면(신규 상장 직후 정지 등 복사할 이력 없음) 계산된 적 없는
+     * 값을 만들어내지 않기 위해 보류(스킵)합니다. {@code updateTradingInfo} 호출 결과 예외는
+     * catch 하지 않고 그대로 전파합니다(4.7절, 기존 정상 흐름과 동일한 정책).</p>
+     *
+     * @param isuCd       종목 코드
+     * @param targetDate  대상 날짜 (yyyyMMdd)
+     * @param yesterday   전일 날짜
+     * @param tradingInfo 14일 매매 정보 목록
+     * @param mktNm       시장 구분
+     */
+    private void handleSuspendedDay(String isuCd, String targetDate, LocalDate yesterday,
+                                    List<KospiDailyTradingInformation> tradingInfo, String mktNm) {
+        KospiDailyTradingInformation yesterdayInfo;
+        try {
+            yesterdayInfo = findYesterdayTradingInfo(yesterday, tradingInfo);
+        } catch (NoSuchElementException e) {
+            log.warn("RSI 계산 스킵(거래정지일, 전일 데이터 없음) - 시장: {}, 종목: {}, 대상일: {}, 전일: {}",
+                    mktNm, isuCd, targetDate, yesterday);
+            return;
+        }
+
+        Double prevAg = yesterdayInfo.getAvgClosingGain();
+        Double prevAl = yesterdayInfo.getAvgClosingLoss();
+        Double prevRsi = yesterdayInfo.getRsi();
+
+        if (prevAg == null || prevAl == null) {
+            // 복사할 이력이 없으므로 보류 - 이 행의 Ag/Al/RSI 는 계속 NULL 로 남는다.
+            log.info("RSI 계산 보류(거래정지일, 전일 Ag/Al/RSI 없음) - 시장: {}, 종목: {}, 대상일: {}", mktNm, isuCd, targetDate);
+            return;
+        }
+
+        log.info("거래정지일 - 전일 Ag/Al/RSI 복사 - 시장: {}, 종목: {}, 대상일: {}, Ag: {}, Al: {}, RSI: {}",
+                mktNm, isuCd, targetDate, prevAg, prevAl, prevRsi);
+        updateTradingInfo(isuCd, targetDate, prevAg, prevAl, prevRsi, mktNm);
     }
 //======================================================RSI 계산===============================================================
     /**

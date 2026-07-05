@@ -144,7 +144,7 @@ public class DailyTradingInformationJDBCRepository {
                     .tddOpnprc(rs.getInt("tdd_opnprc"))
                     .tddHgprc(rs.getInt("tdd_hgprc"))
                     .tddLwprc(rs.getInt("tdd_lwprc"))
-                    .rsi(rs.getDouble("rsi"))
+                    .rsi(rs.getObject("rsi", Double.class))
                     .accTrdvol(rs.getLong("acc_trdvol"))
                     .accTrdval(rs.getLong("acc_trdval"))
                     .avgClosingGain(rs.getObject("avg_closing_gain", Double.class))
@@ -198,7 +198,7 @@ public class DailyTradingInformationJDBCRepository {
         SELECT t.isu_cd, s.isu_nm, t.date, t.tdd_clsprc, t.fluc_rt, t.rsi
         FROM %s t
         JOIN %s s ON s.isu_cd = t.isu_cd
-        WHERE t.date = ? AND t.rsi IS NOT NULL
+        WHERE t.date = ? AND t.rsi IS NOT NULL AND t.acc_trdvol > 0
         ORDER BY t.rsi %s, t.isu_cd
         LIMIT ?
         """, tableName, stockTableName, direction);

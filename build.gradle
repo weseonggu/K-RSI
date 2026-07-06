@@ -1,69 +1,53 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.4.3'
-	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.springframework.boot' version '3.4.3' apply false
+	id 'io.spring.dependency-management' version '1.1.7' apply false
 }
 
-group = 'com.service'
-version = '0.0.1-SNAPSHOT'
+subprojects {
+	apply plugin: 'java'
+	apply plugin: 'io.spring.dependency-management'
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
-}
+	group = 'com.service'
+	version = '0.0.1-SNAPSHOT'
 
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
-}
-
-repositories {
-	mavenCentral()
-}
-
-dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-batch'
-	implementation 'org.springframework.retry:spring-retry:2.0.4'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'com.mysql:mysql-connector-j'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.batch:spring-batch-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-	// Testcontainers
-	testImplementation 'org.testcontainers:testcontainers:2.0.4'
-	testImplementation 'org.testcontainers:testcontainers-junit-jupiter:2.0.4'
-	testImplementation 'org.testcontainers:testcontainers-mysql:2.0.4'
-
-	// 테스트용 Lombok
-	testCompileOnly 'org.projectlombok:lombok'
-	testAnnotationProcessor 'org.projectlombok:lombok'
-}
-
-tasks.named('test') {
-	useJUnitPlatform()
-	// Live runner용 시스템 프로퍼티를 test JVM으로 forward
-	// (Gradle은 기본적으로 -D 프로퍼티를 fork된 test JVM에 전달하지 않음)
-	['rsi.live.run',
-	 'rsi.live.intervalMs',
-	 'rsi.live.drainSecs',
-	 'rsi.live.endDate',
-	 'rsi.live.lagDays',
-	 'rsi.live.maxGap'].each { key ->
-		def value = System.getProperty(key)
-		if (value != null) {
-			systemProperty key, value
+	java {
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(17)
 		}
 	}
-}
-bootJar {
-	enabled = true
+
+	configurations {
+		compileOnly {
+			extendsFrom annotationProcessor
+		}
+	}
+
+	repositories {
+		mavenCentral()
+	}
+
+	dependencyManagement {
+		imports {
+			mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+		}
+	}
+
+	dependencies {
+		compileOnly 'org.projectlombok:lombok'
+		annotationProcessor 'org.projectlombok:lombok'
+		testImplementation 'org.springframework.boot:spring-boot-starter-test'
+		testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+		// 테스트용 Lombok
+		testCompileOnly 'org.projectlombok:lombok'
+		testAnnotationProcessor 'org.projectlombok:lombok'
+	}
+
+	tasks.withType(JavaCompile).configureEach {
+		options.encoding = 'UTF-8'
+	}
+
+	tasks.named('test') {
+		useJUnitPlatform()
+	}
 }

@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: RSIranking-api
+  profiles:
+    group:
+      dev: dev
+      prod: prod
+      test: test
+    active: dev

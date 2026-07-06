@@ -9,6 +9,30 @@ _RSI(Relative Strength Index, 상대강도지수)_ 는
 배치 애플리 케이션에서 KRX에서 제공하는 API를 사용하여 일일 주식 정보를 배치를 통해서 업데이트하여 RSI지표를 계산합니다.
 웹 애플리케이션에서 일별로 RSI의 순위를 볼 수 있는 API를 제공하며 검색 밑 주식에 과거 매매 기록을 볼 수 있도록 제공합니다.
 
+## 프로젝트 구조 (Gradle 멀티모듈)
+```
+RSIRanking/
+├── common/      # 공통 모듈: 엔티티, 공용 DTO, 리포지토리(DAO), 데이터 DB/Redis 설정
+├── collector/   # 데이터 수집기: KRX 수집·RSI 계산 Spring Batch 애플리케이션 (port 8080)
+├── api/         # REST API 서버: 일별 RSI 순위 조회 (port 8081)
+└── frontend/    # Vue 3 + Vite 프론트엔드 (dev port 3000, /api → 8081 프록시)
+```
+collector와 api는 동일한 데이터 DB(MySQL)와 Redis를 공유하며,
+영속성 계층은 common 모듈 한 곳에서만 정의한다.
+
+### 실행
+```bash
+# 인프라 (MySQL x2, Redis)
+docker compose -f docker/docker-compose.yml up -d
+
+# 수집기 / API 서버 (환경변수는 .env.example 참고)
+./gradlew :collector:bootRun
+./gradlew :api:bootRun
+
+# 프론트엔드
+cd frontend && npm install && npm run dev   # http://localhost:3000
+```
+
 ## 개발기간
 2025.03 ~ 개발 중
 

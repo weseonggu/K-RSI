@@ -26,7 +26,8 @@ async function fetchRanking() {
       order: order.value,
       limit: String(limit.value),
     })
-    const res = await fetch(`/api/rsi/ranking?${params}`)
+    // BASE_URL(/rsi/) 기준 상대 경로 — 80(RAG nginx 경유)과 8088(직접) 어디서든 동작
+    const res = await fetch(`${import.meta.env.BASE_URL}api/rsi/ranking?${params}`)
     if (!res.ok) {
       const body = await res.json().catch(() => null)
       throw new Error(body?.error ?? `요청 실패 (HTTP ${res.status})`)

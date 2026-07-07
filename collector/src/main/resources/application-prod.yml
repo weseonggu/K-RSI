@@ -39,7 +39,11 @@ scheduler:
     enabled: true
   master:
     enabled: true
-    cron: "0 30 18 * * MON-FRI"
+    # 일일 수집 시각 — 환경변수로 재배포 없이 변경 가능.
+    # "전일" 데이터를 수집하므로 요일 범위에 주의: 18:30 MON-FRI는 화~금 실행분이 월~목 데이터를
+    # 수집하고 금요일 데이터는 수집되지 않는다(월요일 실행분은 yesterday=일요일이라 스킵).
+    # 금요일 데이터까지 스케줄러로 수집하려면 TUE-SAT 형태를 사용할 것 (예: "0 0 5 * * TUE-SAT").
+    cron: "${SCHEDULER_MASTER_CRON:0 30 18 * * MON-FRI}"
 
 # 기동 시 매매 정보 갭 자동 수집.
 # 첫 배포(빈 DB)면 backfill-days 만큼 과거부터, 이후에는 마지막 수집일 다음 영업일부터 채운다.

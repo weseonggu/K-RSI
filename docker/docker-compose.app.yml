@@ -16,6 +16,8 @@ services:
       KRX_API_KEY: ${KRX_API_KEY:?docker/.env 에 KRX_API_KEY 를 설정하세요}
       # 기동 시 캐치업: 첫 배포(빈 DB)면 200일 백필, 이후에는 마지막 수집일부터 갭 수집
       RSI_BOOTSTRAP_ENABLED: ${RSI_BOOTSTRAP_ENABLED:-true}
+      # 일일 수집 cron (Asia/Seoul). 전일 데이터를 수집하므로 요일 범위 주의 (docker/.env.example 참고)
+      SCHEDULER_MASTER_CRON: ${SCHEDULER_MASTER_CRON:-0 30 18 * * MON-FRI}
     ports:
       - "${COLLECTOR_PORT:-8080}:8080"
     networks:

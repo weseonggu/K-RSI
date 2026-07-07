@@ -1,0 +1,18 @@
+spring:
+  datasource-data:
+    # 비밀번호는 환경변수로만 주입 (.env.example 참고). 값이 없으면 기동 시 즉시 실패한다.
+    password: ${RSI_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 도커 배포 시 호스트는 compose 서비스명(mysql-data)으로 해석된다
+    jdbc-url: jdbc:mysql://${RSI_DATA_DB_HOST:mysql-data}:${RSI_DATA_DB_PORT:3306}/RSIData?rewriteBatchedStatements=true
+    username: ${RSI_DB_USERNAME:dnltjdrn}
+  data:
+    redis:
+      host: ${RSI_REDIS_HOST:redis}
+      port: ${RSI_REDIS_PORT:6379}
+      username: default
+      password: ${RSI_REDIS_PASSWORD}
+      timeout: 3000
+
+server:
+  port: '8081'

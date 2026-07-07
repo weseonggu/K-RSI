@@ -41,6 +41,16 @@ scheduler:
     cron: "0 30 18 * * MON-FRI"
 
 
+# 기동 시 매매 정보 갭 자동 수집 (첫 배포 백필 / 다운타임 복구)
+# 로컬 개발에서는 기본 비활성 — 필요 시 RSI_BOOTSTRAP_ENABLED=true 로 켠다.
+bootstrap:
+  catchup:
+    enabled: ${RSI_BOOTSTRAP_ENABLED:false}
+    backfill-days: 200
+    lag-days: 1
+    interval-ms: 200
+    drain-secs: 15
+
 server:
   port: '8080'
 

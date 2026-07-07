@@ -1,3 +1,7 @@
+# 인프라: MySQL(meta/data) + Redis
+# 사용법: docker compose -f docker/docker-compose.yml up -d
+# 프로젝트명 고정 — 볼륨이 rsiranking_mysql_RSI_* 로 해석되어 기존 데이터를 유지한다.
+name: rsiranking
 services:
   mysql-meta:
     image: mysql:8.0  # 사용할 MySQL 버전 지정
@@ -13,6 +17,8 @@ services:
       - "3307:3306"  # 호스트와 컨테이너 간 포트 매핑
     volumes:
       - mysql_RSI_meta:/var/lib/mysql  # 데이터 영속성을 위한 볼륨 설정
+    networks:
+      - rsi-network
 
   mysql-data:
     image: mysql:8.0  # 사용할 MySQL 버전 지정
@@ -29,6 +35,9 @@ services:
       - mysql_RSI_data:/var/lib/mysql  # 데이터 영속성을 위한 볼륨 설정
     mem_limit: 2048m
     cpus: 2.0
+    networks:
+      - rsi-network
+
   redis:
     image: redis/redis-stack
     container_name: RSI-Redis
@@ -36,6 +45,15 @@ services:
     command: [ "redis-server", "--requirepass", "${RSI_REDIS_PASSWORD:?docker/.env 에 RSI_REDIS_PASSWORD 를 설정하세요}" ]
     ports:
       - 6380:6379
+    networks:
+      - rsi-network
+
 volumes:
   mysql_RSI_meta:
   mysql_RSI_data:
+
+# 앱 컨테이너(docker-compose.app.yml)가 external 로 참조하는 고정 이름 네트워크.
+# 인프라를 먼저 올리면 자동 생성된다.
+networks:
+  rsi-network:
+    name: rsi-network

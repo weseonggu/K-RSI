@@ -1,33 +1,27 @@
 FROM gradle:7.6-jdk17 AS build
 
+# 빌드할 모듈 선택 (collector | api). 기본값은 collector.
+# 예: docker build --build-arg MODULE=api ...
+ARG MODULE=collector
+
 # 작업 디렉토리 설정
 WORKDIR /app
 
-# 루트 프로젝트의 build.gradle 파일과 settings.gradle 파일 복사
-COPY ../settings.gradle ./
-COPY ../build.gradle ./
-# Gradle Wrapper 파일을 복사하고 종속성 다운로드
-COPY ../gradlew ./
-COPY ../gradle ./gradle
-
-# Gradlew에 실행 권한 부여
-RUN chmod +x ./gradlew
-
-# 모듈 코드 복사
+# 프로젝트 전체 복사 (멀티모듈: common + collector + api)
 COPY .. .
 
-ARG MODULE
-# 빌드 수행 - 로그를 파일에 저장
+# Gradlew에 실행 권한 부여 후 대상 모듈만 빌드
 RUN chmod +x ./gradlew
-RUN ./gradlew clean build -x test
+RUN ./gradlew clean :${MODULE}:bootJar -x test
 
-# 실행 이미지 생성
-FROM openjdk:17-jdk-slim
+# bootJar 산출물을 스테이지 간 고정 경로로 이동
+RUN cp ${MODULE}/build/libs/*SNAPSHOT.jar /app/app.jar
+
+# 실행 이미지 생성 (openjdk 이미지는 Docker Hub에서 제공 중단 — temurin 사용)
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 # JAR 파일 복사
-COPY --from=build /app/build/libs/*SNAPSHOT.jar ./app.jar
-
-# Set environment variables if needed
+COPY --from=build /app/app.jar ./app.jar
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

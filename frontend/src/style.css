@@ -1,0 +1,111 @@
+:root {
+  font-family: 'Pretendard', 'Malgun Gothic', system-ui, sans-serif;
+  color: #1f2937;
+  background: #f9fafb;
+}
+
+body {
+  margin: 0;
+}
+
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.controls input,
+.controls select {
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+.controls button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.controls button:disabled {
+  background: #93c5fd;
+  cursor: wait;
+}
+
+.error {
+  color: #b91c1c;
+}
+
+table.ranking {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 0.92rem;
+}
+
+.ranking th,
+.ranking td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.ranking th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+.ranking td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ranking td.name {
+  font-weight: 500;
+}
+
+.up {
+  color: #dc2626;
+}
+
+.down {
+  color: #2563eb;
+}
+
+.overbought {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.oversold {
+  color: #2563eb;
+  font-weight: 600;
+}

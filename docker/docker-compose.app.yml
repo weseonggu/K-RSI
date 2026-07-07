@@ -1,0 +1,54 @@
+# 애플리케이션: collector(배치 수집기) + api(REST) + frontend(nginx)
+# 전제: 인프라(docker-compose.yml)가 먼저 떠 있어야 한다 (rsi-network 생성 주체).
+# 사용법: docker compose -f docker/docker-compose.app.yml up -d
+name: rsiranking-app
+services:
+  collector:
+    image: ${DOCKERHUB_ID:-weseeonggu}/rsi-collector:${TAG:-latest}
+    container_name: RSI-collector
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Seoul  # master 배치 cron(18:30 KST) 기준
+      RSI_DB_USERNAME: ${RSI_DB_USERNAME:-dnltjdrn}
+      RSI_DB_PASSWORD: ${RSI_DB_PASSWORD:?docker/.env 에 RSI_DB_PASSWORD 를 설정하세요}
+      RSI_REDIS_PASSWORD: ${RSI_REDIS_PASSWORD:?docker/.env 에 RSI_REDIS_PASSWORD 를 설정하세요}
+      KRX_API_KEY: ${KRX_API_KEY:?docker/.env 에 KRX_API_KEY 를 설정하세요}
+      # 기동 시 캐치업: 첫 배포(빈 DB)면 200일 백필, 이후에는 마지막 수집일부터 갭 수집
+      RSI_BOOTSTRAP_ENABLED: ${RSI_BOOTSTRAP_ENABLED:-true}
+    ports:
+      - "${COLLECTOR_PORT:-8080}:8080"
+    networks:
+      - rsi-network
+
+  api:
+    image: ${DOCKERHUB_ID:-weseeonggu}/rsi-api:${TAG:-latest}
+    container_name: RSI-api
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Seoul
+      RSI_DB_USERNAME: ${RSI_DB_USERNAME:-dnltjdrn}
+      RSI_DB_PASSWORD: ${RSI_DB_PASSWORD:?docker/.env 에 RSI_DB_PASSWORD 를 설정하세요}
+      RSI_REDIS_PASSWORD: ${RSI_REDIS_PASSWORD:?docker/.env 에 RSI_REDIS_PASSWORD 를 설정하세요}
+    ports:
+      - "${API_PORT:-8081}:8081"
+    networks:
+      - rsi-network
+
+  frontend:
+    image: ${DOCKERHUB_ID:-weseeonggu}/rsi-frontend:${TAG:-latest}
+    container_name: RSI-frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      # 호스트 80이 이미 사용 중인 서버에서는 FRONTEND_PORT 로 변경한다
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - rsi-network
+
+networks:
+  rsi-network:
+    external: true
+    name: rsi-network

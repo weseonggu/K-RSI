@@ -1,0 +1,63 @@
+spring:
+  datasource-data:
+    # 비밀번호는 환경변수로만 주입 (.env.example 참고). 값이 없으면 기동 시 즉시 실패한다.
+    password: ${RSI_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    jdbc-url: jdbc:mysql://localhost:3308/RSIData?rewriteBatchedStatements=true
+    username: ${RSI_DB_USERNAME:dnltjdrn}
+  datasource-meta:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${RSI_DB_USERNAME:dnltjdrn}
+    password: ${RSI_DB_PASSWORD}
+    jdbc-url: jdbc:mysql://localhost:3307/RSIMeta
+  batch:
+    jdbc:
+      initialize-schema: always
+      schema: classpath:org/springframework/batch/core/schema-mysql.sql
+    job:
+      enabled: 'false'
+  application:
+    name: RSIranking
+  data:
+    redis:
+      host: localhost
+      port: 6380
+      username: default
+      password: ${RSI_REDIS_PASSWORD}
+      timeout: 3000
+scheduler:
+  stockinfo:
+    enabled: false
+  dailytranding:
+    enabled: false
+  rsiproducer:
+    enabled: false
+  # 리스너 기반 컨슈머(RSIRedisStreamConsumerService) 단일화.
+  # master 배치가 메시지를 생산하므로 소비자도 기본 활성화한다.
+  rsistreamlistener:
+    enabled: true
+  master:
+    enabled: true
+    cron: "0 30 18 * * MON-FRI"
+
+
+# 기동 시 매매 정보 갭 자동 수집 (첫 배포 백필 / 다운타임 복구)
+# 로컬 개발에서는 기본 비활성 — 필요 시 RSI_BOOTSTRAP_ENABLED=true 로 켠다.
+bootstrap:
+  catchup:
+    enabled: ${RSI_BOOTSTRAP_ENABLED:false}
+    backfill-days: 200
+    lag-days: 1
+    interval-ms: 200
+    drain-secs: 15
+
+server:
+  port: '8080'
+
+api:
+  krx:
+    kospi-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/stk_bydd_trd"
+    kosdaq-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/ksq_isu_base_info"
+    kospi-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/stk_bydd_trd"
+    kosdaq-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/ksq_bydd_trd"
+    key: ${KRX_API_KEY}

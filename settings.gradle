@@ -1,4 +1,5 @@
 rootProject.name = 'RSIranking'
 
-
-include 'com.service.RSIranking'
+include 'common'
+include 'collector'
+include 'api'

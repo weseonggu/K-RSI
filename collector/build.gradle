@@ -1,0 +1,39 @@
+// 수집기 모듈: KRX 데이터 수집·RSI 계산 Spring Batch 애플리케이션.
+plugins {
+	id 'org.springframework.boot'
+}
+
+dependencies {
+	implementation project(':common')
+
+	implementation 'org.springframework.boot:spring-boot-starter-batch'
+	implementation 'org.springframework.retry:spring-retry:2.0.4'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	testImplementation 'org.springframework.batch:spring-batch-test'
+
+	// Testcontainers
+	testImplementation 'org.testcontainers:testcontainers:2.0.4'
+	testImplementation 'org.testcontainers:testcontainers-junit-jupiter:2.0.4'
+	testImplementation 'org.testcontainers:testcontainers-mysql:2.0.4'
+}
+
+tasks.named('test') {
+	// Live runner용 시스템 프로퍼티를 test JVM으로 forward
+	// (Gradle은 기본적으로 -D 프로퍼티를 fork된 test JVM에 전달하지 않음)
+	['rsi.live.run',
+	 'rsi.live.intervalMs',
+	 'rsi.live.drainSecs',
+	 'rsi.live.endDate',
+	 'rsi.live.lagDays',
+	 'rsi.live.maxGap'].each { key ->
+		def value = System.getProperty(key)
+		if (value != null) {
+			systemProperty key, value
+		}
+	}
+}
+
+bootJar {
+	enabled = true
+}

@@ -1,0 +1,14 @@
+// API 모듈: 일별 RSI 순위 조회 REST 서버.
+plugins {
+	id 'org.springframework.boot'
+}
+
+dependencies {
+	implementation project(':common')
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+}
+
+bootJar {
+	enabled = true
+}

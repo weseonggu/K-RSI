@@ -1,0 +1,18 @@
+# 도커 빌드 컨텍스트 제외 목록 (docker/Dockerfile — 컨텍스트: 프로젝트 루트)
+.git
+.gradle
+.idea
+**/build
+**/node_modules
+frontend/dist
+_workflow
+.plan
+.claude
+javadocs
+img
+sql
+md
+
+# 시크릿은 절대 컨텍스트에 포함하지 않는다
+.env
+docker/.env

@@ -1,0 +1,86 @@
+# 도커 이미지 빌드 & Docker Hub 푸시
+# - master 푸시: latest 태그
+# - dev 푸시: dev 태그
+# - 수동 실행(workflow_dispatch) 가능
+# 필요한 secrets: DOCKER_USERNAME, DOCKERHUB_TOKEN
+name: docker-build
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Gradle Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew clean build -x test
+
+  docker:
+    name: Build & Push (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        include:
+          - image: rsi-collector
+            context: .
+            dockerfile: docker/Dockerfile
+            build-args: MODULE=collector
+          - image: rsi-api
+            context: .
+            dockerfile: docker/Dockerfile
+            build-args: MODULE=api
+          - image: rsi-frontend
+            context: frontend
+            dockerfile: frontend/Dockerfile
+            build-args: ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # master → latest, 그 외 브랜치 → 브랜치명 태그
+      - name: Resolve image tag
+        run: |
+          if [ "${{ github.ref_name }}" = "master" ]; then
+            echo "TAG=latest" >> "$GITHUB_ENV"
+          else
+            echo "TAG=${{ github.ref_name }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          build-args: ${{ matrix.build-args }}
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/${{ matrix.image }}:${{ env.TAG }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

@@ -17,8 +17,8 @@ RUN ./gradlew clean :${MODULE}:bootJar -x test
 # bootJar 산출물을 스테이지 간 고정 경로로 이동
 RUN cp ${MODULE}/build/libs/*SNAPSHOT.jar /app/app.jar
 
-# 실행 이미지 생성
-FROM openjdk:17-jdk-slim
+# 실행 이미지 생성 (openjdk 이미지는 Docker Hub에서 제공 중단 — temurin 사용)
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 # JAR 파일 복사
 COPY --from=build /app/app.jar ./app.jar

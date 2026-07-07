@@ -33,6 +33,21 @@ docker compose -f docker/docker-compose.yml up -d
 cd frontend && npm install && npm run dev   # http://localhost:3000
 ```
 
+### 배포 (Docker Hub 이미지 기반)
+```bash
+# 서버에서: docker/.env 작성 후 (docker/.env.example 참고)
+./docker/deploy.sh all          # 인프라 + 앱 전체 배포 (Windows: .\docker\deploy.ps1 all)
+./docker/deploy.sh logs collector   # 캐치업 진행 상황 확인
+
+# 이미지 수동 빌드 & 푸시 (CI를 안 거칠 때)
+./docker/build-and-push.sh all 1.0.0
+```
+- 이미지는 GitHub Actions(`.github/workflows/docker-build.yml`)가 dev/master 푸시 시 자동 빌드·푸시한다
+  (master → `latest`, dev → `dev` 태그. secrets: `DOCKER_USERNAME`, `DOCKER_PASSWORD`).
+- **기동 시 캐치업**: collector는 기동 후 DB의 마지막 수집일을 확인해 갭을 자동 수집한다.
+  첫 배포(빈 DB)면 200일 전부터 백필하여 RSI 계산에 필요한 과거 데이터를 확보한다.
+  `RSI_BOOTSTRAP_ENABLED=false` 로 끌 수 있다.
+
 ## 개발기간
 2025.03 ~ 개발 중
 

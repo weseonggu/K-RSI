@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  *   <li>backfillDays: DB가 비어 있을 때 종료일로부터 되짚어 수집할 달력일 수 (기본 200)</li>
  *   <li>lagDays: KRX 데이터 지연 보정 일수 — 수집 종료일 = 오늘(KST) - lagDays (기본 1)</li>
  *   <li>intervalMs: 일자 간 KRX 호출 간격 밀리초 (기본 200)</li>
- *   <li>drainSecs: RSI 스트림 리스너가 결과를 적재할 때까지 대기하는 시간 초 (기본 15)</li>
+ *   <li>drainSecs: RSI 스트림이 빈 뒤 in-flight 메시지 처리를 위한 추가 대기 초 (기본 15)</li>
  * </ul>
  *
  * @author RSIranking Team
@@ -36,6 +36,6 @@ public class CatchupProperties {
     private int lagDays = 1;
     /** 일자 간 KRX 호출 간격(ms) — KRX API 쿼터 보호용 throttle */
     private long intervalMs = 200;
-    /** RSI 스트림 drain 대기 시간(초) */
+    /** RSI 스트림이 빈 뒤 in-flight 메시지 처리를 위한 추가 대기 시간(초) */
     private long drainSecs = 15;
 }

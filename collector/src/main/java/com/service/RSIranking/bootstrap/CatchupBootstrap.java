@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -58,16 +59,24 @@ public class CatchupBootstrap implements ApplicationRunner {
     private static final DateTimeFormatter YYYYMMDD = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
+    private static final String STREAM_KEY_PREFIX = "rsi:calculation:stream:";
+    /** drain 폴링 간격(ms)과, 진전 없이 허용할 최대 폴링 횟수(리스너 비활성 등 안전장치) */
+    private static final long DRAIN_POLL_MS = 10_000L;
+    private static final int DRAIN_MAX_STALE_POLLS = 30;
+
     private final CatchupProperties properties;
     private final CollectionJobInvoker invoker;
     private final JdbcTemplate jdbcTemplate;
+    private final RedisTemplate<String, Object> rsiMessageRedisTemplate;
 
     public CatchupBootstrap(CatchupProperties properties,
                             CollectionJobInvoker invoker,
-                            @Qualifier("jdbcDataTemplate") JdbcTemplate jdbcTemplate) {
+                            @Qualifier("jdbcDataTemplate") JdbcTemplate jdbcTemplate,
+                            @Qualifier("rsiMessageRedisTemplate") RedisTemplate<String, Object> rsiMessageRedisTemplate) {
         this.properties = properties;
         this.invoker = invoker;
         this.jdbcTemplate = jdbcTemplate;
+        this.rsiMessageRedisTemplate = rsiMessageRedisTemplate;
     }
 
     /**
@@ -252,12 +261,56 @@ public class CatchupBootstrap implements ApplicationRunner {
         return new ArrayList<>(union);
     }
 
+    /**
+     * RSI 스트림이 빌 때까지 대기합니다.
+     *
+     * <p>백필 시 수만 건의 메시지가 쌓여 리스너 소비가 생산보다 한참 늦으므로
+     * 고정 sleep 이 아니라 XLEN 폴링으로 대기한다. 잔량이 {@value #DRAIN_MAX_STALE_POLLS}회
+     * 연속으로 줄지 않으면(리스너 비활성 등) 경고 후 중단한다. 스트림이 빈 뒤에는
+     * in-flight 메시지 처리를 위해 {@code drainSecs}만큼 추가 대기한다.</p>
+     */
     private void waitForRsiStreamDrain() {
-        log.info("[CATCHUP] RSI 스트림 drain 대기 ({}초)", properties.getDrainSecs());
+        long lastTotal = Long.MAX_VALUE;
+        int stalePolls = 0;
+        while (true) {
+            long total = streamLength("KOSPI") + streamLength("KOSDAQ");
+            if (total == 0) {
+                break;
+            }
+            stalePolls = (total >= lastTotal) ? stalePolls + 1 : 0;
+            if (stalePolls >= DRAIN_MAX_STALE_POLLS) {
+                log.warn("[CATCHUP] RSI 스트림 잔량 {}건이 줄지 않아 drain 대기를 중단합니다 "
+                        + "— scheduler.rsistreamlistener.enabled 설정을 확인하세요", total);
+                return;
+            }
+            lastTotal = total;
+            log.info("[CATCHUP] RSI 스트림 drain 대기 — 남은 메시지 {}건", total);
+            if (!sleepQuietly(DRAIN_POLL_MS)) {
+                return;
+            }
+        }
+        // 스트림은 비었지만 리스너가 처리 중인 마지막 메시지들을 위해 잠시 더 기다린다
+        sleepQuietly(properties.getDrainSecs() * 1000L);
+    }
+
+    private long streamLength(String market) {
         try {
-            Thread.sleep(properties.getDrainSecs() * 1000L);
+            Long size = rsiMessageRedisTemplate.opsForStream().size(STREAM_KEY_PREFIX + market);
+            return size == null ? 0L : size;
+        } catch (Exception e) {
+            log.warn("[CATCHUP] RSI 스트림 길이 조회 실패 ({}): {}", market, e.getMessage());
+            return 0L;
+        }
+    }
+
+    /** @return 인터럽트 없이 잠들었으면 true */
+    private static boolean sleepQuietly(long ms) {
+        try {
+            Thread.sleep(ms);
+            return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return false;
         }
     }
 

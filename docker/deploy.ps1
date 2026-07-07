@@ -49,6 +49,29 @@ function Write-Err($message) {
 $InfraFile = "docker-compose.yml"
 $AppFile = "docker-compose.app.yml"
 
+$DockerHubId = if ($env:DOCKERHUB_ID) { $env:DOCKERHUB_ID } else { "weseeonggu" }
+$Tag = if ($env:TAG) { $env:TAG } else { "latest" }
+
+# 이미지 pull. SSH 비대화 세션에서는 Docker Desktop 자격증명 헬퍼가 죽어
+# "A specified logon session does not exist" 오류가 나므로,
+# 실패 시 빈 DOCKER_CONFIG(공개 저장소는 인증 불필요)로 한 번 더 시도한다.
+function Invoke-Pull {
+    param([string]$Image)
+    docker pull $Image
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warn "pull 실패 — 자격증명 헬퍼 우회(빈 DOCKER_CONFIG) 후 재시도: $Image"
+        $CleanConfig = Join-Path $DockerDir ".docker-clean"
+        New-Item -ItemType Directory -Force -Path $CleanConfig | Out-Null
+        Set-Content -Path (Join-Path $CleanConfig "config.json") -Value "{}"
+        $env:DOCKER_CONFIG = $CleanConfig
+        docker pull $Image
+        if ($LASTEXITCODE -ne 0) {
+            Write-Err "pull 재시도 실패: $Image"
+            exit 1
+        }
+    }
+}
+
 # 서비스별 배포 함수
 function Deploy-Infra {
     Write-Info "인프라(MySQL meta/data + Redis) 배포 중..."
@@ -57,17 +80,19 @@ function Deploy-Infra {
 
 function Deploy-App {
     Write-Info "앱 이미지 Pull 중..."
-    docker compose -f $AppFile pull
+    foreach ($name in @("rsi-collector", "rsi-api", "rsi-frontend")) {
+        Invoke-Pull "$DockerHubId/${name}:$Tag"
+    }
     Write-Info "앱(collector + api + frontend) 배포 중..."
-    docker compose -f $AppFile up -d
+    docker compose -f $AppFile up -d --pull never
 }
 
 function Deploy-Service {
     param([string]$ServiceName)
     Write-Info "$ServiceName 이미지 Pull 중..."
-    docker compose -f $AppFile pull $ServiceName
+    Invoke-Pull "$DockerHubId/rsi-${ServiceName}:$Tag"
     Write-Info "$ServiceName 재배포 중..."
-    docker compose -f $AppFile up -d --no-deps --force-recreate $ServiceName
+    docker compose -f $AppFile up -d --no-deps --force-recreate --pull never $ServiceName
 }
 
 function Deploy-All {
@@ -81,7 +106,9 @@ function Deploy-All {
 
 function Pull-All {
     Write-Info "전체 이미지 미리 다운로드 중..."
-    docker compose -f $AppFile pull
+    foreach ($name in @("rsi-collector", "rsi-api", "rsi-frontend")) {
+        Invoke-Pull "$DockerHubId/${name}:$Tag"
+    }
     Write-Info "이미지 다운로드 완료! 'deploy.ps1 all' 로 배포하세요."
 }
 

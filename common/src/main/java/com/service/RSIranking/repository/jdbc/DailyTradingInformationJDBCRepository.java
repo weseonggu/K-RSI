@@ -181,37 +181,97 @@ public class DailyTradingInformationJDBCRepository {
      * 특정 날짜의 RSI 순위를 조회합니다. (RSI 계산 완료된 종목만)
      *
      * <p>종목 정보 테이블과 조인하여 종목명을 함께 반환하며,
-     * RSI 기준 오름/내림차순으로 정렬합니다.</p>
+     * RSI 기준 오름/내림차순으로 정렬합니다. {@code rsiMin}/{@code rsiMax}가 지정되면
+     * 경계값을 포함(&gt;=, &lt;=)하는 RSI 구간 필터가 함께 적용됩니다.</p>
      *
-     * @param date  조회 날짜
-     * @param mktNm 시장 구분 ("KOSPI" / "KOSDAQ")
-     * @param asc   true면 RSI 오름차순(과매도 순), false면 내림차순(과매수 순)
-     * @param limit 최대 조회 건수
+     * <p>{@code offset}은 페이지 경계를 넘어도 예외 없이 빈 결과를 반환하며(MySQL {@code LIMIT/OFFSET}
+     * 표준 동작), 반환되는 {@code rank}는 {@code offset + rowNum + 1}로 계산되어 페이지 간 연속됩니다.</p>
+     *
+     * @param date   조회 날짜
+     * @param mktNm  시장 구분 ("KOSPI" / "KOSDAQ")
+     * @param asc    true면 RSI 오름차순(과매도 순), false면 내림차순(과매수 순)
+     * @param rsiMin RSI 하한 (nullable, 지정 시 경계 포함)
+     * @param rsiMax RSI 상한 (nullable, 지정 시 경계 포함)
+     * @param offset 조회 시작 위치 (0-base)
+     * @param size   페이지 크기
      * @return RSI 순위 목록
      */
-    public List<RSIRankingDto> findRsiRanking(LocalDate date, String mktNm, boolean asc, int limit) {
+    public List<RSIRankingDto> findRsiRanking(LocalDate date, String mktNm, boolean asc,
+                                              Double rsiMin, Double rsiMax, long offset, int size) {
         String tableName = resolveTableName(mktNm);
         String stockTableName = resolveStockInfoTableName(mktNm);
         String direction = asc ? "ASC" : "DESC";
+
+        List<Object> params = new ArrayList<>();
+        params.add(date);
+        String rangeClause = buildRsiRangeClause(rsiMin, rsiMax, params);
 
         String sql = String.format("""
         SELECT t.isu_cd, s.isu_nm, t.date, t.tdd_clsprc, t.fluc_rt, t.rsi
         FROM %s t
         JOIN %s s ON s.isu_cd = t.isu_cd
-        WHERE t.date = ? AND t.rsi IS NOT NULL AND t.acc_trdvol > 0
+        WHERE t.date = ? AND t.rsi IS NOT NULL AND t.acc_trdvol > 0 %s
         ORDER BY t.rsi %s, t.isu_cd
-        LIMIT ?
-        """, tableName, stockTableName, direction);
+        LIMIT ? OFFSET ?
+        """, tableName, stockTableName, rangeClause, direction);
+
+        params.add(size);
+        params.add(offset);
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> new RSIRankingDto(
-                rowNum + 1,
+                (int) (offset + rowNum + 1),
                 rs.getString("isu_cd"),
                 rs.getString("isu_nm"),
                 rs.getDate("date").toLocalDate(),
                 rs.getInt("tdd_clsprc"),
                 rs.getDouble("fluc_rt"),
                 rs.getObject("rsi", Double.class)
-        ), date, limit);
+        ), params.toArray());
+    }
+
+    /**
+     * 필터 조건(RSI 구간)에 해당하는 전체 건수를 조회합니다.
+     *
+     * <p>{@link #findRsiRanking}과 동일한 {@link #buildRsiRangeClause} 조건을 공유하여
+     * 두 쿼리 사이의 필터 불일치를 방지합니다.</p>
+     *
+     * @param date   조회 날짜
+     * @param mktNm  시장 구분 ("KOSPI" / "KOSDAQ")
+     * @param rsiMin RSI 하한 (nullable)
+     * @param rsiMax RSI 상한 (nullable)
+     * @return 전체 건수
+     */
+    public long countRsiRanking(LocalDate date, String mktNm, Double rsiMin, Double rsiMax) {
+        String tableName = resolveTableName(mktNm);
+        List<Object> params = new ArrayList<>();
+        params.add(date);
+        String rangeClause = buildRsiRangeClause(rsiMin, rsiMax, params);
+
+        String sql = String.format("""
+        SELECT COUNT(*)
+        FROM %s t
+        WHERE t.date = ? AND t.rsi IS NOT NULL AND t.acc_trdvol > 0 %s
+        """, tableName, rangeClause);
+
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, params.toArray());
+        return count == null ? 0L : count;
+    }
+
+    /**
+     * rsiMin/rsiMax가 지정된 만큼만 조건을 덧붙이고, params에 해당 바인드 값을 함께 추가합니다.
+     * 경계값은 포함({@code >=}, {@code <=})합니다.
+     */
+    private static String buildRsiRangeClause(Double rsiMin, Double rsiMax, List<Object> params) {
+        StringBuilder sb = new StringBuilder();
+        if (rsiMin != null) {
+            sb.append(" AND t.rsi >= ?");
+            params.add(rsiMin);
+        }
+        if (rsiMax != null) {
+            sb.append(" AND t.rsi <= ?");
+            params.add(rsiMax);
+        }
+        return sb.toString();
     }
 
     /**

@@ -20,21 +20,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * {@link DailyTradingInformationJDBCRepository} 통합 테스트 (Testcontainers MySQL).
  *
- * <p>TDD 계획서: {@code _workflow/tdd/2026-07-05_rsi-trading-halt-volume-detection.md} 5.2절 T17~T18.</p>
+ * <p>TDD 계획서: {@code _workflow/tdd/2026-07-08_rsi-ranking-api-paging-filter.md} 5.2절 T-R1~T-R10.
+ * 기존 {@code 2026-07-05} 계획서 산출물(T17→T-R8, T18)도 회귀로 유지한다.</p>
  *
- * <p>순수 단위 테스트로 검증 불가능한 두 가지를 실제 SQL 실행으로 검증한다.</p>
+ * <p>순수 단위 테스트로 검증 불가능한 실제 SQL 동작을 컨테이너로 검증한다.</p>
  * <ul>
- *   <li>T17: {@code findRsiRanking} 의 {@code acc_trdvol > 0} 필터 (정지 종목이 rsi non-null 이어도 제외).</li>
- *   <li>T18: {@code findByIsuCdAndDateIn} 의 {@code rsi} nullable 매핑 (SQL NULL → 0.0 이 아닌 null).</li>
+ *   <li>T-R1/T-R2: RSI 구간 필터(범위 내/외, 경계값 포함 {@code >=}/{@code <=}).</li>
+ *   <li>T-R3: 필터 없음(null/null) 회귀 - 거래정지만 제외.</li>
+ *   <li>T-R4/T-R5: {@code LIMIT ? OFFSET ?} 페이징 + 페이지 경계를 넘는 rank 연속성.</li>
+ *   <li>T-R6: {@code countRsiRanking} 필터 적용/미적용 COUNT 정확성.</li>
+ *   <li>T-R7: 결측일(데이터 없음).</li>
+ *   <li>T-R8: (기존 T17) 정지 종목 제외 회귀, 신규 시그니처로 갱신.</li>
+ *   <li>T-R9: desc 방향 + OFFSET 페이징.</li>
+ *   <li>T-R10: 초과 offset → 예외 없이 빈 결과.</li>
+ *   <li>T18: {@code findByIsuCdAndDateIn} 의 rsi nullable 매핑 회귀.</li>
  * </ul>
- *
- * <p>비즈니스 테이블은 {@code JPADataDBConfig} 의 {@code hibernate.hbm2ddl.auto=update} 로
- * 테스트 컨테이너에 자동 생성된다(계획서 8장 2차 검토 권장 2). 데이터는
- * {@code RealDataCollectionTest} 의 TRUNCATE 패턴을 참고해 각 테스트 전에 초기화하고
- * {@link JdbcTemplate} 으로 직접 INSERT 한다.</p>
- *
- * <p><b>Red 단계 예상:</b> 현재 구현에서 T17 은 {@code acc_trdvol > 0} 필터가 없어 정지 종목이
- * 포함되어 실패하고, T18 은 매퍼가 {@code rs.getDouble("rsi")} 라 NULL 을 0.0 으로 읽어 실패한다.</p>
  */
 class DailyTradingInformationJDBCRepositoryTest extends AbstractIntegrationTest {
 
@@ -77,38 +77,170 @@ class DailyTradingInformationJDBCRepositoryTest extends AbstractIntegrationTest 
                 rsi, accTrdvol, 1_000_000L, 1.0, 1.0, isuCd);
     }
 
-    // ================================ T17 ================================
+    /** 종목과 매매정보를 한 번에 삽입(정상 거래량). */
+    private void insertStockAndTrading(String isuCd, double rsi) {
+        insertStock(isuCd, "종목" + isuCd);
+        insertTrading(isuCd, D, 10_000L, rsi);
+    }
 
-    /**
-     * T17 - [사용자 결정] 정지 종목(당일 accTrdvol=0)이 rsi non-null 이어도 랭킹에서 제외.
-     *
-     * <p>계획서 8장 2차 검토 권장 1 반영: (date, isu_cd) 유니크 제약이 있으므로 "동일 종목 2건"이
-     * 아니라 <b>같은 날짜에 서로 다른 두 종목</b>을 넣는다.
-     * A(정상, accTrdvol&gt;0, rsi=50.0) / B(정지, accTrdvol=0, rsi=50.0 복사됨).</p>
-     *
-     * <p>기대: {@code findRsiRanking} 결과에 A 만 포함되고 정지 종목 B 는 제외됨.</p>
-     */
+    /** rsi 5개(10/20/30/40/50)를 서로 다른 종목으로 삽입 - 정렬 결정적. */
+    private void insertFiveDistinct() {
+        insertStockAndTrading("S00010", 10.0);
+        insertStockAndTrading("S00020", 20.0);
+        insertStockAndTrading("S00030", 30.0);
+        insertStockAndTrading("S00040", 40.0);
+        insertStockAndTrading("S00050", 50.0);
+    }
+
+    // ================================ T-R1 ================================
+
     @Test
-    @DisplayName("T17 findRsiRanking - 정지 종목(accTrdvol=0)은 rsi non-null 이어도 제외")
-    void t17_findRsiRanking_excludesSuspended() {
+    @DisplayName("T-R1 findRsiRanking - RSI 구간 필터로 범위 내 종목만 반환")
+    void tR1_rsiRangeFilter() {
+        insertStockAndTrading("A00005", 5.0);
+        insertStockAndTrading("A00015", 15.0);
+        insertStockAndTrading("A00025", 25.0);
+
+        List<RSIRankingDto> result = repository.findRsiRanking(D, MKT, true, 10.0, 20.0, 0L, 10);
+
+        assertThat(result).extracting(RSIRankingDto::isuCd).containsExactly("A00015");
+    }
+
+    // ================================ T-R2 ================================
+
+    @Test
+    @DisplayName("T-R2 findRsiRanking - 경계값 포함(>=, <=)")
+    void tR2_boundaryInclusive() {
+        insertStockAndTrading("A00010", 10.0); // 하한과 동일
+        insertStockAndTrading("A00020", 20.0); // 상한과 동일
+
+        List<RSIRankingDto> result = repository.findRsiRanking(D, MKT, true, 10.0, 20.0, 0L, 10);
+
+        assertThat(result).extracting(RSIRankingDto::isuCd).containsExactlyInAnyOrder("A00010", "A00020");
+    }
+
+    // ================================ T-R3 ================================
+
+    @Test
+    @DisplayName("T-R3 findRsiRanking - 필터 없음(null/null) 회귀: 거래정지만 제외")
+    void tR3_noFilterExcludesHalted() {
+        insertStockAndTrading("A00010", 10.0);
+        insertStockAndTrading("A00030", 30.0);
+        insertStock("H00099", "정지종목");
+        insertTrading("H00099", D, 0L, 50.0); // 거래정지(acc_trdvol=0)
+
+        List<RSIRankingDto> result = repository.findRsiRanking(D, MKT, true, null, null, 0L, 10);
+
+        assertThat(result).extracting(RSIRankingDto::isuCd)
+                .containsExactlyInAnyOrder("A00010", "A00030")
+                .doesNotContain("H00099");
+    }
+
+    // ================================ T-R4 ================================
+
+    @Test
+    @DisplayName("T-R4 findRsiRanking - OFFSET 페이징(asc, size=2, offset=2 → 3~4번째)")
+    void tR4_offsetPaging() {
+        insertFiveDistinct();
+
+        List<RSIRankingDto> result = repository.findRsiRanking(D, MKT, true, null, null, 2L, 2);
+
+        // asc 정렬: S00010,S00020,S00030,S00040,S00050 → offset=2,size=2 → S00030,S00040
+        assertThat(result).extracting(RSIRankingDto::isuCd).containsExactly("S00030", "S00040");
+    }
+
+    // ================================ T-R5 ================================
+
+    @Test
+    @DisplayName("T-R5 findRsiRanking - 페이지 경계 넘는 rank 연속성(1페이지 1,2 / 2페이지 3,4)")
+    void tR5_rankContinuity() {
+        insertFiveDistinct();
+
+        List<RSIRankingDto> page1 = repository.findRsiRanking(D, MKT, true, null, null, 0L, 2);
+        List<RSIRankingDto> page2 = repository.findRsiRanking(D, MKT, true, null, null, 2L, 2);
+
+        assertThat(page1).extracting(RSIRankingDto::rank).containsExactly(1, 2);
+        assertThat(page2).extracting(RSIRankingDto::rank).containsExactly(3, 4);
+    }
+
+    // ================================ T-R6 ================================
+
+    @Test
+    @DisplayName("T-R6 countRsiRanking - 필터 적용 시 1건, 미적용 시 (정지 제외) 전체")
+    void tR6_count() {
+        insertStockAndTrading("A00005", 5.0);
+        insertStockAndTrading("A00015", 15.0);
+        insertStockAndTrading("A00025", 25.0);
+
+        long filtered = repository.countRsiRanking(D, MKT, 10.0, 20.0);
+        long all = repository.countRsiRanking(D, MKT, null, null);
+
+        assertThat(filtered).isEqualTo(1L);
+        assertThat(all).isEqualTo(3L);
+    }
+
+    // ================================ T-R7 ================================
+
+    @Test
+    @DisplayName("T-R7 결측일 - findRsiRanking 빈 리스트, countRsiRanking 0")
+    void tR7_missingDate() {
+        List<RSIRankingDto> result = repository.findRsiRanking(D, MKT, true, null, null, 0L, 10);
+        long count = repository.countRsiRanking(D, MKT, null, null);
+
+        assertThat(result).isEmpty();
+        assertThat(count).isEqualTo(0L);
+    }
+
+    // ================================ T-R8 (기존 T17) ================================
+
+    @Test
+    @DisplayName("T-R8 findRsiRanking - 정지 종목(accTrdvol=0)은 rsi non-null 이어도 제외(신규 시그니처)")
+    void tR8_excludesSuspended() {
         insertStock("A00001", "정상종목");
         insertStock("B00002", "정지종목");
         insertTrading("A00001", D, 10_000L, 50.0); // 정상 거래
         insertTrading("B00002", D, 0L, 50.0);       // 정지(거래량 0)이나 rsi 복사됨
 
-        List<RSIRankingDto> ranking = repository.findRsiRanking(D, MKT, true, 10);
+        List<RSIRankingDto> ranking = repository.findRsiRanking(D, MKT, true, null, null, 0L, 10);
 
         assertThat(ranking).extracting(RSIRankingDto::isuCd).contains("A00001");
         assertThat(ranking).extracting(RSIRankingDto::isuCd).doesNotContain("B00002");
     }
 
-    // ================================ T18 ================================
+    // ================================ T-R9 ================================
+
+    @Test
+    @DisplayName("T-R9 findRsiRanking - desc 방향 + OFFSET 페이징(size=2, offset=2 → 3~4번째, rank 3,4)")
+    void tR9_descOffsetPaging() {
+        insertFiveDistinct();
+
+        List<RSIRankingDto> result = repository.findRsiRanking(D, MKT, false, null, null, 2L, 2);
+
+        // desc 정렬: S00050,S00040,S00030,S00020,S00010 → offset=2,size=2 → S00030,S00020
+        assertThat(result).extracting(RSIRankingDto::isuCd).containsExactly("S00030", "S00020");
+        assertThat(result).extracting(RSIRankingDto::rank).containsExactly(3, 4);
+    }
+
+    // ================================ T-R10 ================================
+
+    @Test
+    @DisplayName("T-R10 findRsiRanking - 초과 offset은 예외 없이 빈 결과, countRsiRanking 은 그대로")
+    void tR10_overRangeOffset() {
+        insertStockAndTrading("A00010", 10.0);
+        insertStockAndTrading("A00020", 20.0);
+        insertStockAndTrading("A00030", 30.0);
+
+        List<RSIRankingDto> result = repository.findRsiRanking(D, MKT, true, null, null, 50L, 10);
+        long count = repository.countRsiRanking(D, MKT, null, null);
+
+        assertThat(result).isEmpty();
+        assertThat(count).isEqualTo(3L);
+    }
+
+    // ================================ T18 (회귀 유지) ================================
 
     /**
-     * T18 - [리뷰어 권장 5] rsi 컬럼 NULL 이 0.0 이 아닌 실제 null 로 매핑되는지 검증.
-     *
-     * <p>기대: {@code findByIsuCdAndDateIn} 결과 행의 {@code getRsi()} 가 {@code null}.
-     * 현재 매퍼는 {@code rs.getDouble("rsi")} 라 0.0 을 반환 → 이 테스트는 Red 로 작성됨.</p>
+     * T18 - rsi 컬럼 NULL 이 0.0 이 아닌 실제 null 로 매핑되는지 검증.
      */
     @Test
     @DisplayName("T18 findByIsuCdAndDateIn - rsi NULL 이 0.0 이 아닌 null 로 매핑")

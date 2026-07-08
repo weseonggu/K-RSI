@@ -1,5 +1,6 @@
 package com.service.RSIranking.controller;
 
+import com.service.RSIranking.dto.PagedResponse;
 import com.service.RSIranking.dto.RSIRankingDto;
 import com.service.RSIranking.service.RSIRankingService;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +20,10 @@ import java.util.Map;
  *
  * <h2>사용 예</h2>
  * <pre>
- * GET /api/rsi/ranking?date=20260701&market=KOSPI              → RSI 내림차순(과매수) 상위 50
- * GET /api/rsi/ranking?date=20260701&market=KOSDAQ&order=asc   → RSI 오름차순(과매도) 상위 50
- * GET /api/rsi/ranking?date=20260701&market=KOSPI&limit=100    → 상위 100
+ * GET /api/rsi/ranking?date=20260701&market=KOSPI                         → RSI 오름차순(과매도) 1페이지(50건)
+ * GET /api/rsi/ranking?date=20260701&market=KOSDAQ&order=desc             → RSI 내림차순(과매수) 1페이지
+ * GET /api/rsi/ranking?date=20260701&market=KOSPI&rsiMin=10&rsiMax=20     → RSI 10~20 구간(경계 포함) 필터
+ * GET /api/rsi/ranking?date=20260701&market=KOSPI&page=1&size=20         → 2번째 페이지(0-base), 20건
  * </pre>
  *
  * @author RSIranking Team
@@ -39,17 +41,24 @@ public class RSIRankingController {
      *
      * @param date   조회 날짜 (yyyyMMdd, 필수)
      * @param market 시장 구분 (KOSPI / KOSDAQ, 필수)
-     * @param order  정렬 방향 (desc: 과매수 순 - 기본값 / asc: 과매도 순)
-     * @param limit  최대 조회 건수 (기본 50, 최대 500)
-     * @return RSI 순위 목록
+     * @param order  정렬 방향 (asc: 과매도 순 - 기본값 / desc: 과매수 순)
+     * @param rsiMin RSI 하한 (선택, 0~100, 경계 포함)
+     * @param rsiMax RSI 상한 (선택, 0~100, 경계 포함)
+     * @param page   페이지 번호 (0-base, 기본 0)
+     * @param size   페이지 크기 (기본 50, 1~500)
+     * @return 페이지 응답 (items/page/size/totalElements/totalPages)
      */
     @GetMapping("/ranking")
-    public ResponseEntity<List<RSIRankingDto>> getRanking(
+    public ResponseEntity<PagedResponse<RSIRankingDto>> getRanking(
             @RequestParam("date") String date,
             @RequestParam("market") String market,
-            @RequestParam(value = "order", defaultValue = "desc") String order,
-            @RequestParam(value = "limit", defaultValue = "50") int limit) {
-        return ResponseEntity.ok(rsiRankingService.getRanking(date, market, order, limit));
+            @RequestParam(value = "order", defaultValue = "asc") String order,
+            @RequestParam(value = "rsiMin", required = false) Double rsiMin,
+            @RequestParam(value = "rsiMax", required = false) Double rsiMax,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "50") int size) {
+        return ResponseEntity.ok(
+                rsiRankingService.getRanking(date, market, order, rsiMin, rsiMax, page, size));
     }
 
     /**

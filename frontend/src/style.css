@@ -352,10 +352,14 @@ table.ranking {
     display: none;
   }
 
-  /* 행 → 카드: 1행 순위·종목명·코드, 2행 종가·등락률·RSI */
+  /* 행 → 카드: grid 고정 배치 — 1행 순위·종목명·코드, 2행 종가·등락률·RSI
+     (flex-wrap은 종목명 길이에 따라 줄바꿈 위치가 달라져 카드마다 배치가 어긋난다) */
   .ranking tbody tr {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    grid-template-areas:
+      'rank name code'
+      'close fluc rsi';
     align-items: center;
     column-gap: 8px;
     row-gap: 8px;
@@ -379,7 +383,7 @@ table.ranking {
   }
 
   .cell-rank {
-    order: 0;
+    grid-area: rank;
   }
 
   .rank-badge {
@@ -397,32 +401,40 @@ table.ranking {
   }
 
   .cell-name {
-    order: 1;
-    flex: 1 1 auto;
+    grid-area: name;
+    min-width: 0;
     font-size: 0.98rem;
   }
 
   .cell-code {
-    order: 2;
+    grid-area: code;
     font-size: 0.78rem;
   }
 
   .cell-close {
-    order: 3;
+    grid-area: close;
   }
 
   .cell-fluc {
-    order: 4;
+    grid-area: fluc;
   }
 
   .cell-rsi {
-    order: 5;
+    grid-area: rsi;
   }
 
-  .cell-close,
-  .cell-fluc,
-  .cell-rsi {
-    flex: 1 1 28%;
+  /* 상세 히스토리 카드: 1행 날짜 전체폭, 이하 3열 고정 (전용 셀 클래스가 없어 별도 규칙) */
+  .ranking.history tbody tr {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-areas: none;
+  }
+
+  .ranking.history tbody tr td {
+    grid-area: auto;
+  }
+
+  .ranking.history .cell-name {
+    grid-column: 1 / -1;
   }
 
   .ranking td.num {

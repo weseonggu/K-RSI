@@ -1,6 +1,7 @@
 package com.service.RSIranking.repository.jdbc;
 
 import com.service.RSIranking.dto.RSIRankingDto;
+import com.service.RSIranking.dto.StockHistoryItemDto;
 import com.service.RSIranking.dto.TradingInfoDto;
 import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import com.service.RSIranking.entity.inter.DailyTradingInformation;
@@ -151,6 +152,49 @@ public class DailyTradingInformationJDBCRepository {
                     .avgClosingLoss(rs.getObject("avg_closing_loss", Double.class))
                     .build();
         });
+    }
+
+    /**
+     * 특정 종목의 기준일 이하 최근 N 거래일 시계열(OHLCV+등락률+RSI)을 조회합니다.
+     *
+     * <p>종목 상세 페이지의 캔들/RSI 차트용 조회 메서드입니다. {@code date <= anchorDate}
+     * 조건으로 기준일 당일을 포함(경계 포함)하며, 최근 {@code days}건을 날짜 내림차순으로
+     * 잘라낸 뒤 바깥에서 날짜 오름차순으로 반전해 반환합니다.</p>
+     *
+     * <p>{@link #findRsiRanking}과 달리 {@code rsi IS NOT NULL} / {@code acc_trdvol > 0}
+     * 필터를 걸지 않습니다(계획서 4.2절). 상장 초기 RSI 미계산 구간과 거래정지일도
+     * 개별 종목 시계열에서는 캔들로 표시되어야 하는 정보이기 때문입니다.</p>
+     *
+     * @param isuCd      종목 코드
+     * @param mktNm      시장 구분 ("KOSPI" / "KOSDAQ")
+     * @param anchorDate 기준일 (이 날짜 이하만 조회, 경계 포함)
+     * @param days       최근 거래일 행 개수 상한
+     * @return 종목 시계열 목록 (날짜 오름차순, rsi/flucRt는 null 가능)
+     */
+    public List<StockHistoryItemDto> findHistory(String isuCd, String mktNm, LocalDate anchorDate, int days) {
+        String tableName = resolveTableName(mktNm);
+
+        String sql = String.format("""
+        SELECT * FROM (
+            SELECT date, tdd_opnprc, tdd_hgprc, tdd_lwprc, tdd_clsprc, acc_trdvol, fluc_rt, rsi
+            FROM %s
+            WHERE isu_cd = ? AND date <= ?
+            ORDER BY date DESC
+            LIMIT ?
+        ) recent
+        ORDER BY date ASC
+        """, tableName);
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new StockHistoryItemDto(
+                rs.getDate("date").toLocalDate(),
+                rs.getInt("tdd_opnprc"),
+                rs.getInt("tdd_hgprc"),
+                rs.getInt("tdd_lwprc"),
+                rs.getInt("tdd_clsprc"),
+                rs.getLong("acc_trdvol"),
+                rs.getObject("fluc_rt", Double.class),
+                rs.getObject("rsi", Double.class)
+        ), isuCd, anchorDate, days);
     }
 
     /**

@@ -3,6 +3,8 @@ defineProps({
   rows: { type: Array, required: true },
 })
 
+const emit = defineEmits(['select-stock'])
+
 const priceFormat = new Intl.NumberFormat('ko-KR')
 
 function rsiClass(rsi) {
@@ -32,7 +34,12 @@ function rsiWidth(rsi) {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in rows" :key="row.isuCd">
+        <tr
+          v-for="row in rows"
+          :key="row.isuCd"
+          class="row-selectable"
+          @dblclick="emit('select-stock', row)"
+        >
           <td class="num cell-rank">
             <span class="rank-badge">{{ row.rank }}</span>
           </td>

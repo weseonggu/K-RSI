@@ -447,4 +447,131 @@ table.ranking {
     min-width: 0;
     text-align: left;
   }
+
+  /* 초소형 카드에서 RSI 게이지가 카드 폭을 넘지 않도록 축소(4.6절 2) */
+  .rsi-meter {
+    width: 40px;
+  }
+}
+
+/* ── 초소형(≤400px): 페이지네이션 버튼 축소로 줄바꿈 깨짐 방어(4.6절 1) ── */
+@media (max-width: 400px) {
+  .pagination {
+    gap: 4px;
+  }
+
+  .page-btn {
+    min-width: 30px;
+    height: 32px;
+    padding: 0 6px;
+    font-size: 0.82rem;
+  }
+}
+
+/* ── 행 선택(더블클릭 → 상세) ─────────────────────────── */
+.row-selectable {
+  cursor: pointer;
+}
+
+/* ── 종목 상세 페이지 ─────────────────────────────────── */
+.detail-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.back-btn {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 0.88rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.detail-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.detail-title h1 {
+  margin: 0;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.period-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.period-btn {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.84rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.period-btn:hover:not(.active) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.period-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.chart-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.04);
+}
+
+/* lightweight-charts 컨테이너: 고정 px width 금지, 항상 100%(4.6절 4) */
+.chart-box {
+  width: 100%;
+}
+
+.section-title {
+  font-size: 1rem;
+  margin: 0 2px 10px;
+  color: #334155;
+}
+
+@media (max-width: 640px) {
+  .detail-head {
+    gap: 8px 10px;
+  }
+
+  .detail-title h1 {
+    font-size: 1.12rem;
+  }
+
+  .chart-stack {
+    padding: 8px;
+  }
 }

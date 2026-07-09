@@ -1,6 +1,7 @@
 package com.service.RSIranking.integration.repository;
 
 import com.service.RSIranking.dto.RSIRankingDto;
+import com.service.RSIranking.dto.StockHistoryItemDto;
 import com.service.RSIranking.entity.KospiDailyTradingInformation;
 import com.service.RSIranking.integration.AbstractIntegrationTest;
 import com.service.RSIranking.repository.jdbc.DailyTradingInformationJDBCRepository;
@@ -56,6 +57,8 @@ class DailyTradingInformationJDBCRepositoryTest extends AbstractIntegrationTest 
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0");
         jdbcTemplate.execute("TRUNCATE TABLE kospi_daily_trading_information");
         jdbcTemplate.execute("TRUNCATE TABLE kospi_stock_info");
+        jdbcTemplate.execute("TRUNCATE TABLE kosdaq_daily_trading_information");
+        jdbcTemplate.execute("TRUNCATE TABLE kosdaq_stock_info");
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1");
     }
 
@@ -74,6 +77,22 @@ class DailyTradingInformationJDBCRepositoryTest extends AbstractIntegrationTest 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 date, 1000, 0, 0.0, 1000, 1000, 1000,
+                rsi, accTrdvol, 1_000_000L, 1.0, 1.0, isuCd);
+    }
+
+    /**
+     * OHLC/거래량/rsi 를 날짜별로 서로 다른 값으로 명시 삽입한다 (findHistory 캔들 검증용, 계획서 5.3절).
+     * fluc_rt/cmpprevdd_prc/acc_trdval/avg_* 는 검증 대상이 아니므로 상수로 둔다. rsi 는 null 가능.
+     */
+    private void insertTradingOhlc(String isuCd, LocalDate date, int open, int high, int low, int close,
+                                   long accTrdvol, Double rsi) {
+        jdbcTemplate.update("""
+                INSERT INTO kospi_daily_trading_information
+                (date, tdd_clsprc, cmpprevdd_prc, fluc_rt, tdd_opnprc, tdd_hgprc, tdd_lwprc,
+                 rsi, acc_trdvol, acc_trdval, avg_closing_gain, avg_closing_loss, isu_cd)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                date, close, 0, 0.0, open, high, low,
                 rsi, accTrdvol, 1_000_000L, 1.0, 1.0, isuCd);
     }
 
@@ -253,5 +272,176 @@ class DailyTradingInformationJDBCRepositoryTest extends AbstractIntegrationTest 
 
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).getRsi()).isNull();
+    }
+
+    // ============================================================================
+    // findHistory (2026-07-09 계획서 5.2절 T-R1~T-R7 + 8장 T-R8/T-R9)
+    // 위 T-R1~T-R10 은 findRsiRanking 대상이므로, 혼동을 피하기 위해 메서드명에 findHistory 접두어를 둔다.
+    // ============================================================================
+
+    private static final LocalDate HB = LocalDate.of(2026, 6, 1); // findHistory 기준일 베이스
+
+    /** HB 로부터 i일 뒤 날짜에 결정적 OHLC(1000+i*10 계열)를 삽입. */
+    private void insertHistoryDay(String isuCd, int i, long accTrdvol, Double rsi) {
+        insertTradingOhlc(isuCd, HB.plusDays(i),
+                1000 + i * 10, 1100 + i * 10, 900 + i * 10, 1050 + i * 10,
+                accTrdvol, rsi);
+    }
+
+    // ================================ findHistory T-R1 ================================
+
+    @Test
+    @DisplayName("[findHistory] T-R1 기본 조회 - 최근 N건 오름차순 반환, OHLC 값 일치")
+    void findHistory_tR1_recentAscending() {
+        insertStock("A00001", "종목A");
+        for (int i = 0; i < 10; i++) {
+            insertHistoryDay("A00001", i, 10_000L + i, 50.0 + i);
+        }
+
+        List<StockHistoryItemDto> result = repository.findHistory("A00001", MKT, HB.plusDays(9), 5);
+
+        // 최근 5건(i=5..9)이 날짜 오름차순으로 반환
+        assertThat(result).hasSize(5);
+        assertThat(result).extracting(StockHistoryItemDto::date)
+                .containsExactly(HB.plusDays(5), HB.plusDays(6), HB.plusDays(7), HB.plusDays(8), HB.plusDays(9));
+
+        StockHistoryItemDto last = result.get(4); // i=9
+        assertThat(last.openPrice()).isEqualTo(1090);
+        assertThat(last.highPrice()).isEqualTo(1190);
+        assertThat(last.lowPrice()).isEqualTo(990);
+        assertThat(last.closePrice()).isEqualTo(1140);
+        assertThat(last.volume()).isEqualTo(10_009L);
+        assertThat(last.rsi()).isEqualTo(59.0);
+    }
+
+    // ================================ findHistory T-R2 ================================
+
+    @Test
+    @DisplayName("[findHistory] T-R2 days > 실제 거래일 수 → 존재하는 만큼만 오름차순(예외 아님)")
+    void findHistory_tR2_daysExceedsAvailable() {
+        insertStock("A00001", "종목A");
+        for (int i = 0; i < 3; i++) {
+            insertHistoryDay("A00001", i, 10_000L, 50.0);
+        }
+
+        List<StockHistoryItemDto> result = repository.findHistory("A00001", MKT, HB.plusDays(2), 10);
+
+        assertThat(result).hasSize(3);
+        assertThat(result).extracting(StockHistoryItemDto::date)
+                .containsExactly(HB, HB.plusDays(1), HB.plusDays(2));
+    }
+
+    // ================================ findHistory T-R3 ================================
+
+    @Test
+    @DisplayName("[findHistory] T-R3 anchor 이후(미래) 데이터는 제외")
+    void findHistory_tR3_excludesFuture() {
+        insertStock("A00001", "종목A");
+        for (int i = 0; i < 5; i++) {
+            insertHistoryDay("A00001", i, 10_000L, 50.0);
+        }
+
+        // anchor = HB+2 → HB+3, HB+4 는 미래이므로 제외
+        List<StockHistoryItemDto> result = repository.findHistory("A00001", MKT, HB.plusDays(2), 10);
+
+        assertThat(result).extracting(StockHistoryItemDto::date)
+                .containsExactly(HB, HB.plusDays(1), HB.plusDays(2))
+                .doesNotContain(HB.plusDays(3), HB.plusDays(4));
+    }
+
+    // ================================ findHistory T-R4 ================================
+
+    @Test
+    @DisplayName("[findHistory] T-R4 존재하지 않는 isuCd → 빈 리스트")
+    void findHistory_tR4_unknownIsuCd() {
+        insertStock("A00001", "종목A");
+        insertHistoryDay("A00001", 0, 10_000L, 50.0);
+
+        List<StockHistoryItemDto> result = repository.findHistory("NOPE", MKT, HB.plusDays(9), 5);
+
+        assertThat(result).isEmpty();
+    }
+
+    // ================================ findHistory T-R5 ================================
+
+    @Test
+    @DisplayName("[findHistory] T-R5 KOSPI 테이블에만 삽입 후 KOSDAQ 조회 → 빈 리스트(시장 테이블 분리)")
+    void findHistory_tR5_marketTableIsolation() {
+        insertStock("A00001", "종목A");
+        insertHistoryDay("A00001", 0, 10_000L, 50.0);
+
+        List<StockHistoryItemDto> result = repository.findHistory("A00001", "KOSDAQ", HB.plusDays(9), 5);
+
+        assertThat(result).isEmpty();
+    }
+
+    // ================================ findHistory T-R6 ================================
+
+    @Test
+    @DisplayName("[findHistory] T-R6 rsi NULL 구간도 포함(rsi IS NOT NULL 필터 미적용, 4.2절)")
+    void findHistory_tR6_includesNullRsi() {
+        insertStock("A00001", "종목A");
+        insertHistoryDay("A00001", 0, 10_000L, null); // rsi = SQL NULL
+        insertHistoryDay("A00001", 1, 10_000L, 55.0);
+
+        List<StockHistoryItemDto> result = repository.findHistory("A00001", MKT, HB.plusDays(1), 5);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).date()).isEqualTo(HB);
+        assertThat(result.get(0).rsi()).isNull(); // 제외되지 않고 null 로 매핑
+        assertThat(result.get(1).rsi()).isEqualTo(55.0);
+    }
+
+    // ================================ findHistory T-R7 ================================
+
+    @Test
+    @DisplayName("[findHistory] T-R7 거래정지(acc_trdvol=0) 일자도 포함(4.2절)")
+    void findHistory_tR7_includesHaltedDay() {
+        insertStock("A00001", "종목A");
+        insertHistoryDay("A00001", 0, 0L, 50.0);       // 거래정지(거래량 0)
+        insertHistoryDay("A00001", 1, 10_000L, 55.0);
+
+        List<StockHistoryItemDto> result = repository.findHistory("A00001", MKT, HB.plusDays(1), 5);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).date()).isEqualTo(HB);
+        assertThat(result.get(0).volume()).isEqualTo(0L); // 제외되지 않고 포함
+    }
+
+    // ================================ findHistory T-R8 (8장 추가) ================================
+
+    @Test
+    @DisplayName("[findHistory] T-R8 다종목 혼재 시 요청 isuCd 행만 반환(격리)")
+    void findHistory_tR8_isolatesByIsuCd() {
+        insertStock("A00001", "종목A");
+        insertStock("B00002", "종목B");
+        for (int i = 0; i < 5; i++) {
+            insertHistoryDay("A00001", i, 10_000L, 50.0);
+            insertTradingOhlc("B00002", HB.plusDays(i), 2000, 2100, 1900, 2050, 20_000L, 60.0);
+        }
+
+        List<StockHistoryItemDto> result = repository.findHistory("A00001", MKT, HB.plusDays(4), 10);
+
+        assertThat(result).hasSize(5);
+        // B 종목 특유의 시가(2000)가 결과에 섞이지 않음 → A(1000 계열)만 반환
+        assertThat(result).extracting(StockHistoryItemDto::openPrice)
+                .allMatch(op -> op >= 1000 && op < 1100);
+    }
+
+    // ================================ findHistory T-R9 (8장 추가) ================================
+
+    @Test
+    @DisplayName("[findHistory] T-R9 anchor 당일 포함 경계(date <= ? 의 = 포함)")
+    void findHistory_tR9_anchorInclusive() {
+        insertStock("A00001", "종목A");
+        for (int i = 0; i < 5; i++) {
+            insertHistoryDay("A00001", i, 10_000L, 50.0);
+        }
+
+        LocalDate anchor = HB.plusDays(4);
+        List<StockHistoryItemDto> result = repository.findHistory("A00001", MKT, anchor, 10);
+
+        assertThat(result).isNotEmpty();
+        assertThat(result.get(result.size() - 1).date()).isEqualTo(anchor); // 마지막 원소가 anchor 당일
     }
 }

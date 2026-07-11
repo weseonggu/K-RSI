@@ -6,6 +6,12 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     jdbc-url: jdbc:mysql://localhost:3308/RSIData?rewriteBatchedStatements=true
     username: ${RSI_DB_USERNAME:dnltjdrn}
+    # HikariCP 커넥션 풀 — 코드 하드코딩 대신 여기서 조정(재배포 없이 환경변수로도 변경 가능).
+    maximum-pool-size: ${RSI_DATA_DB_POOL_MAX:20}
+    minimum-idle: ${RSI_DATA_DB_POOL_MIN_IDLE:5}
+    connection-timeout: ${RSI_DATA_DB_CONNECTION_TIMEOUT:30000}
+    leak-detection-threshold: ${RSI_DATA_DB_LEAK_DETECTION:60000}
+    pool-name: DataDBPool
   datasource-meta:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${RSI_DB_USERNAME:dnltjdrn}

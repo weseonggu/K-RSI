@@ -30,8 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>서비스는 {@link MockBean} 으로 대체하며, 조회 결과 정확성이 아니라 쿼리/패스 파라미터 바인딩과
  * 에러 응답 형태만 검증한다.</p>
  *
- * <p>리뷰어 필수 수정 1: 예외 핸들러는 {@code StockHistoryController} 자체 {@code @ExceptionHandler}
- * (RSIRankingController 와 동일 복제) 경유로 400 + {@code {"error": ...}} 를 낸다(T-C5).</p>
+ * <p>예외 핸들러는 전역 {@code ApiExceptionHandler}({@code @RestControllerAdvice}) 경유로
+ * 400 + {@code {"error": ...}} 를 낸다(T-C5). {@code @RestControllerAdvice} 빈은 {@code @WebMvcTest}
+ * 슬라이스에 포함되므로 이 테스트에서도 그대로 적용된다.</p>
  * <p>리뷰어 필수 수정 2: days 기본값 책임=서비스. 컨트롤러는 {@code required=false Integer days} 로 받아
  * null 그대로 위임(T-C2 는 {@code isNull()} 검증).</p>
  */
@@ -129,7 +130,7 @@ class StockHistoryControllerTest {
     // ================================ T-C5 ================================
 
     @Test
-    @DisplayName("T-C5 서비스 IllegalArgumentException → 400 + {\"error\": ...} (컨트롤러 자체 핸들러)")
+    @DisplayName("T-C5 서비스 IllegalArgumentException → 400 + {\"error\": ...} (전역 핸들러)")
     void tC5_badRequest() throws Exception {
         when(stockHistoryService.getHistory(any(), any(), any(), any()))
                 .thenThrow(new IllegalArgumentException("잘못된 파라미터"));

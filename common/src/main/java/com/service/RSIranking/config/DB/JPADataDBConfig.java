@@ -59,7 +59,7 @@ public class JPADataDBConfig {
      */
     @Bean(name = "dataDBSource")
     @ConfigurationProperties(prefix = "spring.datasource-data")
-    public DataSource dataDBSource() {
+    public DataSource cldataDBSource() {
         HikariDataSource ds = DataSourceBuilder.create().type(HikariDataSource.class).build();
         ds.setMaximumPoolSize(20);
         ds.setMinimumIdle(5);

@@ -4,16 +4,11 @@ import com.service.RSIranking.dto.PagedResponse;
 import com.service.RSIranking.dto.RSIRankingDto;
 import com.service.RSIranking.service.RSIRankingService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * 일별 RSI 순위 조회 REST API.
@@ -59,13 +54,5 @@ public class RSIRankingController {
             @RequestParam(value = "size", defaultValue = "50") int size) {
         return ResponseEntity.ok(
                 rsiRankingService.getRanking(date, market, order, rsiMin, rsiMax, page, size));
-    }
-
-    /**
-     * 잘못된 요청 파라미터를 400으로 응답합니다.
-     */
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
     }
 }

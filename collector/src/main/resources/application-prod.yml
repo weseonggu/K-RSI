@@ -6,6 +6,13 @@ spring:
     # 도커 배포 시 호스트는 compose 서비스명(mysql-data)으로 해석된다
     jdbc-url: jdbc:mysql://${RSI_DATA_DB_HOST:mysql-data}:${RSI_DATA_DB_PORT:3306}/RSIData?rewriteBatchedStatements=true
     username: ${RSI_DB_USERNAME:dnltjdrn}
+    # HikariCP 커넥션 풀 — 코드 하드코딩 대신 여기서 조정(재배포 없이 환경변수로도 변경 가능).
+    # KOSPI/KOSDAQ 자식 Job이 동시에 chunk commit을 회전시키므로 풀이 좁으면 직렬화된다.
+    maximum-pool-size: ${RSI_DATA_DB_POOL_MAX:20}
+    minimum-idle: ${RSI_DATA_DB_POOL_MIN_IDLE:5}
+    connection-timeout: ${RSI_DATA_DB_CONNECTION_TIMEOUT:30000}
+    leak-detection-threshold: ${RSI_DATA_DB_LEAK_DETECTION:60000}
+    pool-name: DataDBPool
   datasource-meta:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${RSI_DB_USERNAME:dnltjdrn}

@@ -9,16 +9,17 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      TZ: Asia/Seoul  # master 배치 cron(08:30/21:30 KST) 기준
+      TZ: Asia/Seoul  # master 배치 cron(08:05/21:30 KST) 기준
       RSI_DB_USERNAME: ${RSI_DB_USERNAME:-dnltjdrn}
       RSI_DB_PASSWORD: ${RSI_DB_PASSWORD:?docker/.env 에 RSI_DB_PASSWORD 를 설정하세요}
       RSI_REDIS_PASSWORD: ${RSI_REDIS_PASSWORD:?docker/.env 에 RSI_REDIS_PASSWORD 를 설정하세요}
       KRX_API_KEY: ${KRX_API_KEY:?docker/.env 에 KRX_API_KEY 를 설정하세요}
       # 기동 시 캐치업: 첫 배포(빈 DB)면 200일 백필, 이후에는 마지막 수집일부터 갭 수집
       RSI_BOOTSTRAP_ENABLED: ${RSI_BOOTSTRAP_ENABLED:-true}
-      # 일일 수집 cron (Asia/Seoul). KRX 공개(익일 08:00) 30분 뒤 1차 + 21:30 보정.
+      # 일일 수집 cron (Asia/Seoul). KRX 공개(익일 08:00) 5분 뒤 1차 + 21:30 보정.
       # 전일 데이터를 수집하므로 요일이 하루 밀려 TUE-SAT가 월~금 거래일과 1:1 대응 (docker/.env.example 참고)
-      SCHEDULER_MASTER_CRON: ${SCHEDULER_MASTER_CRON:-0 30 8,21 * * TUE-SAT}
+      SCHEDULER_MASTER_CRON: ${SCHEDULER_MASTER_CRON:-0 5 8 * * TUE-SAT}
+      SCHEDULER_MASTER_RETRY_CRON: ${SCHEDULER_MASTER_RETRY_CRON:-0 30 21 * * TUE-SAT}
     ports:
       - "${COLLECTOR_PORT:-8080}:8080"
     networks:

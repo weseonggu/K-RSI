@@ -51,8 +51,10 @@ scheduler:
     # "전일" 데이터를 수집하므로 요일 범위가 하루 밀린다 — TUE-SAT가 월~금 거래일 5일과 1:1 대응한다
     # (화→월, 수→화, 목→수, 금→목, 토→금). MON-FRI를 쓰면 월요일 실행분은 yesterday=일요일이라
     # 스킵되고 금요일 데이터는 아무도 수집하지 않아 매주 하루씩 구멍이 생긴다.
-    # 21:30은 KRX 공개가 늦는 날을 위한 보정(같은 날짜 재수집, 멱등이라 중복 무해).
-    cron: "${SCHEDULER_MASTER_CRON:0 30 8,21 * * TUE-SAT}"
+    # 08:05는 KRX 공개(08:00) 직후 1차 수집, 21:30은 KRX 공개가 늦는 날을 위한 보정
+    # (같은 날짜 재수집, 멱등이라 중복 무해).
+    cron: "${SCHEDULER_MASTER_CRON:0 5 8 * * TUE-SAT}"
+    retry-cron: "${SCHEDULER_MASTER_RETRY_CRON:0 30 21 * * TUE-SAT}"
 
 # 기동 시 매매 정보 갭 자동 수집.
 # 첫 배포(빈 DB)면 backfill-days 만큼 과거부터, 이후에는 마지막 수집일 다음 영업일부터 채운다.

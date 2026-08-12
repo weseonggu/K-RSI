@@ -45,9 +45,10 @@ scheduler:
     enabled: true
   master:
     enabled: true
-    # KRX 공개(익일 08:00) 30분 뒤 1차 + 21:30 보정. 전일 데이터를 수집하므로 요일이 하루 밀려
+    # KRX 공개(익일 08:00) 5분 뒤 1차 + 21:30 보정. 전일 데이터를 수집하므로 요일이 하루 밀려
     # TUE-SAT가 월~금 거래일과 1:1 대응한다 (상세는 application-prod.yml 주석 참고).
-    cron: "0 30 8,21 * * TUE-SAT"
+    cron: "0 5 8 * * TUE-SAT"
+    retry-cron: "0 30 21 * * TUE-SAT"
 
 
 # 기동 시 매매 정보 갭 자동 수집 (첫 배포 백필 / 다운타임 복구)

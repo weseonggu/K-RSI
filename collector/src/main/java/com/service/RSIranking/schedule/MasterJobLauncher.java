@@ -10,6 +10,7 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.annotation.Schedules;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
@@ -29,13 +30,13 @@ import java.util.Date;
  * </ul>
  *
  * <h2>스케줄 설정</h2>
- * <p>기본값: 매주 화-토 08:30 / 21:30 (Asia/Seoul)</p>
+ * <p>기본값: 매주 화-토 08:05(1차) / 21:30(보정) (Asia/Seoul)</p>
  * <p>KRX는 전 거래일 데이터를 익일(토요일 포함) 아침 08:00 정각에 공개한다(운영 서버 프로브 실측).
  * "전일" 데이터를 수집하므로 요일 범위가 하루 밀린다 — 화요일 실행분이 월요일 데이터를,
  * 토요일 실행분이 금요일 데이터를 수집한다. MON-FRI를 쓰면 월요일 실행분은 yesterday=일요일이라
  * 스킵되고 금요일 데이터는 아무도 수집하지 않아 매주 하루씩 구멍이 생긴다.</p>
  * <p>21:30 실행분은 KRX 공개가 늦는 날을 위한 보정이다(같은 날짜 재수집, 멱등이라 중복 무해).</p>
- * <p>설정 변경: scheduler.master.cron 프로퍼티로 변경 가능</p>
+ * <p>설정 변경: scheduler.master.cron(1차) / scheduler.master.retry-cron(보정) 프로퍼티</p>
  *
  * @author RSIranking Team
  * @version 1.0
@@ -65,12 +66,15 @@ public class MasterJobLauncher {
     /**
      * 마스터 파이프라인 스케줄 실행 메서드.
      *
-     * <p>KRX 공개(08:00) 직후인 기본 08:30에 실행되고, 21:30에 같은 날짜를 한 번 더 보정 수집합니다.
+     * <p>KRX 공개(08:00) 직후인 기본 08:05에 실행되고, 21:30에 같은 날짜를 한 번 더 보정 수집합니다.
      * 대상일(전일)이 주말 또는 휴장일인 경우 실행하지 않습니다.</p>
      *
      * @throws Exception 배치 실행 중 오류 발생 시
      */
-    @Scheduled(cron = "${scheduler.master.cron:0 30 8,21 * * TUE-SAT}", zone = "Asia/Seoul")
+    @Schedules({
+            @Scheduled(cron = "${scheduler.master.cron:0 5 8 * * TUE-SAT}", zone = "Asia/Seoul"),
+            @Scheduled(cron = "${scheduler.master.retry-cron:0 30 21 * * TUE-SAT}", zone = "Asia/Seoul")
+    })
     public void masterPipelineSchedule() throws Exception {
         String yesterday = dateUtil.yesterday();
 

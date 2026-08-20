@@ -9,6 +9,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-batch'
 	implementation 'org.springframework.retry:spring-retry:2.0.4'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.jsoup:jsoup:1.18.3'
 
 	testImplementation 'org.springframework.batch:spring-batch-test'
 
@@ -27,6 +28,12 @@ tasks.named('test') {
 	 'rsi.live.endDate',
 	 'rsi.live.lagDays',
 	 'rsi.live.maxGap'].each { key ->
+		def value = System.getProperty(key)
+		if (value != null) {
+			systemProperty key, value
+		}
+	}
+	['dart.live.run', 'dart.live.outputDir'].each { key ->
 		def value = System.getProperty(key)
 		if (value != null) {
 			systemProperty key, value

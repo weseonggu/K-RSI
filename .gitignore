@@ -55,8 +55,16 @@ src/main/java/com/service/RSIranking/schedule/FirstSchedule.java
 ### 로컬 작업 파일 ###
 /_workflow/
 /.claude/
+/.codex/
+/.agents/
 /javadocs/
 /sql/
 # CLAUDE.md (루트 + 모든 모듈) 는 깃에서 제외
 CLAUDE.md
 **/CLAUDE.md
+
+### Codex local instructions and skills ###
+AGENTS.md
+agents.md
+**/AGENTS.md
+**/agents.md

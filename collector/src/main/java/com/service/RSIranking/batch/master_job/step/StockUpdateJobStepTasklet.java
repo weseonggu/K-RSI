@@ -95,20 +95,31 @@ public class StockUpdateJobStepTasklet implements Tasklet, StepExecutionListener
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 
+        JobParameters etfJobParameters = new JobParametersBuilder()
+                .addString("date", date)
+                .addString("apiUrl", krxApiProperties.getEtfInfoUrl())
+                .addString("apiKey", krxApiProperties.getKey())
+                .addString("mktNm", "ETF")
+                .addString("yesterday", yesterday)
+                .toJobParameters();
+
         CompletableFuture<Void> kospiFuture = asyncJobLauncher.runKospiInfoJob(kospiJobParameters);
         CompletableFuture<Void> kosdaqFuture = asyncJobLauncher.runKosdaqInfoJob(kosdaqJobParameters);
+        CompletableFuture<Void> etfFuture = asyncJobLauncher.runEtfInfoJob(etfJobParameters);
 
         try {
-            CompletableFuture.allOf(kospiFuture, kosdaqFuture).get();
+            CompletableFuture.allOf(kospiFuture, kosdaqFuture, etfFuture).get();
 
             boolean kospiSuccess = !kospiFuture.isCompletedExceptionally();
             boolean kosdaqSuccess = !kosdaqFuture.isCompletedExceptionally();
+            boolean etfSuccess = !etfFuture.isCompletedExceptionally();
 
             log.info("KOSPI Stock Job: {}", kospiSuccess ? "성공" : "실패");
             log.info("KOSDAQ Stock Job: {}", kosdaqSuccess ? "성공" : "실패");
+            log.info("ETF Stock Job: {}", etfSuccess ? "성공" : "실패");
 
-            if (!kospiSuccess || !kosdaqSuccess) {
-                throw new RuntimeException("종목 정보 업데이트 Job 실패: KOSPI=" + kospiSuccess + ", KOSDAQ=" + kosdaqSuccess);
+            if (!kospiSuccess || !kosdaqSuccess || !etfSuccess) {
+                throw new RuntimeException("종목 정보 업데이트 Job 실패: KOSPI=" + kospiSuccess + ", KOSDAQ=" + kosdaqSuccess + ", ETF=" + etfSuccess);
             }
 
         } catch (ExecutionException | InterruptedException e) {

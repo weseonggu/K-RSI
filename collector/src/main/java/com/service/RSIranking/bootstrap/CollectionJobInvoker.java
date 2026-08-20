@@ -64,10 +64,19 @@ public class CollectionJobInvoker {
                 .addString("yesterday", targetDate)
                 .toJobParameters();
 
+        JobParameters etfParams = new JobParametersBuilder()
+                .addString("date", date)
+                .addString("apiUrl", krxApiProperties.getEtfInfoUrl())
+                .addString("apiKey", krxApiProperties.getKey())
+                .addString("mktNm", "ETF")
+                .addString("yesterday", targetDate)
+                .toJobParameters();
+
         CompletableFuture<Void> kospi = asyncJobLauncher.runKospiInfoJob(kospiParams);
         CompletableFuture<Void> kosdaq = asyncJobLauncher.runKosdaqInfoJob(kosdaqParams);
+        CompletableFuture<Void> etf = asyncJobLauncher.runEtfInfoJob(etfParams);
 
-        CompletableFuture.allOf(kospi, kosdaq).get();
+        CompletableFuture.allOf(kospi, kosdaq, etf).get();
     }
 
     /**
@@ -97,10 +106,20 @@ public class CollectionJobInvoker {
                 .addString("yesterday", targetDate)
                 .toJobParameters();
 
+        JobParameters etfParams = new JobParametersBuilder()
+                .addString("uuid", UUID.randomUUID().toString())
+                .addString("date", date)
+                .addString("apiUrl", krxApiProperties.getEtfTradingInfoUrl())
+                .addString("apiKey", krxApiProperties.getKey())
+                .addString("mktNm", "ETF")
+                .addString("yesterday", targetDate)
+                .toJobParameters();
+
         CompletableFuture<Void> kospi = asyncJobLauncher.runKospiTradingJob(kospiParams);
         CompletableFuture<Void> kosdaq = asyncJobLauncher.runKosdaqTradingJob(kosdaqParams);
+        CompletableFuture<Void> etf = asyncJobLauncher.runEtfTradingJob(etfParams);
 
-        CompletableFuture.allOf(kospi, kosdaq).get();
+        CompletableFuture.allOf(kospi, kosdaq, etf).get();
     }
 
     /**
@@ -137,10 +156,20 @@ public class CollectionJobInvoker {
                 .addString("marketDayList", marketDayListString)
                 .toJobParameters();
 
+        JobParameters etfParams = new JobParametersBuilder()
+                .addString("date", date)
+                .addString("targetDate", targetDate)
+                .addString("apiUrl", krxApiProperties.getEtfInfoUrl())
+                .addString("apiKey", krxApiProperties.getKey())
+                .addString("mktNm", "ETF")
+                .addString("marketDayList", marketDayListString)
+                .toJobParameters();
+
         CompletableFuture<Void> kospi = asyncJobLauncher.runKospiRSICalculationJob(kospiParams);
         CompletableFuture<Void> kosdaq = asyncJobLauncher.runKosdaqRSICalculationJob(kosdaqParams);
+        CompletableFuture<Void> etf = asyncJobLauncher.runEtfRSICalculationJob(etfParams);
 
-        CompletableFuture.allOf(kospi, kosdaq).get();
+        CompletableFuture.allOf(kospi, kosdaq, etf).get();
     }
 
     /**

@@ -117,20 +117,32 @@ public class RSICalculationJobStepTasklet implements Tasklet, StepExecutionListe
                 .addString("marketDayList", marketDayListString)
                 .toJobParameters();
 
+        JobParameters etfJobParameters = new JobParametersBuilder()
+                .addString("date", date)
+                .addString("targetDate", yesterday)
+                .addString("apiUrl", krxApiProperties.getEtfInfoUrl())
+                .addString("apiKey", krxApiProperties.getKey())
+                .addString("mktNm", "ETF")
+                .addString("marketDayList", marketDayListString)
+                .toJobParameters();
+
         CompletableFuture<Void> kospiFuture = asyncJobLauncher.runKospiRSICalculationJob(kospiJobParameters);
         CompletableFuture<Void> kosdaqFuture = asyncJobLauncher.runKosdaqRSICalculationJob(kosdaqJobParameters);
+        CompletableFuture<Void> etfFuture = asyncJobLauncher.runEtfRSICalculationJob(etfJobParameters);
 
         try {
-            CompletableFuture.allOf(kospiFuture, kosdaqFuture).get();
+            CompletableFuture.allOf(kospiFuture, kosdaqFuture, etfFuture).get();
 
             boolean kospiSuccess = !kospiFuture.isCompletedExceptionally();
             boolean kosdaqSuccess = !kosdaqFuture.isCompletedExceptionally();
+            boolean etfSuccess = !etfFuture.isCompletedExceptionally();
 
             log.info("KOSPI RSI Job: {}", kospiSuccess ? "성공" : "실패");
             log.info("KOSDAQ RSI Job: {}", kosdaqSuccess ? "성공" : "실패");
+            log.info("ETF RSI Job: {}", etfSuccess ? "성공" : "실패");
 
-            if (!kospiSuccess || !kosdaqSuccess) {
-                throw new RuntimeException("RSI 계산 Job 실패: KOSPI=" + kospiSuccess + ", KOSDAQ=" + kosdaqSuccess);
+            if (!kospiSuccess || !kosdaqSuccess || !etfSuccess) {
+                throw new RuntimeException("RSI 계산 Job 실패: KOSPI=" + kospiSuccess + ", KOSDAQ=" + kosdaqSuccess + ", ETF=" + etfSuccess);
             }
 
         } catch (ExecutionException | InterruptedException e) {

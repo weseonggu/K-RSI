@@ -18,7 +18,8 @@ import com.service.RSIranking.entity.StockInfoEntity;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = KospiSecuritiesStockDto.class, name = "KOSPI"),
-        @JsonSubTypes.Type(value = KosdaqSecuritiesStockDto.class, name = "KOSDAQ")
+        @JsonSubTypes.Type(value = KosdaqSecuritiesStockDto.class, name = "KOSDAQ"),
+        @JsonSubTypes.Type(value = EtfSecuritiesStockDto.class, name = "ETF")
 })
 public interface StockDto {
     /** @return 종목 코드 */

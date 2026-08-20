@@ -16,7 +16,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = KospiTradingInfoDto.class, name = "KOSPI"),
-        @JsonSubTypes.Type(value = KosdaqTradingInfoDto.class, name = "KOSDAQ")
+        @JsonSubTypes.Type(value = KosdaqTradingInfoDto.class, name = "KOSDAQ"),
+        @JsonSubTypes.Type(value = EtfTradingInfoDto.class, name = "ETF")
 })
 public interface TradingInfoDto {
      /** @return 기준일자 (yyyyMMdd) */

@@ -120,5 +120,8 @@ class AsyncJobLauncherTest {
         assertThat(asyncJobLauncher.runKosdaqTradingJob(new JobParameters())).isCompletedExceptionally();
         assertThat(asyncJobLauncher.runKosdaqRSICalculationJob(new JobParameters())).isCompletedExceptionally();
         assertThat(asyncJobLauncher.runKospiRSICalculationJob(new JobParameters())).isCompletedExceptionally();
+        assertThat(asyncJobLauncher.runEtfInfoJob(new JobParameters())).isCompletedExceptionally();
+        assertThat(asyncJobLauncher.runEtfTradingJob(new JobParameters())).isCompletedExceptionally();
+        assertThat(asyncJobLauncher.runEtfRSICalculationJob(new JobParameters())).isCompletedExceptionally();
     }
 }

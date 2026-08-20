@@ -75,4 +75,6 @@ api:
     kosdaq-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/ksq_isu_base_info"
     kospi-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/stk_bydd_trd"
     kosdaq-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/sto/ksq_bydd_trd"
+    etf-info-url: "https://data-dbg.krx.co.kr/svc/apis/etp/etf_bydd_trd"
+    etf-trading-info-url: "https://data-dbg.krx.co.kr/svc/apis/etp/etf_bydd_trd"
     key: ${KRX_API_KEY}

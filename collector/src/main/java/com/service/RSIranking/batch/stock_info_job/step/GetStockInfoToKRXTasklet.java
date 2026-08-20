@@ -3,6 +3,7 @@ package com.service.RSIranking.batch.stock_info_job.step;
 import com.service.RSIranking.config.krx_api.ApiConfig;
 import com.service.RSIranking.dto.KosdaqSecuritiesStockDto;
 import com.service.RSIranking.dto.KospiSecuritiesStockDto;
+import com.service.RSIranking.dto.EtfSecuritiesStockDto;
 import com.service.RSIranking.dto.StockDto;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.KrxRequestService;
@@ -104,11 +105,12 @@ public class GetStockInfoToKRXTasklet implements Tasklet, StepExecutionListener 
 
         // 데이터 변환 및 저장
         for (Map<String, Object> stockJson : stockList) {
-            if ("KOSDAQ".equalsIgnoreCase(mktNM)) {
-                stocks.add(KosdaqSecuritiesStockDto.fromJson(stockJson, true));
-            } else {
-                stocks.add(KospiSecuritiesStockDto.fromJson(stockJson, true));
-            }
+            stocks.add(switch (mktNM.toUpperCase()) {
+                case "KOSPI" -> KospiSecuritiesStockDto.fromJson(stockJson, true);
+                case "KOSDAQ" -> KosdaqSecuritiesStockDto.fromJson(stockJson, true);
+                case "ETF" -> EtfSecuritiesStockDto.fromJson(stockJson, true);
+                default -> throw new IllegalArgumentException("지원하지 않는 시장: " + mktNM);
+            });
         }
         // 레디스 키 날짜 + 시장
         String redisKey = LocalDate.now().toString() + "-" + mktNM;

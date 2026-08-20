@@ -4,6 +4,7 @@ package com.service.RSIranking.batch.stock_info_job.step;
 import com.service.RSIranking.entity.inter.StockInfoEntity;
 import com.service.RSIranking.repository.jpa.KosdaqStockRepository;
 import com.service.RSIranking.repository.jpa.KospiStockRepository;
+import com.service.RSIranking.repository.jpa.EtfStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.Chunk;
@@ -34,6 +35,7 @@ public class UpdateStockInfoWriter implements ItemWriter<StockInfoEntity> {
 
     private final KospiStockRepository kospiStockRepository;
     private final KosdaqStockRepository kosdaqStockRepository;
+    private final EtfStockRepository etfStockRepository;
 
     /**
      * 변경된 종목 정보를 데이터베이스에 업데이트합니다.
@@ -54,20 +56,11 @@ public class UpdateStockInfoWriter implements ItemWriter<StockInfoEntity> {
                 // 이 repository는 위에서 정의한 update JPQL 메서드를 호출
                 log.info(entity.getId() + "변경사항 저장");
                 // 코스피, 코스닥 분기 처리
-                if(entity.getMktNm().equals("KOSPI")){
-                    kospiStockRepository.updateStockInfoByCode(
-                            entity.getId(),
-                            entity.getIsuNm(),
-                            entity.getMktNm(),
-                            entity.getIsPublicStock()
-                    );
-                }else{
-                    kosdaqStockRepository.updateStockInfoByCode(
-                            entity.getId(),
-                            entity.getIsuNm(),
-                            entity.getMktNm(),
-                            entity.getIsPublicStock()
-                    );
+                switch (entity.getMktNm().toUpperCase()) {
+                    case "KOSPI" -> kospiStockRepository.updateStockInfoByCode(entity.getId(), entity.getIsuNm(), entity.getMktNm(), entity.getIsPublicStock());
+                    case "KOSDAQ" -> kosdaqStockRepository.updateStockInfoByCode(entity.getId(), entity.getIsuNm(), entity.getMktNm(), entity.getIsPublicStock());
+                    case "ETF" -> etfStockRepository.updateStockInfoByCode(entity.getId(), entity.getIsuNm(), entity.getMktNm(), entity.getIsPublicStock());
+                    default -> throw new IllegalArgumentException("지원하지 않는 시장: " + entity.getMktNm());
                 }
             } // 실제 DB 저장
             log.info("DB업데이트 끝");

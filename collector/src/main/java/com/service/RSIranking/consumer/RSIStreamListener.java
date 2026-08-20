@@ -32,6 +32,7 @@ public class RSIStreamListener implements StreamListener<String, MapRecord<Strin
 
     private static final String KOSPI_GROUP = "RSI-Kospi-Group";
     private static final String KOSDAQ_GROUP = "RSI-Kosdaq-Group";
+    private static final String ETF_GROUP = "RSI-Etf-Group";
 
     private final RSICalculationService rsiCalculationService;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -88,6 +89,7 @@ public class RSIStreamListener implements StreamListener<String, MapRecord<Strin
         return switch (mktNm.trim().toUpperCase()) {
             case "KOSPI" -> KOSPI_GROUP;
             case "KOSDAQ" -> KOSDAQ_GROUP;
+            case "ETF" -> ETF_GROUP;
             default -> throw new IllegalArgumentException("Unsupported mktNm: " + mktNm);
         };
     }

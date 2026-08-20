@@ -98,20 +98,32 @@ public class TradingInfoJobStepTasklet implements Tasklet, StepExecutionListener
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 
+        JobParameters etfJobParameters = new JobParametersBuilder()
+                .addString("uuid", UUID.randomUUID().toString())
+                .addString("date", date)
+                .addString("apiUrl", krxApiProperties.getEtfTradingInfoUrl())
+                .addString("apiKey", krxApiProperties.getKey())
+                .addString("mktNm", "ETF")
+                .addString("yesterday", yesterday)
+                .toJobParameters();
+
         CompletableFuture<Void> kospiFuture = asyncJobLauncher.runKospiTradingJob(kospiJobParameters);
         CompletableFuture<Void> kosdaqFuture = asyncJobLauncher.runKosdaqTradingJob(kosdaqJobParameters);
+        CompletableFuture<Void> etfFuture = asyncJobLauncher.runEtfTradingJob(etfJobParameters);
 
         try {
-            CompletableFuture.allOf(kospiFuture, kosdaqFuture).get();
+            CompletableFuture.allOf(kospiFuture, kosdaqFuture, etfFuture).get();
 
             boolean kospiSuccess = !kospiFuture.isCompletedExceptionally();
             boolean kosdaqSuccess = !kosdaqFuture.isCompletedExceptionally();
+            boolean etfSuccess = !etfFuture.isCompletedExceptionally();
 
             log.info("KOSPI Trading Job: {}", kospiSuccess ? "성공" : "실패");
             log.info("KOSDAQ Trading Job: {}", kosdaqSuccess ? "성공" : "실패");
+            log.info("ETF Trading Job: {}", etfSuccess ? "성공" : "실패");
 
-            if (!kospiSuccess || !kosdaqSuccess) {
-                throw new RuntimeException("일별 매매 정보 업데이트 Job 실패: KOSPI=" + kospiSuccess + ", KOSDAQ=" + kosdaqSuccess);
+            if (!kospiSuccess || !kosdaqSuccess || !etfSuccess) {
+                throw new RuntimeException("일별 매매 정보 업데이트 Job 실패: KOSPI=" + kospiSuccess + ", KOSDAQ=" + kosdaqSuccess + ", ETF=" + etfSuccess);
             }
 
         } catch (ExecutionException | InterruptedException e) {

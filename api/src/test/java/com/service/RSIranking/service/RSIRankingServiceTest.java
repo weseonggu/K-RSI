@@ -233,6 +233,13 @@ class RSIRankingServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    @DisplayName("ETF 시장은 정규화 후 랭킹 리포지토리에 위임한다")
+    void etfMarketIsSupported() {
+        service.getRanking(DATE, "etf", "asc", null, null, 0, 50);
+        verify(repository).findRsiRanking(eq(TARGET_DATE), eq("ETF"), eq(true), isNull(), isNull(), eq(0L), eq(50));
+    }
+
     // ================================ T-S18: 초과 페이지 계약 ================================
 
     @Test

@@ -25,7 +25,7 @@ import java.util.Set;
 public class RSIRankingService {
 
     private static final DateTimeFormatter YYYYMMDD = DateTimeFormatter.ofPattern("yyyyMMdd");
-    private static final Set<String> SUPPORTED_MARKETS = Set.of("KOSPI", "KOSDAQ");
+    private static final Set<String> SUPPORTED_MARKETS = Set.of("KOSPI", "KOSDAQ", "ETF");
     private static final int MAX_SIZE = 500;
 
     private final DailyTradingInformationJDBCRepository dailyTradingInformationJDBCRepository;
@@ -105,7 +105,7 @@ public class RSIRankingService {
 
     private static String normalizeMarket(String market) {
         if (market == null || !SUPPORTED_MARKETS.contains(market.trim().toUpperCase())) {
-            throw new IllegalArgumentException("market은 KOSPI 또는 KOSDAQ이어야 합니다: " + market);
+            throw new IllegalArgumentException("market은 KOSPI, KOSDAQ 또는 ETF여야 합니다: " + market);
         }
         return market.trim().toUpperCase();
     }

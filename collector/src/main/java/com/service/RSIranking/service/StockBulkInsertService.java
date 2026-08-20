@@ -43,4 +43,9 @@ public class StockBulkInsertService {
     public void KosdaqStocksInsert(List<StockInfoEntity> newStocks){
         stockJDBCRepository.kosdaqBulkInsert(newStocks);
     }
+
+    @Transactional
+    public void EtfStocksInsert(List<StockInfoEntity> newStocks){
+        stockJDBCRepository.etfBulkInsert(newStocks);
+    }
 }

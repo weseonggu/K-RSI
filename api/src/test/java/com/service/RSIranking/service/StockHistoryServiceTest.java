@@ -84,6 +84,13 @@ class StockHistoryServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    @DisplayName("ETF 시장은 정규화 후 히스토리 리포지토리에 위임한다")
+    void etfMarketIsSupported() {
+        service.getHistory(ISU, "etf", DATE, 60);
+        verify(repository).findHistory(eq(ISU), eq("ETF"), eq(ANCHOR), eq(60));
+    }
+
     // ================================ T-S4 ================================
 
     @Test

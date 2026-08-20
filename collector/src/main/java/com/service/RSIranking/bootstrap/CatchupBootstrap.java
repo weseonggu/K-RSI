@@ -195,12 +195,16 @@ public class CatchupBootstrap implements ApplicationRunner {
         String kosdaqMax = jdbcTemplate.query(
                 "SELECT DATE_FORMAT(MAX(date), '%Y%m%d') FROM kosdaq_daily_trading_information",
                 rs -> rs.next() ? rs.getString(1) : null);
-        if (kospiMax == null || kosdaqMax == null) {
+        String etfMax = jdbcTemplate.query(
+                "SELECT DATE_FORMAT(MAX(date), '%Y%m%d') FROM etf_daily_trading_information",
+                rs -> rs.next() ? rs.getString(1) : null);
+        if (kospiMax == null || kosdaqMax == null || etfMax == null) {
             return null;
         }
         LocalDate kospi = LocalDate.parse(kospiMax, YYYYMMDD);
         LocalDate kosdaq = LocalDate.parse(kosdaqMax, YYYYMMDD);
-        return kospi.isBefore(kosdaq) ? kospi : kosdaq;
+        LocalDate etf = LocalDate.parse(etfMax, YYYYMMDD);
+        return List.of(kospi, kosdaq, etf).stream().min(LocalDate::compareTo).orElse(null);
     }
 
     /**
@@ -232,8 +236,11 @@ public class CatchupBootstrap implements ApplicationRunner {
                 + " FROM kospi_daily_trading_information WHERE date BETWEEN ? AND ?";
         String kosdaqSql = "SELECT DISTINCT DATE_FORMAT(date, '%Y%m%d')"
                 + " FROM kosdaq_daily_trading_information WHERE date BETWEEN ? AND ?";
+        String etfSql = "SELECT DISTINCT DATE_FORMAT(date, '%Y%m%d')"
+                + " FROM etf_daily_trading_information WHERE date BETWEEN ? AND ?";
         Set<String> collected = new TreeSet<>(jdbcTemplate.queryForList(kospiSql, String.class, start, end));
-        collected.addAll(jdbcTemplate.queryForList(kosdaqSql, String.class, start, end));
+        collected.retainAll(jdbcTemplate.queryForList(kosdaqSql, String.class, start, end));
+        collected.retainAll(jdbcTemplate.queryForList(etfSql, String.class, start, end));
         return generateBusinessDays(start, end).stream()
                 .filter(day -> !collected.contains(day))
                 .toList();
@@ -254,10 +261,14 @@ public class CatchupBootstrap implements ApplicationRunner {
                 + " WHERE date BETWEEN ? AND ? GROUP BY date HAVING COUNT(rsi) = 0";
         String kosdaqSql = "SELECT DATE_FORMAT(date, '%Y%m%d') FROM kosdaq_daily_trading_information"
                 + " WHERE date BETWEEN ? AND ? GROUP BY date HAVING COUNT(rsi) = 0";
+        String etfSql = "SELECT DATE_FORMAT(date, '%Y%m%d') FROM etf_daily_trading_information"
+                + " WHERE date BETWEEN ? AND ? GROUP BY date HAVING COUNT(rsi) = 0";
         List<String> kospi = jdbcTemplate.queryForList(kospiSql, String.class, start, end);
         List<String> kosdaq = jdbcTemplate.queryForList(kosdaqSql, String.class, start, end);
+        List<String> etf = jdbcTemplate.queryForList(etfSql, String.class, start, end);
         Set<String> union = new TreeSet<>(kospi);
         union.addAll(kosdaq);
+        union.addAll(etf);
         return new ArrayList<>(union);
     }
 
@@ -273,7 +284,7 @@ public class CatchupBootstrap implements ApplicationRunner {
         long lastTotal = Long.MAX_VALUE;
         int stalePolls = 0;
         while (true) {
-            long total = streamLength("KOSPI") + streamLength("KOSDAQ");
+            long total = streamLength("KOSPI") + streamLength("KOSDAQ") + streamLength("ETF");
             if (total == 0) {
                 break;
             }

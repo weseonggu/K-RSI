@@ -117,10 +117,19 @@ public class StockInfoLauncher {
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 
+        JobParameters etfJobParameters = new JobParametersBuilder()
+                .addString("date", date)
+                .addString("apiUrl", krxApiProperties.getEtfInfoUrl())
+                .addString("apiKey", krxApiProperties.getKey())
+                .addString("mktNm", "ETF")
+                .addString("yesterday", yesterday)
+                .toJobParameters();
+
         CompletableFuture<Void> kospiFuture = asyncJobLauncher.runKospiInfoJob(kospiJobParameters);
         CompletableFuture<Void> kosdaqFuture = asyncJobLauncher.runKosdaqInfoJob(kosdaqJobParameters);
+        CompletableFuture<Void> etfFuture = asyncJobLauncher.runEtfInfoJob(etfJobParameters);
 
-        CompletableFuture.allOf(kospiFuture, kosdaqFuture)
+        CompletableFuture.allOf(kospiFuture, kosdaqFuture, etfFuture)
                 .thenRun(() -> log.info("모든 Stock 배치 작업 완료!"))
                 .exceptionally(ex -> {
                     log.error("Stock 배치 작업 중 오류 발생: {}", ex.getMessage(), ex);
@@ -130,6 +139,7 @@ public class StockInfoLauncher {
 
         log.info("KOSPI Stock Job 완료: {}", kospiFuture.isCompletedExceptionally() ? "실패" : "성공");
         log.info("KOSDAQ Stock Job 완료: {}", kosdaqFuture.isCompletedExceptionally() ? "실패" : "성공");
+        log.info("ETF Stock Job 완료: {}", etfFuture.isCompletedExceptionally() ? "실패" : "성공");
     }
 
 }

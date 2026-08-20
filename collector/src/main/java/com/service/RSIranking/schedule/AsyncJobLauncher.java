@@ -106,6 +106,11 @@ public class AsyncJobLauncher {
         return runJob("KOSDAQ-Stock", "stockUpdateJob", () -> parameters);
     }
 
+    @Async("asyncExecutor")
+    public CompletableFuture<Void> runEtfInfoJob(JobParameters parameters) {
+        return runJob("ETF-Stock", "stockUpdateJob", () -> parameters);
+    }
+
     /**
      * KOSPI 일별 매매 정보 업데이트 작업을 비동기로 실행합니다.
      *
@@ -128,6 +133,11 @@ public class AsyncJobLauncher {
         return runJob("KOSDAQ-Trading", "dailyTradingInformationUpdateJob", () -> parameters);
     }
 
+    @Async("asyncExecutor")
+    public CompletableFuture<Void> runEtfTradingJob(JobParameters parameters) {
+        return runJob("ETF-Trading", "dailyTradingInformationUpdateJob", () -> parameters);
+    }
+
     /**
      * KOSPI RSI 지표 계산 작업을 비동기로 실행합니다.
      *
@@ -148,5 +158,10 @@ public class AsyncJobLauncher {
     @Async("asyncExecutor")
     public CompletableFuture<Void> runKosdaqRSICalculationJob(JobParameters parameters) {
         return runJob("KOSDAQ-RSI", "RSICalculationJob", () -> parameters);
+    }
+
+    @Async("asyncExecutor")
+    public CompletableFuture<Void> runEtfRSICalculationJob(JobParameters parameters) {
+        return runJob("ETF-RSI", "RSICalculationJob", () -> parameters);
     }
 }

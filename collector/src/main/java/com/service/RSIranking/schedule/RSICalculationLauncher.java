@@ -147,10 +147,20 @@ public class RSICalculationLauncher {
                 .addString("marketDayList", marketDayListString)
                 .toJobParameters();
 
+        JobParameters etfJobParameters = new JobParametersBuilder()
+                .addString("date", jobExecutionTimestamp)
+                .addString("targetDate", targetDate)
+                .addString("apiUrl", krxApiProperties.getEtfInfoUrl())
+                .addString("apiKey", krxApiProperties.getKey())
+                .addString("mktNm", "ETF")
+                .addString("marketDayList", marketDayListString)
+                .toJobParameters();
+
         CompletableFuture<Void> kospiFuture = asyncJobLauncher.runKospiRSICalculationJob(kospiJobParameters);
         CompletableFuture<Void> kosdaqFuture = asyncJobLauncher.runKosdaqRSICalculationJob(kosdaqJobParameters);
+        CompletableFuture<Void> etfFuture = asyncJobLauncher.runEtfRSICalculationJob(etfJobParameters);
 
-        CompletableFuture.allOf(kospiFuture, kosdaqFuture)
+        CompletableFuture.allOf(kospiFuture, kosdaqFuture, etfFuture)
                 .thenRun(() -> log.info("모든 RSICalculation 배치 작업 완료!"))
                 .exceptionally(ex -> {
                     log.error("RSICalculation 배치 작업 중 오류 발생: {}", ex.getMessage(), ex);
@@ -160,5 +170,6 @@ public class RSICalculationLauncher {
 
         log.info("KOSPI RSICalculation Job 완료: {}", kospiFuture.isCompletedExceptionally() ? "실패" : "성공");
         log.info("KOSDAQ RSICalculation Job 완료: {}", kosdaqFuture.isCompletedExceptionally() ? "실패" : "성공");
+        log.info("ETF RSICalculation Job 완료: {}", etfFuture.isCompletedExceptionally() ? "실패" : "성공");
     }
 }

@@ -41,4 +41,8 @@ public class KrxApiProperties {
     private String kospiTradingInfoUrl;
     /** KOSDAQ 일별 매매 정보 API URL */
     private String kosdaqTradingInfoUrl;
+    /** ETF 종목 정보 API URL (ETF 일별 API와 동일) */
+    private String etfInfoUrl;
+    /** ETF 일별 매매 정보 API URL */
+    private String etfTradingInfoUrl;
 }

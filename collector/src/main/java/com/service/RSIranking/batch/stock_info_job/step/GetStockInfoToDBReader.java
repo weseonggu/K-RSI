@@ -4,6 +4,7 @@ package com.service.RSIranking.batch.stock_info_job.step;
 import com.service.RSIranking.entity.inter.StockInfoEntity;
 import com.service.RSIranking.repository.jpa.KosdaqStockRepository;
 import com.service.RSIranking.repository.jpa.KospiStockRepository;
+import com.service.RSIranking.repository.jpa.EtfStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
@@ -51,6 +52,7 @@ public class GetStockInfoToDBReader implements ItemReader<StockInfoEntity>, Item
 
     private final KospiStockRepository kospiStockRepository;
     private final KosdaqStockRepository kosdaqStockRepository;
+    private final EtfStockRepository etfStockRepository;
     private int pageSize;
 
     /**
@@ -69,11 +71,12 @@ public class GetStockInfoToDBReader implements ItemReader<StockInfoEntity>, Item
             // todo 페이징 크기 chunk 크기와 같아야 하기 때문에 yml파일에서 관리하도록 변경이 필요
             Page<StockInfoEntity> currentBatch = null;
             // 코스피, 코스닥 분기 처리
-            if(mktNm.equals("KOSPI")){
-                currentBatch = kospiStockRepository.findByMktNmAndIsPublicStockTrue(mktNm, PageRequest.of(currentPage, pageSize));
-            }else {
-                currentBatch = kosdaqStockRepository.findByMktNmAndIsPublicStockTrue(mktNm, PageRequest.of(currentPage, pageSize));
-            }
+            currentBatch = switch (mktNm.toUpperCase()) {
+                case "KOSPI" -> kospiStockRepository.findByMktNmAndIsPublicStockTrue(mktNm, PageRequest.of(currentPage, pageSize));
+                case "KOSDAQ" -> kosdaqStockRepository.findByMktNmAndIsPublicStockTrue(mktNm, PageRequest.of(currentPage, pageSize));
+                case "ETF" -> etfStockRepository.findByMktNmAndIsPublicStockTrue(mktNm, PageRequest.of(currentPage, pageSize));
+                default -> throw new IllegalArgumentException("지원하지 않는 시장: " + mktNm);
+            };
 
 
 

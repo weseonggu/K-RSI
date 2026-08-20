@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.service.RSIranking.dto.TradingInfoDto;
 import com.service.RSIranking.entity.KosdaqDailyTradingInformation;
 import com.service.RSIranking.entity.KospiDailyTradingInformation;
+import com.service.RSIranking.entity.EtfDailyTradingInformation;
 import com.service.RSIranking.entity.inter.DailyTradingInformation;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.UpdateDailyTradingInfoService;
@@ -92,8 +93,12 @@ public class UpdateDailyTradingInfoTasklet implements Tasklet {
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
         // 레디스에서 가져온 데이터 엔티티로 변환 (시장별 엔티티 타입만 다르고 로직은 동일)
-        Function<TradingInfoDto, DailyTradingInformation> toEntity =
-                "KOSPI".equals(mktNm) ? KospiDailyTradingInformation::new : KosdaqDailyTradingInformation::new;
+        Function<TradingInfoDto, DailyTradingInformation> toEntity = switch (mktNm.toUpperCase()) {
+            case "KOSPI" -> KospiDailyTradingInformation::new;
+            case "KOSDAQ" -> KosdaqDailyTradingInformation::new;
+            case "ETF" -> EtfDailyTradingInformation::new;
+            default -> throw new IllegalArgumentException("지원하지 않는 시장: " + mktNm);
+        };
         List<DailyTradingInformation> tradingInfoEntities = tradingInfoDtos.stream()
                 .map(toEntity)
                 .collect(Collectors.toList());

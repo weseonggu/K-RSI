@@ -96,11 +96,21 @@ public class RequestDailyTradingInfoTasklet implements Tasklet {
 
         // 데이터 변환 및 저장
         for (Map<String, Object> stockJson : stockList) {
-            if ("KOSDAQ".equalsIgnoreCase(mktNM)) {
-                stocks.add(KosdaqTradingInfoDto.fromJson(stockJson));// <- 여기 변경
-            } else {
-                stocks.add(KospiTradingInfoDto.fromJson(stockJson));// <- 여기 변경
+            TradingInfoDto dto = switch (mktNM.toUpperCase()) {
+                case "KOSPI" -> KospiTradingInfoDto.fromJson(stockJson);
+                case "KOSDAQ" -> KosdaqTradingInfoDto.fromJson(stockJson);
+                case "ETF" -> EtfTradingInfoDto.fromJson(stockJson);
+                default -> throw new IllegalArgumentException("지원하지 않는 시장: " + mktNM);
+            };
+            if (dto instanceof EtfTradingInfoDto etf && !etf.hasRequiredValues()) {
+                log.warn("ETF 필수 일봉 값 누락으로 행 스킵 - date={}, isuCd={}", etf.getBasDd(), etf.getIsuCd());
+                continue;
             }
+            stocks.add(dto);
+        }
+        if (stocks.isEmpty()) {
+            stepExecution.setExitStatus(new ExitStatus("NO_DATA"));
+            return RepeatStatus.FINISHED;
         }
         // 레디스 키 날짜 + 시장
         String redisKey ="daily-trading-"+LocalDate.now().toString() + "-" + mktNM;

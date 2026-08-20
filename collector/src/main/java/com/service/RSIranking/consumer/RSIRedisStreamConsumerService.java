@@ -44,10 +44,13 @@ public class RSIRedisStreamConsumerService {
     private static final String STREAM_KEY_PREFIX = "rsi:calculation:stream:";
     private static final String KOSPI_STREAM = STREAM_KEY_PREFIX + "KOSPI";
     private static final String KOSDAQ_STREAM = STREAM_KEY_PREFIX + "KOSDAQ";
+    private static final String ETF_STREAM = STREAM_KEY_PREFIX + "ETF";
     private static final String KOSPI_CONSUMER_GROUP = "RSI-Kospi-Group";
     private static final String KOSDAQ_CONSUMER_GROUP = "RSI-Kosdaq-Group";
+    private static final String ETF_CONSUMER_GROUP = "RSI-Etf-Group";
     private static final String KOSPI_CONSUMER_NAME = "RSI-Kospi-consumer-01";
     private static final String KOSDAQ_CONSUMER_NAME = "RSI-Kosdaq-consumer-01";
+    private static final String ETF_CONSUMER_NAME = "RSI-Etf-consumer-01";
 
     private final StreamMessageListenerContainer<String, MapRecord<String, String, String>> listenerContainer;
     private final RSIStreamListener rsiStreamListener;
@@ -72,6 +75,7 @@ public class RSIRedisStreamConsumerService {
         initializeConsumerGroups();
         reprocessPendingMessages(KOSPI_STREAM, KOSPI_CONSUMER_GROUP, KOSPI_CONSUMER_NAME);
         reprocessPendingMessages(KOSDAQ_STREAM, KOSDAQ_CONSUMER_GROUP, KOSDAQ_CONSUMER_NAME);
+        reprocessPendingMessages(ETF_STREAM, ETF_CONSUMER_GROUP, ETF_CONSUMER_NAME);
         registerListeners();
         listenerContainer.start();
         log.info("Redis Stream Listener Container 시작 완료");
@@ -131,6 +135,7 @@ public class RSIRedisStreamConsumerService {
     private void initializeConsumerGroups() {
         createGroupIfAbsent(KOSPI_STREAM, KOSPI_CONSUMER_GROUP);
         createGroupIfAbsent(KOSDAQ_STREAM, KOSDAQ_CONSUMER_GROUP);
+        createGroupIfAbsent(ETF_STREAM, ETF_CONSUMER_GROUP);
     }
 
     /**
@@ -183,6 +188,17 @@ public class RSIRedisStreamConsumerService {
             );
         } catch (Exception e) {
             log.error("코스닥 스트림 리스너 등록 실패: {}", e.getMessage(), e);
+        }
+
+        try {
+            log.info("ETF 스트림 리스너 등록");
+            listenerContainer.receive(
+                    Consumer.from(ETF_CONSUMER_GROUP, ETF_CONSUMER_NAME),
+                    StreamOffset.create(ETF_STREAM, ReadOffset.lastConsumed()),
+                    rsiStreamListener
+            );
+        } catch (Exception e) {
+            log.error("ETF 스트림 리스너 등록 실패: {}", e.getMessage(), e);
         }
     }
 }

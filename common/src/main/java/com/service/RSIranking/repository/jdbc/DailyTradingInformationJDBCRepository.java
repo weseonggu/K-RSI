@@ -329,6 +329,7 @@ public class DailyTradingInformationJDBCRepository {
         return switch (mktNm.trim().toUpperCase()) {
             case "KOSPI" -> "kospi_daily_trading_information";
             case "KOSDAQ" -> "kosdaq_daily_trading_information";
+            case "ETF" -> "etf_daily_trading_information";
             default -> throw new IllegalArgumentException("Unsupported mktNm: " + mktNm);
         };
     }
@@ -343,6 +344,7 @@ public class DailyTradingInformationJDBCRepository {
         return switch (mktNm.trim().toUpperCase()) {
             case "KOSPI" -> "kospi_stock_info";
             case "KOSDAQ" -> "kosdaq_stock_info";
+            case "ETF" -> "etf_stock_info";
             default -> throw new IllegalArgumentException("Unsupported mktNm: " + mktNm);
         };
     }

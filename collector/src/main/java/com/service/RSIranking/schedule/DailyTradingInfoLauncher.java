@@ -118,10 +118,20 @@ public class DailyTradingInfoLauncher {
                 .addString("yesterday", yesterday)
                 .toJobParameters();
 
+        JobParameters etfJobParameters = new JobParametersBuilder()
+                .addString("uuid", UUID.randomUUID().toString())
+                .addString("date", date)
+                .addString("apiUrl", krxApiProperties.getEtfTradingInfoUrl())
+                .addString("apiKey", krxApiProperties.getKey())
+                .addString("mktNm", "ETF")
+                .addString("yesterday", yesterday)
+                .toJobParameters();
+
         CompletableFuture<Void> kospiFuture = asyncJobLauncher.runKospiTradingJob(kospiJobParameters);
         CompletableFuture<Void> kosdaqFuture = asyncJobLauncher.runKosdaqTradingJob(kosdaqJobParameters);
+        CompletableFuture<Void> etfFuture = asyncJobLauncher.runEtfTradingJob(etfJobParameters);
 
-        CompletableFuture.allOf(kospiFuture, kosdaqFuture)
+        CompletableFuture.allOf(kospiFuture, kosdaqFuture, etfFuture)
                 .thenRun(() -> log.info("모든 Trading 배치 작업 완료!"))
                 .exceptionally(ex -> {
                     log.error("Trading 배치 작업 중 오류 발생: {}", ex.getMessage(), ex);
@@ -131,5 +141,6 @@ public class DailyTradingInfoLauncher {
 
         log.info("KOSPI Trading Job 완료: {}", kospiFuture.isCompletedExceptionally() ? "실패" : "성공");
         log.info("KOSDAQ Trading Job 완료: {}", kosdaqFuture.isCompletedExceptionally() ? "실패" : "성공");
+        log.info("ETF Trading Job 완료: {}", etfFuture.isCompletedExceptionally() ? "실패" : "성공");
     }
 }

@@ -102,4 +102,27 @@ public class StockJDBCRepository {
         });
     }
 
+    /** ETF 신규 종목을 대량 삽입합니다. */
+    public void etfBulkInsert(List<StockInfoEntity> stocks) {
+        String sql = """
+                INSERT INTO etf_stock_info (isu_cd, isu_nm, mkt_nm, is_public_stock)
+                SELECT ?, ?, ?, ?
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM etf_stock_info s WHERE s.isu_cd = ?
+                )
+                """;
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                StockInfoEntity stock = stocks.get(i);
+                ps.setString(1, stock.getId());
+                ps.setString(2, stock.getIsuNm());
+                ps.setString(3, stock.getMktNm());
+                ps.setBoolean(4, stock.getIsPublicStock());
+                ps.setString(5, stock.getId());
+            }
+            @Override public int getBatchSize() { return stocks.size(); }
+        });
+    }
+
 }

@@ -5,6 +5,7 @@ import com.service.RSIranking.dto.StockDto;
 
 import com.service.RSIranking.entity.KosdaqStockInfoEntity;
 import com.service.RSIranking.entity.KospiStockInfoEntity;
+import com.service.RSIranking.entity.EtfStockInfoEntity;
 import com.service.RSIranking.entity.inter.StockInfoEntity;
 import com.service.RSIranking.service.InterStepDataSharingWithRedisService;
 import com.service.RSIranking.service.StockBulkInsertService;
@@ -151,20 +152,20 @@ public class CompareAndUpdateProcessor implements ItemProcessor<StockInfoEntity,
         }
         List<StockInfoEntity> newStockEntities = null;
         // 코스피, 코스닥 분기 처리
-        if(mktNm.equals("KOSPI")){
-            newStockEntities = newStockDtos.stream()
-                    .map(KospiStockInfoEntity::new)
-                    .collect(Collectors.toList());
-            if (!newStockEntities.isEmpty()) {
+        switch (mktNm.toUpperCase()) {
+            case "KOSPI" -> {
+                newStockEntities = newStockDtos.stream().map(KospiStockInfoEntity::new).collect(Collectors.toList());
                 stockBulkInsertService.KospiStocksInsert(newStockEntities);
             }
-        }else{
-            newStockEntities = newStockDtos.stream()
-                    .map(KosdaqStockInfoEntity::new)
-                    .collect(Collectors.toList());
-            if (!newStockEntities.isEmpty()) {
+            case "KOSDAQ" -> {
+                newStockEntities = newStockDtos.stream().map(KosdaqStockInfoEntity::new).collect(Collectors.toList());
                 stockBulkInsertService.KosdaqStocksInsert(newStockEntities);
             }
+            case "ETF" -> {
+                newStockEntities = newStockDtos.stream().map(EtfStockInfoEntity::new).collect(Collectors.toList());
+                stockBulkInsertService.EtfStocksInsert(newStockEntities);
+            }
+            default -> throw new IllegalArgumentException("지원하지 않는 시장: " + mktNm);
         }
         log.info(mktNm+": 종목: "+ del + "개 폐지");
         log.info(mktNm+": 신규 종목 추가: "+ newStockEntities.size() + "개 추가");

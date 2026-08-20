@@ -18,6 +18,11 @@ const order = ref('asc') // 기본: 과매도 순 (RSI 오름차순)
 const rsiBand = ref('') // '' = 전체, '30-40' 형식
 const size = ref(50)
 const page = ref(0) // 0-base
+const searchKeyword = ref('')
+const suggestions = ref([])
+const selectedStock = ref(null)
+const searchOpen = ref(false)
+let searchTimer
 
 // ── 조회 결과 ─────────────────────────────────────────
 const items = ref([])
@@ -66,6 +71,7 @@ async function fetchRanking() {
       params.set('rsiMin', min)
       params.set('rsiMax', max)
     }
+    if (selectedStock.value) params.set('isuCd', selectedStock.value.isuCd)
     // BASE_URL(/rsi/) 기준 상대 경로 — 80(RAG nginx 경유)과 8088(직접) 어디서든 동작
     const res = await fetch(`${import.meta.env.BASE_URL}api/rsi/ranking?${params}`)
     if (seq !== requestSeq) return
@@ -101,8 +107,65 @@ function resetAndFetch() {
   }
 }
 
-watch([date, market, order, rsiBand, size], resetAndFetch)
+watch([date, order, rsiBand, size], resetAndFetch)
 watch(page, fetchRanking)
+
+watch(searchKeyword, (keyword) => {
+  clearTimeout(searchTimer)
+  const selectedLabel = selectedStock.value ? `${selectedStock.value.isuNm} (${selectedStock.value.isuCd})` : ''
+  if (selectedStock.value && keyword !== selectedLabel) selectedStock.value = null
+  if (!keyword.trim() || selectedStock.value) {
+    suggestions.value = []
+    return
+  }
+  searchTimer = setTimeout(() => fetchSuggestions(keyword), 200)
+})
+
+watch(market, async () => {
+  searchKeyword.value = ''
+  selectedStock.value = null
+  suggestions.value = []
+  await initializeLatestDate()
+})
+
+async function fetchSuggestions(keyword) {
+  try {
+    const params = new URLSearchParams({ market: market.value, keyword: keyword.trim() })
+    const res = await fetch(`${import.meta.env.BASE_URL}api/rsi/stocks/search?${params}`)
+    suggestions.value = res.ok ? (await res.json()).slice(0, 5) : []
+    searchOpen.value = suggestions.value.length > 0
+  } catch {
+    suggestions.value = []
+  }
+}
+
+function selectSuggestion(stock) {
+  selectedStock.value = stock
+  searchKeyword.value = `${stock.isuNm} (${stock.isuCd})`
+  suggestions.value = []
+  searchOpen.value = false
+}
+
+function submitSearch() {
+  if (!selectedStock.value && suggestions.value.length === 1) selectSuggestion(suggestions.value[0])
+  resetAndFetch()
+}
+
+async function initializeLatestDate() {
+  loading.value = true
+  error.value = ''
+  try {
+    const params = new URLSearchParams({ market: market.value })
+    const res = await fetch(`${import.meta.env.BASE_URL}api/rsi/latest-date?${params}`)
+    if (!res.ok) throw new Error('최신 거래일을 불러오지 못했습니다.')
+    const latestDate = (await res.json()).date
+    if (date.value === latestDate) fetchRanking()
+    else date.value = latestDate
+  } catch (e) {
+    error.value = e.message
+    loading.value = false
+  }
+}
 
 function onPageChange(p) {
   page.value = p
@@ -118,12 +181,10 @@ function onSelectStock(row) {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (date.value) return // keep-alive 복귀 시 기존 상태 유지(중복 초기화 방지)
   // 기본값: 오늘 (로컬 기준) — date 워처가 첫 자동 조회를 수행
-  const now = new Date()
-  const pad = (n) => String(n).padStart(2, '0')
-  date.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+  await initializeLatestDate()
 })
 </script>
 
@@ -131,20 +192,39 @@ onMounted(() => {
   <main class="container">
     <header class="page-head">
       <h1>일별 RSI 순위</h1>
-      <p class="subtitle">KOSPI · KOSDAQ 종목의 일별 RSI 순위 조회 · 종목 더블클릭 시 상세 차트</p>
+      <p class="subtitle">KOSPI · KOSDAQ · ETF 종목의 일별 RSI 순위 조회 · 종목 더블클릭 시 상세 차트</p>
     </header>
+
+    <form class="search-panel" @submit.prevent="submitSearch">
+      <label class="field field-search">
+        <span>종목 검색</span>
+        <div class="search-row">
+          <div class="autocomplete">
+            <input v-model="searchKeyword" type="search" placeholder="종목명 또는 식별코드"
+              autocomplete="off" @focus="searchOpen = suggestions.length > 0"
+              @keydown.escape="searchOpen = false" />
+            <ul v-if="searchOpen" class="suggestions" role="listbox">
+              <li v-for="stock in suggestions" :key="stock.isuCd">
+                <button type="button" @mousedown.prevent="selectSuggestion(stock)">
+                  <strong>{{ stock.isuNm }}</strong><span>{{ stock.isuCd }}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+          <button class="search-btn" type="submit">검색</button>
+        </div>
+      </label>
+    </form>
+
+    <nav class="market-tabs" aria-label="시장 선택">
+      <button v-for="tab in ['KOSPI', 'KOSDAQ', 'ETF']" :key="tab" type="button"
+        :class="{ active: market === tab }" @click="market = tab">{{ tab }}</button>
+    </nav>
 
     <form class="controls" @submit.prevent="fetchRanking">
       <label class="field field-date">
         <span>날짜</span>
         <input v-model="date" type="date" required />
-      </label>
-      <label class="field">
-        <span>시장</span>
-        <select v-model="market">
-          <option value="KOSPI">KOSPI</option>
-          <option value="KOSDAQ">KOSDAQ</option>
-        </select>
       </label>
       <label class="field">
         <span>정렬</span>

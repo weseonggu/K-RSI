@@ -1,6 +1,7 @@
 package com.service.RSIranking.repository.jdbc;
 
 
+import com.service.RSIranking.dto.StockSearchSuggestionDto;
 import com.service.RSIranking.entity.inter.StockInfoEntity;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -27,6 +28,36 @@ public class StockJDBCRepository {
     public StockJDBCRepository(@Qualifier("jdbcDataTemplate") JdbcTemplate jdbcTemplate){
         this.jdbcTemplate = jdbcTemplate;
 
+    }
+
+    public List<StockSearchSuggestionDto> search(String keyword, String mktNm, int limit) {
+        String tableName = resolveTableName(mktNm);
+        String normalized = keyword == null ? "" : keyword.trim();
+        String contains = "%" + normalized + "%";
+        String prefix = normalized + "%";
+        String sql = String.format("""
+                SELECT isu_cd, isu_nm, mkt_nm
+                FROM %s
+                WHERE is_public_stock = true AND (isu_cd LIKE ? OR isu_nm LIKE ?)
+                ORDER BY CASE
+                    WHEN isu_cd = ? THEN 0
+                    WHEN isu_cd LIKE ? THEN 1
+                    WHEN isu_nm LIKE ? THEN 2
+                    ELSE 3 END, isu_nm, isu_cd
+                LIMIT ?
+                """, tableName);
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new StockSearchSuggestionDto(
+                rs.getString("isu_cd"), rs.getString("isu_nm"), rs.getString("mkt_nm")),
+                contains, contains, normalized, prefix, prefix, limit);
+    }
+
+    private static String resolveTableName(String mktNm) {
+        return switch (mktNm.trim().toUpperCase()) {
+            case "KOSPI" -> "kospi_stock_info";
+            case "KOSDAQ" -> "kosdaq_stock_info";
+            case "ETF" -> "etf_stock_info";
+            default -> throw new IllegalArgumentException("Unsupported mktNm: " + mktNm);
+        };
     }
 
     /**

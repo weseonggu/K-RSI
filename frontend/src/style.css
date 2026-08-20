@@ -82,6 +82,38 @@ h1 {
   border-color: var(--accent);
 }
 
+.search-panel {
+  background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 10px;
+}
+.field-search { width: 100%; }
+.search-row { display: flex; gap: 8px; }
+.autocomplete { position: relative; flex: 1; }
+.autocomplete input { width: 100%; }
+.suggestions {
+  position: absolute; z-index: 10; top: calc(100% + 4px); left: 0; right: 0;
+  margin: 0; padding: 4px; list-style: none; background: #fff;
+  border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.14);
+}
+.suggestions button {
+  display: flex; justify-content: space-between; gap: 12px; width: 100%;
+  padding: 8px 10px; border: 0; border-radius: 6px; background: transparent;
+  color: #1f2937; cursor: pointer; text-align: left;
+}
+.suggestions button:hover { background: var(--accent-weak); }
+.suggestions span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.search-btn {
+  min-height: 38px; padding: 7px 18px; border: 0; border-radius: 8px;
+  background: var(--accent); color: #fff; font-weight: 600; cursor: pointer;
+}
+.market-tabs { display: flex; gap: 4px; margin: 0 4px 10px; }
+.market-tabs button {
+  padding: 9px 20px; border: 0; border-bottom: 2px solid transparent;
+  background: transparent; color: var(--muted); font-weight: 700; cursor: pointer;
+}
+.market-tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
 /* ── 상태 표시 ─────────────────────────────────────── */
 .error {
   color: #b91c1c;

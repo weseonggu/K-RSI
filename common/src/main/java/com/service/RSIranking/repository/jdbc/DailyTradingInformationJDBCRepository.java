@@ -242,6 +242,12 @@ public class DailyTradingInformationJDBCRepository {
      */
     public List<RSIRankingDto> findRsiRanking(LocalDate date, String mktNm, boolean asc,
                                               Double rsiMin, Double rsiMax, long offset, int size) {
+        return findRsiRanking(date, mktNm, asc, rsiMin, rsiMax, null, offset, size);
+    }
+
+    public List<RSIRankingDto> findRsiRanking(LocalDate date, String mktNm, boolean asc,
+                                              Double rsiMin, Double rsiMax, String isuCd,
+                                              long offset, int size) {
         String tableName = resolveTableName(mktNm);
         String stockTableName = resolveStockInfoTableName(mktNm);
         String direction = asc ? "ASC" : "DESC";
@@ -249,15 +255,20 @@ public class DailyTradingInformationJDBCRepository {
         List<Object> params = new ArrayList<>();
         params.add(date);
         String rangeClause = buildRsiRangeClause(rsiMin, rsiMax, params);
+        String stockClause = "";
+        if (isuCd != null && !isuCd.isBlank()) {
+            stockClause = " AND t.isu_cd = ?";
+            params.add(isuCd);
+        }
 
         String sql = String.format("""
         SELECT t.isu_cd, s.isu_nm, t.date, t.tdd_clsprc, t.fluc_rt, t.rsi
         FROM %s t
         JOIN %s s ON s.isu_cd = t.isu_cd
-        WHERE t.date = ? AND t.rsi IS NOT NULL AND t.acc_trdvol > 0 %s
+        WHERE t.date = ? AND t.rsi IS NOT NULL AND t.acc_trdvol > 0 %s %s
         ORDER BY t.rsi %s, t.isu_cd
         LIMIT ? OFFSET ?
-        """, tableName, stockTableName, rangeClause, direction);
+        """, tableName, stockTableName, rangeClause, stockClause, direction);
 
         params.add(size);
         params.add(offset);
@@ -286,19 +297,33 @@ public class DailyTradingInformationJDBCRepository {
      * @return 전체 건수
      */
     public long countRsiRanking(LocalDate date, String mktNm, Double rsiMin, Double rsiMax) {
+        return countRsiRanking(date, mktNm, rsiMin, rsiMax, null);
+    }
+
+    public long countRsiRanking(LocalDate date, String mktNm, Double rsiMin, Double rsiMax, String isuCd) {
         String tableName = resolveTableName(mktNm);
         List<Object> params = new ArrayList<>();
         params.add(date);
         String rangeClause = buildRsiRangeClause(rsiMin, rsiMax, params);
+        String stockClause = "";
+        if (isuCd != null && !isuCd.isBlank()) {
+            stockClause = " AND t.isu_cd = ?";
+            params.add(isuCd);
+        }
 
         String sql = String.format("""
         SELECT COUNT(*)
         FROM %s t
-        WHERE t.date = ? AND t.rsi IS NOT NULL AND t.acc_trdvol > 0 %s
-        """, tableName, rangeClause);
+        WHERE t.date = ? AND t.rsi IS NOT NULL AND t.acc_trdvol > 0 %s %s
+        """, tableName, rangeClause, stockClause);
 
         Long count = jdbcTemplate.queryForObject(sql, Long.class, params.toArray());
         return count == null ? 0L : count;
+    }
+
+    public LocalDate findLatestRsiDate(String mktNm) {
+        String sql = String.format("SELECT MAX(date) FROM %s WHERE rsi IS NOT NULL", resolveTableName(mktNm));
+        return jdbcTemplate.queryForObject(sql, LocalDate.class);
     }
 
     /**

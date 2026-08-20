@@ -3,6 +3,7 @@ package com.service.RSIranking.service;
 import com.service.RSIranking.dto.PagedResponse;
 import com.service.RSIranking.dto.RSIRankingDto;
 import com.service.RSIranking.repository.jdbc.DailyTradingInformationJDBCRepository;
+import com.service.RSIranking.repository.jdbc.StockJDBCRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,8 +46,36 @@ class RSIRankingServiceTest {
     @Mock
     private DailyTradingInformationJDBCRepository repository;
 
+    @Mock
+    private StockJDBCRepository stockRepository;
+
     @InjectMocks
     private RSIRankingService service;
+
+    @Test
+    @DisplayName("선택 종목 식별코드를 순위 조회와 개수 조회에 전달한다")
+    void selectedStockFiltersRanking() {
+        service.getRanking(DATE, MARKET, "asc", null, null, "005930", 0, 50);
+
+        verify(repository).findRsiRanking(TARGET_DATE, MARKET, true, null, null, "005930", 0L, 50);
+        verify(repository).countRsiRanking(TARGET_DATE, MARKET, null, null, "005930");
+    }
+
+    @Test
+    @DisplayName("검색 자동완성은 최대 5개를 요청한다")
+    void searchSuggestionsAreLimitedToFive() {
+        service.searchStocks(MARKET, "삼성");
+
+        verify(stockRepository).search("삼성", MARKET, 5);
+    }
+
+    @Test
+    @DisplayName("최신 RSI 거래일을 시장별로 조회한다")
+    void latestDateUsesSelectedMarket() {
+        when(repository.findLatestRsiDate("ETF")).thenReturn(TARGET_DATE);
+
+        assertThat(service.getLatestDate("etf")).isEqualTo(TARGET_DATE);
+    }
 
     @BeforeEach
     void setUp() {

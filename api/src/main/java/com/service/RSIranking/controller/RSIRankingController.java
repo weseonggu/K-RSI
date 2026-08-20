@@ -2,6 +2,7 @@ package com.service.RSIranking.controller;
 
 import com.service.RSIranking.dto.PagedResponse;
 import com.service.RSIranking.dto.RSIRankingDto;
+import com.service.RSIranking.dto.StockSearchSuggestionDto;
 import com.service.RSIranking.service.RSIRankingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 일별 RSI 순위 조회 REST API.
@@ -50,9 +55,25 @@ public class RSIRankingController {
             @RequestParam(value = "order", defaultValue = "asc") String order,
             @RequestParam(value = "rsiMin", required = false) Double rsiMin,
             @RequestParam(value = "rsiMax", required = false) Double rsiMax,
+            @RequestParam(value = "isuCd", required = false) String isuCd,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "50") int size) {
+        if (isuCd == null || isuCd.isBlank()) {
+            return ResponseEntity.ok(
+                    rsiRankingService.getRanking(date, market, order, rsiMin, rsiMax, page, size));
+        }
         return ResponseEntity.ok(
-                rsiRankingService.getRanking(date, market, order, rsiMin, rsiMax, page, size));
+                rsiRankingService.getRanking(date, market, order, rsiMin, rsiMax, isuCd, page, size));
+    }
+
+    @GetMapping("/stocks/search")
+    public List<StockSearchSuggestionDto> searchStocks(@RequestParam String market,
+                                                       @RequestParam String keyword) {
+        return rsiRankingService.searchStocks(market, keyword);
+    }
+
+    @GetMapping("/latest-date")
+    public Map<String, LocalDate> latestDate(@RequestParam String market) {
+        return Map.of("date", rsiRankingService.getLatestDate(market));
     }
 }

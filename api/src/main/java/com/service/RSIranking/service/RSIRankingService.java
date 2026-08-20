@@ -2,7 +2,9 @@ package com.service.RSIranking.service;
 
 import com.service.RSIranking.dto.PagedResponse;
 import com.service.RSIranking.dto.RSIRankingDto;
+import com.service.RSIranking.dto.StockSearchSuggestionDto;
 import com.service.RSIranking.repository.jdbc.DailyTradingInformationJDBCRepository;
+import com.service.RSIranking.repository.jdbc.StockJDBCRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +31,7 @@ public class RSIRankingService {
     private static final int MAX_SIZE = 500;
 
     private final DailyTradingInformationJDBCRepository dailyTradingInformationJDBCRepository;
+    private final StockJDBCRepository stockJDBCRepository;
 
     /**
      * 특정 날짜의 RSI 순위를 조회합니다.
@@ -49,6 +52,12 @@ public class RSIRankingService {
      */
     public PagedResponse<RSIRankingDto> getRanking(String date, String market, String order,
                                                    Double rsiMin, Double rsiMax, int page, int size) {
+        return getRanking(date, market, order, rsiMin, rsiMax, null, page, size);
+    }
+
+    public PagedResponse<RSIRankingDto> getRanking(String date, String market, String order,
+                                                   Double rsiMin, Double rsiMax, String isuCd,
+                                                   int page, int size) {
         LocalDate targetDate = parseDate(date);
         String mktNm = normalizeMarket(market);
         boolean asc = parseOrder(order);
@@ -59,13 +68,30 @@ public class RSIRankingService {
         // page(int) * size(int)를 int로 계산하면 오버플로될 수 있으므로, page를 먼저 long으로
         // 캐스팅한 뒤 곱한다(page 상한을 두지 않는 대신 오버플로 자체를 원천 차단).
         long offset = (long) page * size;
-        List<RSIRankingDto> items = dailyTradingInformationJDBCRepository
-                .findRsiRanking(targetDate, mktNm, asc, rsiMin, rsiMax, offset, size);
-        long totalElements = dailyTradingInformationJDBCRepository
-                .countRsiRanking(targetDate, mktNm, rsiMin, rsiMax);
+        String normalizedIsuCd = isuCd == null || isuCd.isBlank() ? null : isuCd.trim();
+        List<RSIRankingDto> items = normalizedIsuCd == null
+                ? dailyTradingInformationJDBCRepository.findRsiRanking(targetDate, mktNm, asc, rsiMin, rsiMax, offset, size)
+                : dailyTradingInformationJDBCRepository.findRsiRanking(targetDate, mktNm, asc, rsiMin, rsiMax, normalizedIsuCd, offset, size);
+        long totalElements = normalizedIsuCd == null
+                ? dailyTradingInformationJDBCRepository.countRsiRanking(targetDate, mktNm, rsiMin, rsiMax)
+                : dailyTradingInformationJDBCRepository.countRsiRanking(targetDate, mktNm, rsiMin, rsiMax, normalizedIsuCd);
         int totalPages = (int) Math.ceil(totalElements / (double) size);
 
         return new PagedResponse<>(items, page, size, totalElements, totalPages);
+    }
+
+    public List<StockSearchSuggestionDto> searchStocks(String market, String keyword) {
+        String mktNm = normalizeMarket(market);
+        if (keyword == null || keyword.trim().length() < 1) return List.of();
+        return stockJDBCRepository.search(keyword, mktNm, 5);
+    }
+
+    public LocalDate getLatestDate(String market) {
+        LocalDate latestDate = dailyTradingInformationJDBCRepository.findLatestRsiDate(normalizeMarket(market));
+        if (latestDate == null) {
+            throw new IllegalArgumentException("해당 시장에 조회 가능한 RSI 데이터가 없습니다.");
+        }
+        return latestDate;
     }
 
     private static void validateRsiRange(Double rsiMin, Double rsiMax) {
